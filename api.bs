@@ -1485,10 +1485,13 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
 <p class=advisement><a method for=Attribution>saveImpression()</a>
 does not return a status indicating whether the impression was recorded.
 This minimizes the ability to detect when the Attribution
-API is [[#opt-out|disabled]]. Similarly, resolution of the returned promise is
-not predicated on saving |impression| to the [=impression store=] in order to
-avoid timing [=side channels=] related to the number of existing impressions and
-whether the API is enabled.
+API is [[#opt-out|disabled]].
+
+<p class=advisement>Implementations MUST attempt to mitigate [=side channels=]
+that can reveal API state. For example, resolution of the returned promise is
+not predicated on saving |impression| to the [=impression store=] to ensure that
+the amount of time it takes to resolve is not dependent on the number of
+existing impressions or whether the API is enabled.
 
 </div>
 
@@ -1544,6 +1547,11 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
      1.  [=Queue a task=] on the [=Attribution task source=] to
          [=resolve=] |promise| with |result|.
 1. Return |promise|.
+
+<p class=advisement>Implementations MUST attempt to mitigate [=side channels=]
+that can reveal API state. For example, ideally the amount of time it takes to
+resolve the returned promise would not depend on the number of stored or matched
+impressions or whether the API is enabled.
 
 </div>
 
