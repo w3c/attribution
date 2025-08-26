@@ -1538,7 +1538,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     :: |credit|
 1.  Let |lookback| be |options|.{{AttributionConversionOptions/lookbackDays}} [=days=]
     if it [=map/exists=], the [=implementation-defined=] maximum otherwise.
-1.  Let |lookback| be the [=implementation-defined=] maximum
+1.  Set |lookback| to the [=implementation-defined=] maximum
     if it is larger than that maximum.
 1.  If |lookback| is 0 [=days=], throw a {{RangeError}}.
 1.  If the [=list/size=] of
