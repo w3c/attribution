@@ -76,7 +76,6 @@ export interface Delegate {
   readonly maxConversionCallersPerImpression: number;
   readonly maxCreditSize: number;
   readonly maxLifetimeDays: number;
-  readonly maxLookbackDays: number;
   readonly maxHistogramSize: number;
   readonly privacyBudgetMicroEpsilons: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
@@ -210,7 +209,7 @@ export class Backend {
     histogramSize,
     impressionSites = [],
     impressionCallers = [],
-    lookbackDays = this.#delegate.maxLookbackDays,
+    lookbackDays = this.#delegate.maxLifetimeDays,
     logic = index.DEFAULT_CONVERSION_LOGIC,
     logicOptions,
     maxValue = index.DEFAULT_CONVERSION_MAX_VALUE,
@@ -276,7 +275,7 @@ export class Backend {
     if (lookbackDays <= 0 || !Number.isInteger(lookbackDays)) {
       throw new RangeError("lookbackDays must be a positive integer");
     }
-    lookbackDays = Math.min(lookbackDays, this.#delegate.maxLookbackDays);
+    lookbackDays = Math.min(lookbackDays, this.#delegate.maxLifetimeDays);
 
     const matchValueSet = new Set<number>();
     for (const value of matchValues) {
