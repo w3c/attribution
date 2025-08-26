@@ -276,6 +276,7 @@ export class Backend {
     if (lookbackDays <= 0 || !Number.isInteger(lookbackDays)) {
       throw new RangeError("lookbackDays must be a positive integer");
     }
+    lookbackDays = Math.min(lookbackDays, this.#delegate.maxLookbackDays);
 
     const matchValueSet = new Set<number>();
     for (const value of matchValues) {
