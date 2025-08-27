@@ -1143,7 +1143,7 @@ given a [=privacy budget key=] |key|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|, and
-nullable integer |attributedValueForSingleEpochOpt|:
+nullable integer |l1Norm|:
 
 1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
     its value of |key| to be a [=user agent=]-defined value,
@@ -1157,17 +1157,22 @@ nullable integer |attributedValueForSingleEpochOpt|:
 1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
     in the [=privacy budget store=].
 
-1.  Let |singleEpochQuery| be true if |attributedValueForSingleEpochOpt| is non-null, false otherwise.
+1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, |value| otherwise.
 
-1.  Let |halfReportGlobalSensitivity| be |attributedValueForSingleEpochOpt|/2 if |singleEpochQuery| is true, |value| otherwise.
+1.  Let |noiseScale| be |maxValue| / |epsilon|.
 
-1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
+1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
 
-1.  Let |deductionFp| be |halfReportGlobalSensitivity| / |noiseScale|.
+1.  Let |deductionFp| be |deductionFp| * 2 if |l1Norm| is null.
 
-<p class=note>Single epoch attributions do not cause any cascading effects across epochs,
-so they do not need to consume double the budget. The deduction here is assuming Laplace
-noise is added to the histogram with scale param |maxValue| / |epsilon|.
+<p class=note>Single epoch attributions &mdash;
+the only case that |l1Norm| is non-null &mdash;
+do not cause any cascading effects across epochs.
+Attribution that involves multiple epochs consume double the budget
+because of the potential for one change to affect attribution across epochs.
+Doubling the deduction assumes that Laplace noise
+proportional to |maxValue| / |epsilon|
+is added to the aggregated histogram.
 
 1.  If |deductionFp| is negative or greater than [=maximum epsilon=],
     [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
