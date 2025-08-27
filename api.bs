@@ -1163,7 +1163,7 @@ nullable integer |l1Norm|:
 
 1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
 
-1.  Let |deductionFp| be |deductionFp| * 2 if |l1Norm| is null.
+1.  Set |deductionFp| to |deductionFp| * 2 if |l1Norm| is null.
 
 <p class=note>Single epoch attributions &mdash;
 the only case that |l1Norm| is non-null &mdash;
