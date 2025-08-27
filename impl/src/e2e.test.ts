@@ -20,7 +20,6 @@ interface TestConfig {
   maxConversionCallersPerImpression: number;
   maxCreditSize: number;
   maxLifetimeDays: number;
-  maxLookbackDays: number;
   maxHistogramSize: number;
   privacyBudgetMicroEpsilons: number;
   privacyBudgetEpochDays: number;
@@ -95,7 +94,6 @@ function runTest(
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
     maxCreditSize: config.maxCreditSize,
     maxLifetimeDays: config.maxLifetimeDays,
-    maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),

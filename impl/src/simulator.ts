@@ -20,7 +20,6 @@ const backend = new Backend({
   maxConversionCallersPerImpression: 10,
   maxCreditSize: Infinity,
   maxLifetimeDays: 30,
-  maxLookbackDays: 60,
   maxHistogramSize: 100,
   privacyBudgetMicroEpsilons: 1000000,
   privacyBudgetEpoch: days(7),
