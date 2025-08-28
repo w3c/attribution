@@ -78,7 +78,8 @@ function listCell(tr: HTMLTableRowElement, vs: Iterable<string>): void {
   }
 }
 
-const impressionTable = document.querySelector("tbody")!;
+const impressionDb = document.querySelector("#db")!;
+const impressionTable = impressionDb.querySelector("#db tbody")!;
 
 function updateImpressionsTable() {
   impressionTable.replaceChildren();
@@ -96,6 +97,7 @@ function updateImpressionsTable() {
     listCell(tr, i.conversionCallers);
 
     impressionTable.append(tr);
+    impressionDb.scroll(0, impressionTable.scrollHeight);
   }
 }
 
@@ -159,7 +161,6 @@ function updateImpressionsTable() {
     "conversionCallers",
   ) as HTMLInputElement;
 
-  const output = form.querySelector("ol")!;
 
   form.addEventListener("input", reportValidity);
 
@@ -189,7 +190,10 @@ function updateImpressionsTable() {
       li.innerText = `Error: ${e}`;
     }
 
-    output.append(li);
+    const output = form.querySelector("output")!;
+    const results = output.querySelector("ol")!;
+    results.append(li);
+    output.scroll(0, output.scrollHeight);
     updateImpressionsTable();
   });
 }
@@ -242,7 +246,7 @@ function updateImpressionsTable() {
     "impressionCallers",
   ) as HTMLInputElement;
 
-  const output = form.querySelector("ol")!;
+  const output = form.querySelector("output")!;
 
   const epochStarts = document.querySelector<HTMLDListElement>("#epochStarts")!;
 
@@ -309,7 +313,8 @@ function updateImpressionsTable() {
       li.innerText = `Error: ${e}`;
     }
 
-    output.append(li);
+    const results = output.querySelector("ol")!;
+    results.append(li);
 
     epochStarts.replaceChildren();
     for (const [site, start] of backend.epochStarts) {
@@ -328,5 +333,7 @@ function updateImpressionsTable() {
       dd.innerText = entry.value.toString();
       privacyBudgetEntries.append(dt, dd);
     }
+
+    output.scroll(0, output.scrollHeight);
   });
 }
