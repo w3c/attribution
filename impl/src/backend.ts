@@ -528,12 +528,9 @@ export class Backend {
       };
       this.#privacyBudgetStore.push(entry);
     }
-    const sensitivity = l1Norm ?? value;
+    const sensitivity = l1Norm ?? (value * 2);
     const noiseScale = maxValue / epsilon;
-    let deductionFp = sensitivity / noiseScale;
-    if (l1Norm === null) {
-      deductionFp *= 2;
-    }
+    const deductionFp = sensitivity / noiseScale;
     if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
       entry.value = 0;
       return false;
