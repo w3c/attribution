@@ -161,7 +161,6 @@ function updateImpressionsTable() {
     "conversionCallers",
   ) as HTMLInputElement;
 
-
   form.addEventListener("input", reportValidity);
 
   form.addEventListener("submit", function (this: HTMLFormElement, e) {
