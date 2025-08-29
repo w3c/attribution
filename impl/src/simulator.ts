@@ -79,7 +79,7 @@ function listCell(tr: HTMLTableRowElement, vs: Iterable<string>): void {
 }
 
 const impressionDb = document.querySelector("#db")!;
-const impressionTable = impressionDb.querySelector("#db tbody")!;
+const impressionTable = impressionDb.querySelector("tbody")!;
 
 function updateImpressionsTable() {
   impressionTable.replaceChildren();
