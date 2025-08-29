@@ -13,6 +13,9 @@
         grid-gap: 0.25em;
         grid-template-columns: max-content;
 
+        output & dt::after {
+          content: " = ";
+        }
         dd {
           grid-column-start: 2;
 
@@ -40,18 +43,49 @@
       form,
       section {
         border: 1px solid #000;
-        padding: 0.5em;
+        padding: 3px 1ch;
         flex: 1;
       }
 
-      table {
-        border-collapse: collapse;
+      form {
+        max-height: 36lh;
+        display: flex;
+        flex-direction: column;
+        output {
+          margin: 3px 0;
+          overflow-y: auto;
+
+          h3 {
+            position: sticky;
+            background-color: #ddd;
+            top: 0;
+            padding: 3px 1ch;
+          }
+        }
       }
 
-      th,
-      td {
-        padding: 0.5em;
-        border: 1px solid #000;
+      #db {
+        max-height: 32lh;
+        overflow-y: auto;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+
+        thead {
+          position: sticky;
+          background-color: #ddd;
+          top: 0;
+        }
+
+        th,
+        td {
+          padding: 3px 1ch;
+        }
+
+        tr:nth-child(2n) {
+          background-color: #eee;
+        }
       }
     </style>
   </head>
@@ -60,11 +94,13 @@
       <!-- TODO: Expose actions for simulating user- and site-initiated data clears -->
       <form id="time">
         <h2>Time: <time></time></h2>
-        <button>Advance</button> by
-        <label
-          ><input id="days" type="number" min="0" value="1" step="0.25" />
-          days</label
-        >
+        <line
+          ><button>Advance</button> by
+          <label
+            ><input id="days" type="number" min="0" value="1" step="0.25" />
+            days</label
+          >
+        </line>
       </form>
       <section>
         <h2>Epoch Starts</h2>
@@ -98,27 +134,11 @@
           <dt><label for="conversionCallers">Conversion Callers</label></dt>
           <dd><input id="conversionCallers" /></dd>
         </dl>
-        <button>Submit</button>
+        <button>Save Impression</button>
         <output>
           <h3>Results</h3>
           <ol></ol>
         </output>
-        <table>
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>Impression Site</th>
-              <th>Intermediary Site</th>
-              <th>Histogram Index</th>
-              <th>Match Value</th>
-              <th>Lifetime Days</th>
-              <th>Priority</th>
-              <th>Conversion Sites</th>
-              <th>Conversion Callers</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
       </form>
       <form id="measureConversion">
         <h2>Measure Conversion</h2>
@@ -164,12 +184,33 @@
           <dt><label for="impressionCallers">Impression Callers</label></dt>
           <dd><input id="impressionCallers" /></dd>
         </dl>
-        <button>Submit</button>
+        <button>Measure Conversion</button>
         <output>
           <h3>Results</h3>
           <ol></ol>
         </output>
       </form>
     </div>
+    <section>
+      <h2>Impression Database</h2>
+      <div id="db">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Impression Site</th>
+              <th>Intermediary Site</th>
+              <th>Histogram Index</th>
+              <th>Match Value</th>
+              <th>Lifetime Days</th>
+              <th>Priority</th>
+              <th>Conversion Sites</th>
+              <th>Conversion Callers</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
   </body>
 </html>
