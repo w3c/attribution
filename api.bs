@@ -1157,9 +1157,9 @@ nullable integer |l1Norm|:
 1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
     in the [=privacy budget store=].
 
-1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, |value| * 2 otherwise.
+1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, 2 * |value| otherwise.
 
-1.  Let |noiseScale| be |maxValue| / |epsilon|.
+1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
 
 1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
 
