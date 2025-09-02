@@ -1344,6 +1344,46 @@ returning an [=epoch index=]:
 
 </div>
 
+<div algorithm="clear browsing history for attribution">
+To <dfn>clear browsing history for attribution</dfn>,
+given a [=set=] of [=sites=] |sites|
+and a [=boolean=] |forgetVisits|:
+
+1.  If |forgetVisits| is false:
+
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],
+        if |sites| [=set/is empty|is not empty=]
+        or |sites| [=set/contains=] the [=site=] component of |key|,
+        [=map/set=] [=privacy budget store=]\[|key|] to 0.
+
+    1.  Return.
+
+1.  If |sites| [=set/is empty=]:
+
+    1.  [=set/empty|Clear=] the [=impression store=].
+
+    1.  [=set/empty|Clear=] the [=privacy budget store=].
+
+    1.  [=set/empty|Clear=] the [=epoch start store=].
+
+1.  If |sites| [=set/is empty|is not empty=]:
+
+    1.  [=set/iterate|For each=] |impression| in the [=impression store=],
+        if |sites| [=set/contains=] |impression|.[=impression/Impression Site=],
+        [=set/remove=] |impression| from the [=impression store=].
+
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],
+        if |sites| [=set/contains=] the [=site=] component of |key|,
+        [=map/remove=] [=privacy budget store=]\[|key|].
+
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=epoch start store=],
+        if |sites| [=set/contains=] |key|,
+        [=map/remove=] [=epoch start store=]\[|key|].
+
+1.  Set the [=last browsing history clear=] to the current time.
+
+</div>
+
 ## Save Impression Algorithm ## {#save-impression-api-operation}
 
 <div algorithm>
@@ -2855,13 +2895,18 @@ to ensure that [=privacy budgets=] are not inadvertently exceeded.
 
 When clearing site data at the request of a [=user=],
 but retaining browsing history,
-a [=user agent=] can [=map/set=] the value
-in the [=privacy budget store=] to 0 for all [=epochs=]
-for all affected [=sites=].
+a [=user agent=] invokes [=clear browsing history for attribution=],
+given the [=set=] of affected [=sites=]
+and false (for |forgetVisits|).
+This sets the privacy budget for that site to zero,
+preventing any use of conversion measurement on that site.
+This does not remove saved impressions from the [=impression store=];
+logically, impressions are transferred to the [=conversion site=]
+at the time they are saved.
 
 When clearing site data at the request of a [=site=],
 through the use of the [:Clear-Site-Data:] header,
-a [=user agent=] only [[#removing-impressions|removes impressions]],
+a [=user agent=] only [=clear impressions for a conversion site|removes impressions=],
 without altering either the [=privacy budget store=]
 or the [=epoch start store=] for affected [=sites=].
 
@@ -2875,6 +2920,11 @@ necessary to prevent privacy loss toward sites
 leaves information about visits to sites
 for other users of a computer to discover
 when removing browsing history.
+
+A user agent that clears browsing history
+invokes [=clear browsing history for attribution=],
+given the [=set=] of affected [=sites=]
+and true (for |forgetVisits|).
 
 When clearing browsing history,
 [=user agents=] need to
