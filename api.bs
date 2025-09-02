@@ -1167,7 +1167,7 @@ nullable integer |l1Norm|:
 <p class=note>Single epoch attributions &mdash;
 the only case that |l1Norm| is non-null &mdash;
 do not cause any cascading effects across epochs.
-Attribution that involves multiple epochs consume double the budget
+Attribution that involves multiple epochs consumes double the budget
 because of the potential for one change to affect attribution across epochs.
 Doubling the deduction assumes that Laplace noise
 proportional to |maxValue| / |epsilon|
