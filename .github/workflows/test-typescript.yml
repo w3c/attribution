@@ -27,5 +27,8 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test
-      - run: npm run pretty:check
+      - name: Check Format
+        run: |
+          npm run pretty
+          git diff --exit-code
       - run: npm run lint
