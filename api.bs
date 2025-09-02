@@ -1351,10 +1351,25 @@ and a [=boolean=] |forgetVisits|:
 
 1.  If |forgetVisits| is false:
 
-    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],
-        if |sites| [=set/is empty|is not empty=]
-        or |sites| [=set/contains=] the [=site=] component of |key|,
-        [=map/set=] [=privacy budget store=]\[|key|] to 0.
+    1.  [=Assert=]: |sites| [=set/is empty|is not empty=].
+
+    1.  [=set/iterate|For each=] |site| in |sites|:
+
+        1.  Let |startingEpoch| be the result of
+            invoking [=get the starting epoch for attribution=]
+            given |site|.
+
+        1.  Let |currentEpoch| be the result of
+            invoking [=get the current epoch=]
+            given |site|.
+
+        1.  [=set/iterate|For each=] |epoch| in [=the inclusive range=]
+            from |startingEpoch| to |currentEpoch|:
+
+            1.  Let |key| be the [=privacy budget key=] formed
+                from |site| and |epoch|.
+
+            1.  [=map/set=] [=privacy budget store=]\[|key|] to 0.
 
     1.  Return.
 
@@ -1381,6 +1396,11 @@ and a [=boolean=] |forgetVisits|:
         [=map/remove=] [=epoch start store=]\[|key|].
 
 1.  Set the [=last browsing history clear=] to the current time.
+
+    <p class=note>Setting the [=last browsing history clear=]
+    while only clearing state for some sites
+    (that is, when |sites| [=set/is empty|is not empty=])
+    will make some impressions unreachable for sites that are not present in that set.
 
 </div>
 

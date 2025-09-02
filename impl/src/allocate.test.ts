@@ -1,6 +1,6 @@
 import { fairlyAllocateCredit } from "./backend";
 
-import { strict as assert } from "assert";
+import { strict as assert } from "node:assert";
 import test from "node:test";
 import { inverseErrorFunction } from "simple-statistics";
 
@@ -150,7 +150,7 @@ const testCases: FairlyAllocateCreditTestCase[] = [
   },
 ];
 
-void test("fairlyAllocateCredit", async (t) => {
+void test("fairly-allocate-credit", async (t) => {
   await Promise.all(
     testCases.map((tc) =>
       t.test(tc.name, () => runFairlyAllocateCreditTest(tc)),

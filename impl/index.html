@@ -16,6 +16,7 @@
         output & dt::after {
           content: " = ";
         }
+
         dd {
           grid-column-start: 2;
 
@@ -32,6 +33,7 @@
         display: flex;
         gap: 1em;
         width: 100%;
+        max-width: 1500px;
       }
 
       body {
@@ -40,17 +42,22 @@
         padding: 0.5em;
       }
 
-      form,
+      form:not(.simple),
       section {
         border: 1px solid #000;
         padding: 3px 1ch;
         flex: 1;
       }
 
+      form.simple {
+        margin: 0;
+      }
+
       form {
         max-height: 36lh;
         display: flex;
         flex-direction: column;
+
         output {
           margin: 3px 0;
           overflow-y: auto;
@@ -64,10 +71,15 @@
         }
       }
 
+      line {
+        margin: 0.5lh 1ch;
+      }
+
       #db {
         max-height: 32lh;
         overflow-y: auto;
       }
+
       table {
         border-collapse: collapse;
         width: 100%;
@@ -83,31 +95,69 @@
           padding: 3px 1ch;
         }
 
+        td:nth-child(n + 4):nth-child(-n + 7) {
+          text-align: right;
+        }
+
         tr:nth-child(2n) {
           background-color: #eee;
         }
       }
     </style>
   </head>
+
   <body>
     <nav>
       <!-- TODO: Expose actions for simulating user- and site-initiated data clears -->
-      <form id="time">
-        <h2>Time: <time></time></h2>
-        <line
-          ><button>Advance</button> by
-          <label
-            ><input id="days" type="number" min="0" value="1" step="0.25" />
-            days</label
-          >
-        </line>
-      </form>
+      <section>
+        <form id="time" class="simple">
+          <h2>Time: <time></time></h2>
+          <line
+            ><button>Advance</button> by
+            <label
+              ><input
+                id="days"
+                type="number"
+                min="0"
+                value="1"
+                step="0.25"
+                size="6"
+              />
+              days</label
+            >
+          </line>
+        </form>
+        <form id="clear" class="simple">
+          <line>
+            <input
+              id="clear-site"
+              size="40"
+              min="1"
+              placeholder="site.example (empty = all sites)"
+            />
+            <button>Clear Site Data</button>
+          </line>
+        </form>
+        <form id="forget" class="simple">
+          <line>
+            <input
+              id="forget-site"
+              size="40"
+              placeholder="site.example (empty = all sites)"
+            />
+            <button>Forget Site</button>
+          </line>
+        </form>
+        <line id="last-clear" style="display: none"
+          >Last history clear: <time></time
+        ></line>
+      </section>
       <section>
         <h2>Epoch Starts</h2>
         <dl id="epochStarts"></dl>
       </section>
       <section>
-        <h2>Privacy Budget Entries (in micro-epsilons)</h2>
+        <h2>Privacy Budget Entries (&mu;&epsi;)</h2>
         <dl id="privacyBudgetEntries"></dl>
       </section>
     </nav>
