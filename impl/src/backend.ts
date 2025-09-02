@@ -323,11 +323,11 @@ export class Backend {
 
     const report = this.enabled
       ? this.#doAttributionAndFillHistogram(
-        topLevelSite,
-        intermediarySite,
-        now,
-        validatedOptions,
-      )
+          topLevelSite,
+          intermediarySite,
+          now,
+          validatedOptions,
+        )
       : allZeroHistogram(validatedOptions.histogramSize);
 
     const result: AttributionConversionResult = {
