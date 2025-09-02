@@ -25,7 +25,7 @@ const siteTable: SiteTableEntry[] = [
   },
 ];
 async function setupImpressions(config?: TestConfig): Promise<Backend> {
-  const backend = await make_backend(config);
+  const backend = make_backend(config);
   await Promise.all(
     siteTable.map(({ impression, conversion: conversionSites }) =>
       backend.saveImpression(impression, undefined, {

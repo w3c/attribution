@@ -652,7 +652,7 @@ export class Backend {
       const startEpoch = this.#getStartEpoch(site);
       const currentEpoch = this.#getCurrentEpoch(site, this.#delegate.now());
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
-        let entry = this.#privacyBudgetStore.find(
+        const entry = this.#privacyBudgetStore.find(
           (e) => e.epoch === epoch && e.site === site,
         );
         if (entry === undefined) {
