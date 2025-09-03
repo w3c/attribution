@@ -2338,6 +2338,35 @@ for a number of reasons:
     Without allocating [=privacy budget=] for new data,
     sites could exhaust their budget forever.
 
+We operate the system with [=site=] in the [=privacy unit=], but theoretically proving
+DP guarantees for this privacy unit requires additional assumptions.
+Since different sites are interacting with the same user over time there is not
+complete independence between privacy units maintained for the same user which is necessary
+for proving the formal DP guarantees. These assumptions capture what would need to be assumed
+for these privacy units to be independent and under which the DP guarantees can be proven rigorously.
+* Assumption 1: Siloed adaptive data generation. The data stream of the user's impressions
+and conversions able to be queried by one site is generated independently from the past query
+results of other sites.
+* Assumption 2: No leakage through safety limits. The queries from one site do not impact
+which reports get filtered for any other site.
+
+Both of these assumptions are technically not met by the system. By stating them here we
+are saying that the API does not protect against privacy leakages that result from them.
+
+Assumption 1 is a consequence of multiple sites interacting with the same user over time and
+changing the ads they show to users based on their use of this system. For example, one advertiser
+might learn how to make one of their ads more effective which results in the user converting on
+their site rather than on a different site. This impacts the data the other site has available to
+query and introduces across site adaptive dependency in how data is generated.
+
+Assumption 2 is a consequence of having safety limits that span across multiple sites.
+If the safety limits are never triggered there is no change in the data available to
+be queried across all sites covered by the safety limit. But if as a result of some
+sites’ queries causing the safety limit to be reached and start filtering out reports
+sent to other sites, there is now a dependence introduced across the data queried under
+ the separate privacy units.
+
+See [cite paper] for more details on the formal DP proofs and in depth discussion of these assumptions.
 
 ### Browser Instances ### {#dp-instance}
 
