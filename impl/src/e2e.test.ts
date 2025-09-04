@@ -6,7 +6,7 @@ import type {
 import type { TestContext } from "node:test";
 
 import { Backend, days } from "./backend";
-import { TestConfig } from "./fixture";
+import type { TestConfig } from "./fixture";
 
 import { strict as assert } from "assert";
 import { glob, readFile } from "node:fs/promises";

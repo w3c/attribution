@@ -68,7 +68,7 @@ function parseSite(input: string): string {
   return site;
 }
 
-function parseSites(input: string[]): Set<string> {
+function parseSites(input: readonly string[]): Set<string> {
   const parsed = new Set<string>();
   for (const site of input) {
     parsed.add(parseSite(site));
@@ -643,12 +643,12 @@ export class Backend {
     );
   }
 
-  #zeroBudgetForSites(sites: Set<string>) {
+  #zeroBudgetForSites(sites: Set<string>): void {
     if (sites.size === 0) {
       throw new RangeError("need to specify at least one site when forgetting");
     }
 
-    sites.forEach((site) => {
+    for (const site of sites) {
       const startEpoch = this.#getStartEpoch(site);
       const currentEpoch = this.#getCurrentEpoch(site, this.#delegate.now());
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
@@ -665,10 +665,10 @@ export class Backend {
           entry.value = 0;
         }
       }
-    });
+    }
   }
 
-  clearState(sites: string[], forgetVisits: boolean) {
+  clearState(sites: readonly string[], forgetVisits: boolean): void {
     const parsedSites = parseSites(sites);
     if (!forgetVisits) {
       this.#zeroBudgetForSites(parsedSites);
@@ -686,9 +686,9 @@ export class Backend {
       this.#privacyBudgetStore = this.#privacyBudgetStore.filter((e) => {
         return !parsedSites.has(e.site);
       });
-      parsedSites.forEach((site) => {
+      for (const site of parsedSites) {
         this.#epochStartStore.delete(site);
-      });
+      }
     }
 
     this.#lastBrowsingHistoryClear = this.#delegate.now();

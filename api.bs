@@ -1369,7 +1369,7 @@ and a [=boolean=] |forgetVisits|:
             1.  Let |key| be the [=privacy budget key=] formed
                 from |site| and |epoch|.
 
-            1.  [=map/set=] [=privacy budget store=]\[|key|] to 0.
+            1.  [=map/Set=] [=privacy budget store=]\[|key|] to 0.
 
     1.  Return.
 
@@ -1377,14 +1377,14 @@ and a [=boolean=] |forgetVisits|:
 
     1.  [=set/empty|Clear=] the [=impression store=].
 
-    1.  [=set/empty|Clear=] the [=privacy budget store=].
+    1.  [=map/empty|Clear=] the [=privacy budget store=].
 
-    1.  [=set/empty|Clear=] the [=epoch start store=].
+    1.  [=map/empty|Clear=] the [=epoch start store=].
 
 1.  If |sites| [=set/is empty|is not empty=]:
 
     1.  [=set/iterate|For each=] |impression| in the [=impression store=],
-        if |sites| [=set/contains=] |impression|.[=impression/Impression Site=],
+        if |sites| [=set/contains=] |impression|'s [=impression/impression site=],
         [=set/remove=] |impression| from the [=impression store=].
 
     1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],

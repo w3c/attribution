@@ -3,7 +3,7 @@ import { Backend, Delegate, days } from "./backend";
 import { Temporal } from "temporal-polyfill";
 import e2eConfig from "../e2e-tests/CONFIG.json";
 
-export const defaultConfig = e2eConfig as TestConfig;
+export const defaultConfig = e2eConfig as Readonly<TestConfig>;
 
 export interface TestConfig {
   now?: string;
@@ -17,7 +17,7 @@ export interface TestConfig {
   privacyBudgetEpochDays: number;
 }
 
-export function make_backend(overrideConfig?: Readonly<TestConfig>): Backend {
+export function makeBackend(overrideConfig?: Readonly<TestConfig>): Backend {
   const config = overrideConfig ?? defaultConfig;
   const now = config.now
     ? Temporal.Instant.from(config.now)

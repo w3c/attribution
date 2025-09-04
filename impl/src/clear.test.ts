@@ -10,7 +10,8 @@ interface SiteTableEntry {
   impression: string;
   conversion: string[];
 }
-const siteTable: SiteTableEntry[] = [
+
+const siteTable: readonly SiteTableEntry[] = [
   {
     impression: "imp-one.example",
     conversion: ["conv-one.example"],
@@ -24,8 +25,9 @@ const siteTable: SiteTableEntry[] = [
     conversion: ["conv-three.example", "conv-three-plus.example"],
   },
 ];
+
 async function setupImpressions(config?: TestConfig): Promise<Backend> {
-  const backend = make_backend(config);
+  const backend = makeBackend(config);
   await Promise.all(
     siteTable.map(({ impression, conversion: conversionSites }) =>
       backend.saveImpression(impression, undefined, {
