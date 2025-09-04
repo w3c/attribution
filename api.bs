@@ -1377,9 +1377,9 @@ and a [=boolean=] |forgetVisits|:
 
     1.  [=set/empty|Clear=] the [=impression store=].
 
-    1.  [=map/empty|Clear=] the [=privacy budget store=].
+    1.  [=map/clear|Clear=] the [=privacy budget store=].
 
-    1.  [=map/empty|Clear=] the [=epoch start store=].
+    1.  [=map/clear|Clear=] the [=epoch start store=].
 
 1.  If |sites| [=set/is empty|is not empty=]:
 
