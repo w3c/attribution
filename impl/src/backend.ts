@@ -454,7 +454,7 @@ export class Backend {
             options.epsilon,
             options.value,
             options.maxValue,
-            /*attributedValueForSingleEpochOpt=*/ null,
+            /*l1Norm=*/ null,
           );
           if (budgetOk) {
             for (const i of impressions) {
@@ -516,7 +516,7 @@ export class Backend {
     epsilon: number,
     value: number,
     maxValue: number,
-    attributedValueForSingleEpochOpt: number | null,
+    l1Norm: number | null,
   ): boolean {
     let entry = this.#privacyBudgetStore.find(
       (e) => e.epoch === key.epoch && e.site === key.site,
@@ -528,12 +528,9 @@ export class Backend {
       };
       this.#privacyBudgetStore.push(entry);
     }
-    const singleEpochQuery = attributedValueForSingleEpochOpt !== null;
-    const halfReportGlobalSensitivity = singleEpochQuery
-      ? attributedValueForSingleEpochOpt / 2
-      : value;
+    const sensitivity = l1Norm ?? 2 * value;
     const noiseScale = (2 * maxValue) / epsilon;
-    const deductionFp = halfReportGlobalSensitivity / noiseScale;
+    const deductionFp = sensitivity / noiseScale;
     if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
       entry.value = 0;
       return false;
