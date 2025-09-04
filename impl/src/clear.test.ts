@@ -1,6 +1,6 @@
 import { Temporal } from "temporal-polyfill";
 import { Backend } from "./backend";
-import { defaultConfig, make_backend, TestConfig } from "./fixture";
+import { defaultConfig, makeBackend, TestConfig } from "./fixture";
 
 import { strict as assert } from "node:assert";
 import test from "node:test";
