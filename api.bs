@@ -2340,16 +2340,16 @@ for a number of reasons:
 
 ### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
 The paper [[PPA-DP-2]] provides formal analysis of the mathematical privacy guarantees
-afforded by <dfn> per-site budgets </dfn> and by <dfn> safety limits </dfn>. Per-site
+afforded by *per-site budgets* and by *safety limits*. Per-site
 budgets include [=site=] in the [=privacy unit=], whereas safety limits exclude it
 thereby enforcing a global individual DP guarantee.
 
-The analysis shows that <dfn> per-site individual DP guarantees </dfn> hold under a restricted system
+The analysis shows that *per-site individual DP guarantees* hold under a restricted system
  model that makes two assumptions, which may not always be satisfied in practice:
 
-1.  <dfn> No cross-site adaptivity in data generation. </dfn> A site’s queryable data stream (impressions
+1.  *No cross-site adaptivity in data generation.* A site’s queryable data stream (impressions
 and conversions) must be generated independently of past DP query results from other sites.
-2.  <dfn> No leakage through cross-site shared limits. </dfn> Queries from one site must not affect which
+2.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
 reports are emitted to others.
 
 Assumption 1 is necessary because the system involves multiple sites that could interact
@@ -2373,9 +2373,9 @@ These results suggest that per-site protections should be regarded as theoretica
 of an ideal per-site individual DP guarantee that can be established only under certain assumptions.
 The extent to which privacy protection from per-site budgets may be impacted in practice remains unknown.
 
-By contrast, the analysis shows that <dfn> safety limits </dfn> -- which operate at global level,
-excluding [=site=] from the [=privacy unit=] -- can be implemented to deliver <dfn> sound global individual
-DP guarantees </dfn> regardless of whether either assumption is satisfied.
+By contrast, the analysis shows that *safety limits* -- which operate at global level,
+excluding [=site=] from the [=privacy unit=] -- can be implemented to deliver *sound global individual
+DP guarantees* regardless of whether either assumption is satisfied.
 
 
 ### Browser Instances ### {#dp-instance}
