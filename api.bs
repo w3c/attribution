@@ -2374,9 +2374,8 @@ of an ideal per-site individual DP guarantee that can be established only under 
 The extent to which privacy protection from per-site budgets may be impacted in practice remains unknown.
 
 By contrast, the analysis shows that <dfn> safety limits </dfn> -- which operate at global level,
-excluding [=site=]
-from the [=privacy unit=] -- can be implemented to deliver <dfn> sound global individual DP guarantees </dfn>
-regardless of whether either assumption is satisfied.
+excluding [=site=] from the [=privacy unit=] -- can be implemented to deliver <dfn> sound global individual
+DP guarantees </dfn> regardless of whether either assumption is satisfied.
 
 
 ### Browser Instances ### {#dp-instance}
