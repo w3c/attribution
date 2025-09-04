@@ -101,6 +101,30 @@ function updateImpressionsTable() {
   }
 }
 
+function updateBudgetAndEpochTables() {
+  const epochStarts = document.querySelector<HTMLDListElement>("#epochStarts")!;
+  epochStarts.replaceChildren();
+  for (const [site, start] of backend.epochStarts) {
+    const dt = document.createElement("dt");
+    dt.innerText = site;
+    const dd = document.createElement("dd");
+    dd.innerText = start.toString();
+    epochStarts.append(dt, dd);
+  }
+
+  const privacyBudgetEntries = document.querySelector<HTMLDListElement>(
+    "#privacyBudgetEntries",
+  )!;
+  privacyBudgetEntries.replaceChildren();
+  for (const entry of backend.privacyBudgetEntries) {
+    const dt = document.createElement("dt");
+    dt.innerText = `${entry.site} @ epoch ${entry.epoch}`;
+    const dd = document.createElement("dd");
+    dd.innerText = entry.value.toString();
+    privacyBudgetEntries.append(dt, dd);
+  }
+}
+
 {
   const form = document.querySelector<HTMLFormElement>("#time")!;
 
@@ -122,6 +146,38 @@ function updateImpressionsTable() {
     time.innerText = now.toString();
     backend.clearExpiredImpressions();
     updateImpressionsTable();
+  });
+}
+
+{
+  function updateLastClear() {
+    updateImpressionsTable();
+    updateBudgetAndEpochTables();
+
+    const container = document.querySelector<HTMLElement>("#last-clear")!;
+    if (backend.lastBrowsingHistoryClear !== null) {
+      container.style.display = "block";
+      const lastClear = container.querySelector<HTMLTimeElement>("time")!;
+      lastClear.innerText = backend.lastBrowsingHistoryClear.toString();
+    }
+  }
+
+  const clear = document.querySelector<HTMLFormElement>("#clear")!;
+  clear.addEventListener("submit", function (this: HTMLFormElement, e) {
+    e.preventDefault();
+
+    const sites = this.elements.namedItem("clear-site") as HTMLInputElement;
+    backend.clearState(spaceSeparated(sites), false);
+    updateLastClear();
+  });
+
+  const forget = document.querySelector<HTMLFormElement>("#forget")!;
+  forget.addEventListener("submit", function (this: HTMLFormElement, e) {
+    e.preventDefault();
+
+    const sites = this.elements.namedItem("forget-site") as HTMLInputElement;
+    backend.clearState(spaceSeparated(sites), true);
+    updateLastClear();
   });
 }
 
@@ -247,12 +303,6 @@ function updateImpressionsTable() {
 
   const output = form.querySelector("output")!;
 
-  const epochStarts = document.querySelector<HTMLDListElement>("#epochStarts")!;
-
-  const privacyBudgetEntries = document.querySelector<HTMLDListElement>(
-    "#privacyBudgetEntries",
-  )!;
-
   form.addEventListener("input", reportValidity);
 
   form.addEventListener("submit", function (this: HTMLFormElement, e) {
@@ -315,23 +365,7 @@ function updateImpressionsTable() {
     const results = output.querySelector("ol")!;
     results.append(li);
 
-    epochStarts.replaceChildren();
-    for (const [site, start] of backend.epochStarts) {
-      const dt = document.createElement("dt");
-      dt.innerText = site;
-      const dd = document.createElement("dd");
-      dd.innerText = start.toString();
-      epochStarts.append(dt, dd);
-    }
-
-    privacyBudgetEntries.replaceChildren();
-    for (const entry of backend.privacyBudgetEntries) {
-      const dt = document.createElement("dt");
-      dt.innerText = `${entry.site} @ epoch ${entry.epoch}`;
-      const dd = document.createElement("dd");
-      dd.innerText = entry.value.toString();
-      privacyBudgetEntries.append(dt, dd);
-    }
+    updateBudgetAndEpochTables();
 
     output.scroll(0, output.scrollHeight);
   });
