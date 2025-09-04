@@ -454,7 +454,7 @@ export class Backend {
             options.epsilon,
             options.value,
             options.maxValue,
-            /*attributedValueForSingleEpochOpt=*/ null,
+            /*l1Norm=*/ null,
           );
           if (budgetOk) {
             for (const i of impressions) {
