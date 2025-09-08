@@ -1348,7 +1348,7 @@ returning an [=epoch index=]:
 To <dfn>clear browsing history for attribution</dfn>,
 given a [=set=] of [=sites=] |sites|,
 a [=boolean=] |forgetVisits|,
-and a [=moment] |now|:
+and a [=moment=] |now|:
 
 1.  If |forgetVisits| is false:
 
