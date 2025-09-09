@@ -2345,11 +2345,11 @@ budgets include [=site=] in the [=privacy unit=], whereas safety limits exclude 
 thereby enforcing a global individual DP guarantee.
 
 The analysis shows that *per-site individual DP guarantees* hold under a restricted system
- model that makes two assumptions, which may not always be satisfied in practice:
+model that makes two assumptions, which may not always be satisfied in practice:
 
 1.  *No cross-site adaptivity in data generation.* A site’s queryable data stream (impressions
 and conversions) must be generated independently of past DP query results from other sites.
-2.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
+1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
 reports are emitted to others.
 
 Assumption 1 is necessary because the system involves multiple sites that could interact
@@ -3178,7 +3178,7 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     "title": "Cookie Monster: Efficient On-device Budgeting for Differentially-Private Ad-Measurement Systems",
     "publisher": "SOSP'24"
   },
-    "ppa-dp-2": {
+  "ppa-dp-2": {
     "authors": [
       "Pierre Tholoniat",
       "Alison Caulfield",
@@ -3193,7 +3193,6 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     ],
     "href": "https://arxiv.org/abs/2506.05290",
     "title": "Big Bird: Privacy Budget Management for W3C's Privacy-Preserving Attribution API",
-    "publisher": "arXiv"
   },
   "prio": {
     "authors": [
