@@ -1,29 +1,18 @@
 import type {
   AttributionImpressionOptions,
   AttributionConversionOptions,
-  AttributionProtocol,
 } from "./index";
 
 import type { TestContext } from "node:test";
 
 import { Backend, days } from "./backend";
+import type { TestConfig } from "./fixture";
 
 import { strict as assert } from "assert";
 import { glob, readFile } from "node:fs/promises";
 import * as path from "node:path";
 import test from "node:test";
 import { Temporal } from "temporal-polyfill";
-
-interface TestConfig {
-  aggregationServices: Record<string, AttributionProtocol>;
-  maxConversionSitesPerImpression: number;
-  maxConversionCallersPerImpression: number;
-  maxCreditSize: number;
-  maxLifetimeDays: number;
-  maxHistogramSize: number;
-  privacyBudgetMicroEpsilons: number;
-  privacyBudgetEpochDays: number;
-}
 
 interface TestCase {
   config?: TestConfig;

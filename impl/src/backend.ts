@@ -68,6 +68,14 @@ function parseSite(input: string): string {
   return site;
 }
 
+function parseSites(input: readonly string[]): Set<string> {
+  const parsed = new Set<string>();
+  for (const site of input) {
+    parsed.add(parseSite(site));
+  }
+  return parsed;
+}
+
 export interface Delegate {
   readonly aggregationServices: AttributionAggregationServices;
   readonly includeUnencryptedHistogram?: boolean;
@@ -95,7 +103,7 @@ export class Backend {
   readonly #delegate: Delegate;
   #impressions: Readonly<Impression>[] = [];
   readonly #epochStartStore: Map<string, Temporal.Instant> = new Map();
-  readonly #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
+  #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
 
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
 
@@ -117,6 +125,10 @@ export class Backend {
 
   get aggregationServices(): AttributionAggregationServices {
     return this.#delegate.aggregationServices;
+  }
+
+  get lastBrowsingHistoryClear(): Temporal.Instant | null {
+    return this.#lastBrowsingHistoryClear;
   }
 
   saveImpression(
@@ -159,10 +171,7 @@ export class Backend {
         `conversionSites.length must be <= ${maxConversionSitesPerImpression}`,
       );
     }
-    const parsedConversionSites = new Set<string>();
-    for (const site of conversionSites) {
-      parsedConversionSites.add(parseSite(site));
-    }
+    const parsedConversionSites = parseSites(conversionSites);
 
     const maxConversionCallersPerImpression =
       this.#delegate.maxConversionCallersPerImpression;
@@ -171,10 +180,7 @@ export class Backend {
         `conversionCallers.length must be <= ${maxConversionCallersPerImpression}`,
       );
     }
-    const parsedConversionCallers = new Set<string>();
-    for (const site of conversionCallers) {
-      parsedConversionCallers.add(parseSite(site));
-    }
+    const parsedConversionCallers = parseSites(conversionCallers);
 
     if (matchValue < 0 || !Number.isInteger(matchValue)) {
       throw new RangeError("matchValue must be a non-negative integer");
@@ -285,24 +291,14 @@ export class Backend {
       matchValueSet.add(value);
     }
 
-    const parsedImpressionSites = new Set<string>();
-    for (const site of impressionSites) {
-      parsedImpressionSites.add(parseSite(site));
-    }
-
-    const parsedImpressionCallers = new Set<string>();
-    for (const site of impressionCallers) {
-      parsedImpressionCallers.add(parseSite(site));
-    }
-
     return {
       aggregationService: aggregationServiceEntry,
       epsilon,
       histogramSize,
       lookback: days(lookbackDays),
       matchValues: matchValueSet,
-      impressionSites: parsedImpressionSites,
-      impressionCallers: parsedImpressionCallers,
+      impressionSites: parseSites(impressionSites),
+      impressionCallers: parseSites(impressionCallers),
       logic,
       logicOptions: { credit },
       value,
@@ -642,6 +638,57 @@ export class Backend {
     this.#impressions = this.#impressions.filter(
       (i) => !shouldRemoveImpression(i),
     );
+  }
+
+  #zeroBudgetForSites(sites: Set<string>): void {
+    if (sites.size === 0) {
+      throw new RangeError("need to specify at least one site when forgetting");
+    }
+
+    for (const site of sites) {
+      const startEpoch = this.#getStartEpoch(site);
+      const currentEpoch = this.#getCurrentEpoch(site, this.#delegate.now());
+      for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
+        const entry = this.#privacyBudgetStore.find(
+          (e) => e.epoch === epoch && e.site === site,
+        );
+        if (entry === undefined) {
+          this.#privacyBudgetStore.push({
+            site,
+            epoch,
+            value: 0,
+          });
+        } else {
+          entry.value = 0;
+        }
+      }
+    }
+  }
+
+  clearState(sites: readonly string[], forgetVisits: boolean): void {
+    const parsedSites = parseSites(sites);
+    if (!forgetVisits) {
+      this.#zeroBudgetForSites(parsedSites);
+      return;
+    }
+
+    if (parsedSites.size === 0) {
+      this.#impressions = [];
+      this.#privacyBudgetStore = [];
+      this.#epochStartStore.clear();
+    } else {
+      this.#impressions = this.#impressions.filter((e) => {
+        return !parsedSites.has(e.impressionSite);
+      });
+      this.#privacyBudgetStore = this.#privacyBudgetStore.filter((e) => {
+        return !parsedSites.has(e.site);
+      });
+      for (const site of parsedSites) {
+        this.#epochStartStore.delete(site);
+      }
+    }
+
+    this.#lastBrowsingHistoryClear = this.#delegate.now();
   }
 
   clearExpiredImpressions(): void {
