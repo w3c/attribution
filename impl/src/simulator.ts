@@ -319,9 +319,7 @@ function updateBudgetAndEpochTables() {
       matchValues: spaceSeparated(matchValues).map((v) =>
         Number.parseInt(v, 10),
       ),
-      logicOptions: {
-        credit: spaceSeparated(credit).map(Number.parseFloat),
-      },
+      credit: spaceSeparated(credit).map(Number.parseFloat),
       lookbackDays: numberOrUndefined(lookbackDays),
       maxValue: numberOrUndefined(maxValue),
       value: numberOrUndefined(value),

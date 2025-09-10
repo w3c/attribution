@@ -24,14 +24,7 @@ export interface AttributionImpressionOptions {
 
 export type AttributionImpressionResult = object;
 
-export type AttributionLogic = "last-n-touch";
-
-export interface AttributionLogicOptions {
-  credit?: number[] | undefined;
-}
-
 export const DEFAULT_CONVERSION_EPSILON = 1.0;
-export const DEFAULT_CONVERSION_LOGIC = "last-n-touch";
 export const DEFAULT_CONVERSION_VALUE = 1;
 export const DEFAULT_CONVERSION_MAX_VALUE = 1;
 
@@ -48,8 +41,7 @@ export interface AttributionConversionOptions {
   impressionSites?: string[] | undefined; // = []
   impressionCallers?: string[] | undefined; // = []
 
-  logic?: AttributionLogic | undefined; // = DEFAULT_CONVERSION_LOGIC
-  logicOptions?: AttributionLogicOptions | undefined;
+  credit?: number[] | undefined;
   value?: number | undefined; // = DEFAULT_CONVERSION_VALUE
   maxValue?: number | undefined; // = DEFAULT_CONVERSION_MAX_VALUE
 }
