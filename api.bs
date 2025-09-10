@@ -1366,7 +1366,7 @@ and a [=moment=] |now|:
 
         1.  Let |currentEpoch| be the result of
             invoking [=get the current epoch=]
-            given |site|.
+            given |site| and |now|.
 
         1.  [=set/iterate|For each=] |epoch| in [=the inclusive range=]
             from |startingEpoch| to |currentEpoch|:
