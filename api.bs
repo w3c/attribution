@@ -1543,7 +1543,7 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
 <dfn>Match Values</dfn>: A [=set=] of [=32-bit unsigned integers=].
 <dfn>Impression Sites</dfn>: A [=set=] of [=sites=].
 <dfn>Impression Callers</dfn>: A [=set=] of [=sites=].
-<dfn>Credit</dfn>: TODO.
+<dfn>Credit</dfn>: A [=list=] of numbers.
 <dfn>Value</dfn>: A [=32-bit unsigned integer=].
 <dfn>Max Value</dfn>: A [=32-bit unsigned integer=].
 </pre>
