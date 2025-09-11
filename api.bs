@@ -720,9 +720,7 @@ contribute to the histogram, i.e., will be uniformly zero.
         };
       </xmp>
 
-  1.  The choice of [=attribution logic=]
-      that the browser will apply,
-      plus any parameters that the logic needs.
+  1.  The [=attribution logic=] parameters.
 
       <xmp highlight=js>
         const attributionDetails = {
@@ -812,7 +810,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
     are eligible to match this [=conversion=].
   </dd>
   <dt><dfn>credit</dfn></dt>
-  <dd>TODO</dd>
+  <dd>A [=list=] of numbers.</dd>
   <dt><dfn>value</dfn></dt>
   <dd>
     The [=conversion value=]. If an attribution is made and [[#dp|privacy]]
@@ -1626,14 +1624,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 
 ### Attribution Logic ### {#s-logic}
 
-A site that measures conversions can specify <dfn>attribution logic</dfn>,
-which determines how the [=conversion value=] is allocated to histogram buckets.
-The <a method for=Attribution>measureConversion()</a> function
-accepts a <a dict-member for=AttributionConversionOptions>logic</a> parameter
-that specifies the [=attribution logic=].
-
-Each attribution logic specifies a process for allocating values to histogram buckets,
-after the [=common matching logic=] is applied and privacy budgeting occurs.
+<dfn>Attribution logic</dfn> determines how the [=conversion value=] is allocated to histogram buckets.
 
 <div algorithm>
 To <dfn>do attribution and fill a histogram</dfn>, given
