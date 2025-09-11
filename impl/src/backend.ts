@@ -532,10 +532,10 @@ export class Backend {
     const sortedImpressions = Array.from(matchedImpressions).toSorted(
       (a, b) => {
         if (a.priority < b.priority) {
-          return -1;
+          return 1;
         }
         if (a.priority > b.priority) {
-          return 1;
+          return -1;
         }
         return Temporal.Instant.compare(b.timestamp, a.timestamp);
       },
@@ -544,6 +544,8 @@ export class Backend {
     const N = Math.min(credit.length, sortedImpressions.length);
 
     const lastNImpressions = sortedImpressions.slice(0, N);
+
+    credit = credit.slice(0, N);
 
     const normalizedCredit = fairlyAllocateCredit(credit, value, () =>
       this.#delegate.random(),
