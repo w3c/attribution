@@ -1,0 +1,35 @@
+{
+  "events": [
+    {
+      "seconds": 1,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 0 }
+    },
+    {
+      "seconds": 2,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 1 }
+    },
+    {
+      "seconds": 3,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 2 }
+    },
+    {
+      "seconds": 4,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 10,
+        "credit": [2, 1, 1]
+      },
+      "expected": [2, 2, 4, 0]
+    }
+  ]
+}
