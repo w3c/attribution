@@ -5,7 +5,6 @@ import type {
   AttributionConversionResult,
   AttributionImpressionOptions,
   AttributionImpressionResult,
-  AttributionLogic,
 } from "./index";
 
 import * as index from "./index";
@@ -43,14 +42,9 @@ interface ValidatedConversionOptions {
   matchValues: Set<number>;
   impressionSites: Set<string>;
   impressionCallers: Set<string>;
-  logic: AttributionLogic;
-  logicOptions: ValidatedLogicOptions;
+  credit: readonly number[];
   value: number;
   maxValue: number;
-}
-
-interface ValidatedLogicOptions {
-  credit: readonly number[];
 }
 
 export function days(days: number): Temporal.Duration {
@@ -216,8 +210,7 @@ export class Backend {
     impressionSites = [],
     impressionCallers = [],
     lookbackDays = this.#delegate.maxLifetimeDays,
-    logic = index.DEFAULT_CONVERSION_LOGIC,
-    logicOptions,
+    credit = [1],
     maxValue = index.DEFAULT_CONVERSION_MAX_VALUE,
     matchValues = [],
     value = index.DEFAULT_CONVERSION_VALUE,
@@ -245,37 +238,26 @@ export class Backend {
       );
     }
 
-    let credit = [1];
+    if (value <= 0 || !Number.isInteger(value)) {
+      throw new RangeError("value must be a positive integer");
+    }
+    if (maxValue <= 0 || !Number.isInteger(value)) {
+      throw new RangeError("maxValue must be a positive integer");
+    }
+    if (value > maxValue) {
+      throw new RangeError("value must be <= maxValue");
+    }
 
-    switch (logic) {
-      case "last-n-touch":
-        if (value <= 0 || !Number.isInteger(value)) {
-          throw new RangeError("value must be a positive integer");
-        }
-        if (maxValue <= 0 || !Number.isInteger(value)) {
-          throw new RangeError("maxValue must be a positive integer");
-        }
-        if (value > maxValue) {
-          throw new RangeError("value must be <= maxValue");
-        }
-        if (logicOptions?.credit) {
-          credit = logicOptions.credit;
-          const maxCreditSize = this.#delegate.maxCreditSize;
-          if (credit.length === 0 || credit.length > maxCreditSize) {
-            throw new RangeError(
-              `credit size must be in the range [1, ${maxCreditSize}]`,
-            );
-          }
-          for (const c of credit) {
-            if (c <= 0 || !Number.isFinite(value)) {
-              throw new RangeError("credit must be positive and finite");
-            }
-          }
-        }
-
-        break;
-      default:
-        throw new RangeError("unknown logic");
+    const maxCreditSize = this.#delegate.maxCreditSize;
+    if (credit.length === 0 || credit.length > maxCreditSize) {
+      throw new RangeError(
+        `credit size must be in the range [1, ${maxCreditSize}]`,
+      );
+    }
+    for (const c of credit) {
+      if (c <= 0 || !Number.isFinite(value)) {
+        throw new RangeError("credit must be positive and finite");
+      }
     }
 
     if (lookbackDays <= 0 || !Number.isInteger(lookbackDays)) {
@@ -299,8 +281,7 @@ export class Backend {
       matchValues: matchValueSet,
       impressionSites: parseSites(impressionSites),
       impressionCallers: parseSites(impressionCallers),
-      logic,
-      logicOptions: { credit },
+      credit,
       value,
       maxValue,
     };
@@ -465,17 +446,12 @@ export class Backend {
       return allZeroHistogram(options.histogramSize);
     }
 
-    let histogram;
-    switch (options.logic) {
-      case "last-n-touch":
-        histogram = this.#fillHistogramWithLastNTouchAttribution(
-          matchedImpressions,
-          options.histogramSize,
-          options.value,
-          options.logicOptions.credit,
-        );
-        break;
-    }
+    let histogram = this.#fillHistogramWithLastNTouchAttribution(
+      matchedImpressions,
+      options.histogramSize,
+      options.value,
+      options.credit,
+    );
 
     if (singleEpoch) {
       const l1Norm = histogram.reduce((a, b) => a + b);

@@ -357,10 +357,10 @@ The histogram created by the [=conversion report=] is constructed as follows:
     or the [=privacy budget=] for the site is exhausted,
     a histogram consisting entirely of zeros (0) is constructed.
 
-*   If one or more matching impressions is found, the browser runs the attribution
-    logic (default last-n-touch) to select the most recent impression. The provided conversion
+*   If one or more matching impressions is found, the browser runs the last-n-touch
+    attribution logic to select the relevant impression(s). The provided conversion
     value is added to a histogram at the bucket that was specified at the time of the
-    attributed impression. All other buckets are set to zero.
+    attributed impression(s). All other buckets are set to zero.
 
 The browser updates the [=privacy budget store=] to reflect the reported conversion.
 
@@ -720,16 +720,11 @@ contribute to the histogram, i.e., will be uniformly zero.
         };
       </xmp>
 
-  1.  The choice of [=attribution logic=]
-      that the browser will apply,
-      plus any parameters that the logic needs.
+  1.  The [=attribution logic=] parameters.
 
       <xmp highlight=js>
         const attributionDetails = {
-          logic: "last-n-touch",
-          logicOptions: {
-            credit: [.25, .25, .5]
-          }
+          credit: [.25, .25, .5]
           value: 3,
           maxValue: 7,
         };
@@ -767,18 +762,9 @@ dictionary AttributionConversionOptions {
   sequence<USVString> impressionSites = [];
   sequence<USVString> impressionCallers = [];
 
-  AttributionLogic logic = "last-n-touch";
-  AttributionLogicOptions logicOptions;
+  sequence<double> credit;
   unsigned long value = 1;
   unsigned long maxValue = 1;
-};
-
-enum AttributionLogic {
-  "last-n-touch",
-};
-
-dictionary AttributionLogicOptions {
-  sequence<double> credit;
 };
 
 dictionary AttributionConversionResult {
@@ -823,11 +809,8 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
     only [=impressions=] recorded by one of the listed sites
     are eligible to match this [=conversion=].
   </dd>
-  <dt><dfn>logic</dfn></dt>
-  <dd>
-    A selection from <a enum>AttributionLogic</a> indicating the
-    [=attribution logic=] to use.
-  </dd>
+  <dt><dfn>credit</dfn></dt>
+  <dd>A [=list=] of numbers.</dd>
   <dt><dfn>value</dfn></dt>
   <dd>
     The [=conversion value=]. If an attribution is made and [[#dp|privacy]]
@@ -1558,8 +1541,7 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
 <dfn>Match Values</dfn>: A [=set=] of [=32-bit unsigned integers=].
 <dfn>Impression Sites</dfn>: A [=set=] of [=sites=].
 <dfn>Impression Callers</dfn>: A [=set=] of [=sites=].
-<dfn>Logic</dfn>: An {{AttributionLogic}}.
-<dfn>Logic Options</dfn>: An {{AttributionLogicOptions}}.
+<dfn>Credit</dfn>: A [=list=] of numbers.
 <dfn>Value</dfn>: A [=32-bit unsigned integer=].
 <dfn>Max Value</dfn>: A [=32-bit unsigned integer=].
 </pre>
@@ -1582,25 +1564,15 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     or is greater than the <dfn ignore>maximum aggregation-service histogram size</dfn>,
     if any, for |options|.{{AttributionConversionOptions/aggregationService}},
     throw a {{RangeError}}.
-1.  Let |credit| be «1».
-1.  Switch on the value of |options|.{{AttributionConversionOptions/logic}}:
-    <dl class="switch">
-        :   <a enum-value for=AttributionLogic>"last-n-touch"</a>
-        ::  Perform the following steps:
-            1.  If |options|.{{AttributionConversionOptions/value}} is 0,
-                throw a {{RangeError}}.
-            1.  If |options|.{{AttributionConversionOptions/value}}
-                is greater than |options|.{{AttributionConversionOptions/maxValue}},
-                throw a {{RangeError}}.
-            1.  If |options|.{{AttributionConversionOptions/logicOptions}}.{{AttributionLogicOptions/credit}} [=map/exists=]:
-                1.  Set |credit| to |options|.{{AttributionConversionOptions/logicOptions}}.{{AttributionLogicOptions/credit}}.
-                1.  If |credit| is not a [=list=] or [=list/is empty=], throw a {{RangeError}}.
-                1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
-                1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
-    </dl>
-1.  Let |validatedLogicOptions| be a {{AttributionLogicOptions}} with the following fields:
-    : {{AttributionLogicOptions/credit}}
-    :: |credit|
+1.  If |options|.{{AttributionConversionOptions/value}} is 0,
+    throw a {{RangeError}}.
+1.  If |options|.{{AttributionConversionOptions/value}}
+    is greater than |options|.{{AttributionConversionOptions/maxValue}},
+    throw a {{RangeError}}.
+1.  Let |credit| be |options|.{{AttributionConversionOptions/credit}} if it [=map/exists=], «1» otherwise.
+1.  If |credit| [=list/is empty=], throw a {{RangeError}}.
+1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
+1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
 1.  Let |lookback| be |options|.{{AttributionConversionOptions/lookbackDays}} [=days=]
     if it [=map/exists=], the [=implementation-defined=] maximum otherwise.
 1.  Set |lookback| to the [=implementation-defined=] maximum
@@ -1640,10 +1612,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     :: |impressionSites|
     : [=validated conversion options/Impression Callers=]
     :: |impressionCallers|
-    : [=validated conversion options/Logic=]
-    :: |options|.{{AttributionConversionOptions/logic}}
-    : [=validated conversion options/Logic Options=]
-    :: |validatedLogicOptions|
+    : [=validated conversion options/Credit=]
+    :: |credit|
     : [=validated conversion options/Value=]
     :: |options|.{{AttributionConversionOptions/value}}
     : [=validated conversion options/Max Value=]
@@ -1654,14 +1624,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 
 ### Attribution Logic ### {#s-logic}
 
-A site that measures conversions can specify <dfn>attribution logic</dfn>,
-which determines how the [=conversion value=] is allocated to histogram buckets.
-The <a method for=Attribution>measureConversion()</a> function
-accepts a <a dict-member for=AttributionConversionOptions>logic</a> parameter
-that specifies the [=attribution logic=].
-
-Each attribution logic specifies a process for allocating values to histogram buckets,
-after the [=common matching logic=] is applied and privacy budgeting occurs.
+<dfn>Attribution logic</dfn> determines how the [=conversion value=] is allocated to histogram buckets.
 
 <div algorithm>
 To <dfn>do attribution and fill a histogram</dfn>, given
@@ -1710,19 +1673,10 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     [=create an all-zero histogram=] with
     |options|' [=validated conversion options/histogram size=].
 
-1.  Let |histogram| be null.
-
-1.  Switch on |options|' [=validated conversion options/logic=]:
-      <dl class="switch">
-      : <a enum-value for=AttributionLogic>"last-n-touch"</a>
-      :: Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
-        |options|' [=validated conversion options/histogram size=],
-        |options|' [=validated conversion options/value=], and
-        |options|' [=validated conversion options/logic options=].{{AttributionLogicOptions/credit}}.
-
-      </dl>
-
-1.  [=Assert=]: |histogram| is not null.
+1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+    |options|' [=validated conversion options/histogram size=],
+    |options|' [=validated conversion options/value=], and
+    |options|' [=validated conversion options/credit=].
 
 1.  If |singleEpoch| is true:
     1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
