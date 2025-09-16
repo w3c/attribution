@@ -1922,17 +1922,17 @@ the {{AttributionImpressionOptions}} dictionary passed to
   <dt><dfn noexport><code>histogram-index</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionImpressionOptions>histogramIndex</a>,
-    a non-negative [=structured header/integer=]. This key is required.
+    an [=structured header/integer=] in the [=32-bit unsigned integer=] range. This key is required.
   </dd>
   <dt><dfn noexport><code>priority</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionImpressionOptions>priority</a>,
-    an [=structured header/integer=]. This key is optional.
+    an [=structured header/integer=] in the [=32-bit signed integer=] range. This key is optional.
   </dd>
   <dt><dfn noexport><code>match-value</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionImpressionOptions>matchValue</a>,
-    a non-negative [=structured header/integer=]. This key is optional.
+    an [=structured header/integer=] in the [=32-bit unsigned integer=] range. This key is optional.
     If not supplied, a value of 0 is saved for [=impression/Match Value=].
   </dd>
   <dt><dfn noexport><code>lifetime-days</code></dfn></dt>
@@ -1952,7 +1952,7 @@ To <dfn noexport>parse a `Save-Impression` header</dfn> given a [=header value=]
     <var ignore>field_type</var> set to "`dictionary`".
 1.  If parsing failed, return an error.
 1.  If |dict|["<code>[=save-impression/histogram-index=]</code>"] does not [=map/exist=] or
-    is not an [=structured header/integer=] or is less than 0, return an error.
+    is not an [=structured header/integer=] in the [=32-bit unsigned integer=] range, return an error.
 1.  Let |histogramIndex| be |dict|["<code>[=save-impression/histogram-index=]</code>"].
 1.  Let |conversionSites| be |dict|["<code>[=save-impression/conversion-sites=]</code>"]
     [=map/with default=] an empty [=structured header/inner list=].
@@ -1961,11 +1961,12 @@ To <dfn noexport>parse a `Save-Impression` header</dfn> given a [=header value=]
     [=map/with default=] an empty [=structured header/inner list=].
 1.  If |conversionCallers| is not an [=structured header/inner list=], or if any of |conversionCallers|' [=list/items=] is not a [=structured header/string=], return an error.
 1.  Let |matchValue| be |dict|["<code>[=save-impression/match-value=]</code>"] [=map/with default=] 0.
-1.  If |matchValue| is not an [=structured header/integer=] or is less than 0, return an error.
+1.  If |matchValue| is not an [=structured header/integer=] in the [=32-bit unsigned integer=] range, return an error.
 1.  Let |lifetimeDays| be |dict|["<code>[=save-impression/lifetime-days=]</code>"] [=map/with default=] 30.
-1.  If |lifetimeDays| is not an [=structured header/integer=] or is less than or equal to 0, return an error.
+1.  If |lifetimeDays| is not a positive [=structured header/integer=], return an error.
+1.  Clamp |lifetimeDays| to the [=32-bit unsigned integer=] range.
 1.  Let |priority| be |dict|["<code>[=save-impression/priority=]</code>"] [=map/with default=] 0.
-1.  If |priority| is not an [=structured header/integer=], return an error.
+1.  If |priority| is not an [=structured header/integer=] in the [=32-bit signed integer=] range, return an error.
 1.  Return a new {{AttributionImpressionOptions}} with the following items:
      : {{AttributionImpressionOptions/histogramIndex}}
      :: |histogramIndex|
