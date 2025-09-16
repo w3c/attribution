@@ -1923,9 +1923,12 @@ if the user has opted out of collection of diagnostic data.
 set on a response requesting that the user agent invoke the
 <a method for=Attribution>saveImpression()</a> API.
 
-<pre class=example id=ex-save-impression-header>
-Save-Impression: conversion-sites=("advertiser.example"), conversion-callers=("intermediary.example"), histogram-index=2, match-value=12, lifetime-days=7
-</pre>
+<div class=example id=ex-save-impression-header>
+This is the HTTP equivalent of <a href=#ex-save-impression>the JavaScript `saveImpression` example</a>:
+<xmp highlight=http>
+Save-Impression: histogram-index=3, match-value=2, conversion-sites=("advertiser.example"), lifetime-days=7
+</xmp>
+</div>
 
 The following keys are defined, corresponding to the members of
 the {{AttributionImpressionOptions}} dictionary passed to
