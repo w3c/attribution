@@ -9,8 +9,15 @@ const MAX_UINT32: number = 4294967295;
 const MIN_INT32: number = -2147483648;
 const MAX_INT32: number = 2147483647;
 
-function parseInnerListOfSites(dict: Dictionary, key: string): string[] {
-  const [values] = dict.get(key) ?? [[]];
+function parseInnerListOfSites(
+  dict: Dictionary,
+  key: string,
+): string[] | undefined {
+  const [values] = dict.get(key) ?? [undefined];
+  if (values === undefined) {
+    return values;
+  }
+
   if (!Array.isArray(values)) {
     throw new TypeError(`${key} must be an inner list`);
   }
@@ -42,52 +49,49 @@ export function parseSaveImpressionHeader(
     );
   }
 
-  const conversionSites = parseInnerListOfSites(dict, "conversion-sites");
-  const conversionCallers = parseInnerListOfSites(dict, "conversion-callers");
+  const opts: AttributionImpressionOptions = { histogramIndex };
 
-  const [matchValue] = dict.get("match-value") ?? [0];
+  opts.conversionSites = parseInnerListOfSites(dict, "conversion-sites");
+  opts.conversionCallers = parseInnerListOfSites(dict, "conversion-callers");
+
+  const [matchValue] = dict.get("match-value") ?? [undefined];
   if (
-    typeof matchValue !== "number" ||
-    !Number.isInteger(matchValue) ||
-    matchValue < 0 ||
-    matchValue > MAX_UINT32
+    matchValue !== undefined &&
+    (typeof matchValue !== "number" ||
+      !Number.isInteger(matchValue) ||
+      matchValue < 0 ||
+      matchValue > MAX_UINT32)
   ) {
     throw new RangeError(
       "match-value must be an integer in the 32-bit unsigned range",
     );
   }
+  opts.matchValue = matchValue;
 
-  let [lifetimeDays] = dict.get("lifetime-days") ?? [30];
+  const [lifetimeDays] = dict.get("lifetime-days") ?? [undefined];
   if (
-    typeof lifetimeDays !== "number" ||
-    !Number.isInteger(lifetimeDays) ||
-    lifetimeDays <= 0
+    lifetimeDays !== undefined &&
+    (typeof lifetimeDays !== "number" ||
+      !Number.isInteger(lifetimeDays) ||
+      lifetimeDays <= 0)
   ) {
     throw new RangeError("lifetime-days must be a positive integer");
   }
+  opts.lifetimeDays = lifetimeDays;
 
-  if (lifetimeDays > MAX_UINT32) {
-    lifetimeDays = MAX_UINT32;
-  }
-
-  const [priority] = dict.get("priority") ?? [0];
+  const [priority] = dict.get("priority") ?? [undefined];
   if (
-    typeof priority !== "number" ||
-    !Number.isInteger(priority) ||
-    priority < MIN_INT32 ||
-    priority > MAX_INT32
+    priority !== undefined &&
+    (typeof priority !== "number" ||
+      !Number.isInteger(priority) ||
+      priority < MIN_INT32 ||
+      priority > MAX_INT32)
   ) {
     throw new RangeError(
       "priority must be an integer in the 32-bit signed range",
     );
   }
+  opts.priority = priority;
 
-  return {
-    histogramIndex,
-    matchValue,
-    conversionSites,
-    conversionCallers,
-    lifetimeDays,
-    priority,
-  };
+  return opts;
 }
