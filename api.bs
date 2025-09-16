@@ -1918,6 +1918,8 @@ if the user has opted out of collection of diagnostic data.
 
 # HTTP API # {#http-api}
 
+## Saving impressions ## {#http-api-impressions}
+
 \`<dfn http-header><code>Save-Impression</code></dfn>\` is a
 [=structured header/dictionary|Dictionary Structured Header=]
 set on a response requesting that the user agent invoke the
@@ -2012,6 +2014,165 @@ To <dfn noexport>parse a `Save-Impression` header</dfn> given a [=header value=]
 
 </div>
 
+## Measuring Conversions ## {#http-api-conversions}
+
+\`<dfn http-header><code>Measure-Conversion</code></dfn>\` is a
+[=structured header/dictionary|Dictionary Structured Header=]
+set on a response requesting that the user agent invoke the
+<a method for=Attribution>measureConversion()</a> API.
+
+<div class=example id=ex-measure-conversion-header>
+This is the HTTP equivalent of <a href=#ex-measure-conversion>the JavaScript `measureConversion` example</a>:
+<xmp highlight=http>
+Measure-Conversion: aggregation-service="https://aggregator.example/tee", histogram-size=20, epsilon=1.0, lookback-days=14, impression-sites=("publisher.example" "other.example"), impression-callers=("ad-tech.example"), match-values=(2), credit=(0.25 0.25 0.5), value=3, max-value=7
+</xmp>
+</div>
+
+The following keys are defined, corresponding to the members of
+the {{AttributionConversionOptions}} dictionary passed to
+<a method for=Attribution>measureConversion()</a>. Default values for omitted
+optional keys are populated the same way as the corresponding
+{{AttributionConversionOptions}} field.
+
+<dl dfn-for=measure-conversion>
+  <dt><dfn noexport><code>aggregation-service</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>aggregationService</a>,
+    a [=structured header/string=]. This key is required.
+  </dd>
+  <dt><dfn noexport><code>epsilon</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>epsilon</a>,
+    a positive [=structured header/decimal=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>histogram-size</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>histogramSize</a>,
+    a positive [=structured header/integer=]. This key is required.
+  </dd>
+  <dt><dfn noexport><code>lookback-days</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>lookbackDays</a>,
+    a positive [=structured header/integer=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>match-values</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>matchValues</a>,
+    an [=structured header/inner list=] containing non-negative [=structured header/integer|integers=].
+    This key is optional.
+  </dd>
+  <dt><dfn noexport><code>impression-sites</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>impressionSites</a>,
+    an [=structured header/inner list=] containing [=structured header/string|strings=].
+    Each string value includes a domain name using A-labels only;
+    [[RFC5890|Internationalized Domain Names]] therefore need to use [[RFC3492|punycode]].
+    This key is optional.
+  </dd>
+  <dt><dfn noexport><code>impression-callers</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>impressionCallers</a>,
+    an [=structured header/inner list=] containing [=structured header/string|strings=].
+    Each string value includes a domain name using A-labels only;
+    [[RFC5890|Internationalized Domain Names]] therefore need to use [[RFC3492|punycode]].
+    This key is optional.
+  </dd>
+  <dt><dfn noexport><code>credit</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>credit</a>,
+    an [=structured header/inner list=] containing positive [=structured header/decimal|decimals=]
+    or positive [=structured header/integer|integers=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>value</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>value</a>,
+    a positive [=structured header/integer=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>max-value</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>maxValue</a>,
+    a positive [=structured header/integer=]. This key is optional.
+  </dd>
+</dl>
+
+Issue: Add a required field indicating where to send the resulting report.
+
+<div algorithm>
+To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header value=]
+|input|, run these steps:
+
+1.  Let |dict| be the result of [=structured header/parsing structured fields=]
+    with <var ignore>input_bytes</var> set to |input| and
+    <var ignore>field_type</var> set to "`dictionary`".
+1.  If parsing failed, return an error.
+1.  Let |aggregationService| be |dict|["<code>[=measure-conversion/aggregation-service=]</code>"] [=map/with default=] `undefined`.
+1.  If |aggregationService| is not a [=structured header/string=], return an error.
+1.  Let |histogramSize| be |dict|["<code>[=measure-conversion/histogram-size=]</code>"] [=map/with default=] `undefined`.
+1.  If |histogramSize| is not a positive [=structured header/integer=], return an error.
+1.  Let |opts| be a new {{AttributionConversionOptions}} with the following items:
+     : {{AttributionConversionOptions/aggregationService}}
+     :: |aggregationService|
+     : {{AttributionConversionOptions/histogramSize}}
+     :: |histogramSize|
+1.  If |dict|["<code>[=measure-conversion/epsilon=]</code>"] [=map/exists=]:
+     1.  Let |epsilon| be its [=map/value=].
+     1.  If |epsilon| is not a [=structured header/decimal=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/epsilon}} to |epsilon|.
+1.  If |dict|["<code>[=measure-conversion/lookback-days=]</code>"] [=map/exists=]:
+     1.  Let |lookbackDays| be its [=map/value=].
+     1.  If |lookbackDays| is not a positive [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/lookbackDays}} to |lookbackDays|.
+1.  If |dict|["<code>[=measure-conversion/match-values=]</code>"] [=map/exists=]:
+     1.  Let |matchValues| be its [=map/value=].
+     1.  If |matchValues| is not an [=structured header/inner list=], or if any of
+         |matchValues|' [=list/items=] is not a non-negative [=structured header/integer=],
+         return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/matchValues}} to |matchValues|.
+1.  If |dict|["<code>[=measure-conversion/impression-sites=]</code>"] [=map/exists=]:
+     1.  Let |impressionSites| be its [=map/value=].
+     1.  If |impressionSites| is not an [=structured header/inner list=], or if any of
+         |impressionSites|' [=list/items=] is not a [=structured header/string=],
+         return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/impressionSites}} to |impressionSites|.
+1.  If |dict|["<code>[=measure-conversion/impression-callers=]</code>"] [=map/exists=]:
+     1.  Let |impressionCallers| be its [=map/value=].
+     1.  If |impressionCallers| is not an [=structured header/inner list=], or if any of
+         |impressionCallers|' [=list/items=] is not a [=structured header/string=],
+         return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/impressionCallers}} to |impressionCallers|.
+1.  If |dict|["<code>[=measure-conversion/credit=]</code>"] [=map/exists=]:
+     1.  Let |credit| be its [=map/value=].
+     1.  If |credit| is not an [=structured header/inner list=], or if any of
+         |credit|'s [=list/items=] is not a [=structured header/decimal=] or
+         [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/credit}} to |credit|.
+1.  If |dict|["<code>[=measure-conversion/value=]</code>"] [=map/exists=]:
+     1.  Let |value| be its [=map/value=].
+     1.  If |value| is not a positive [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/value}} to |value|.
+1.  If |dict|["<code>[=measure-conversion/max-value=]</code>"] [=map/exists=]:
+     1.  Let |maxValue| be its [=map/value=].
+     1.  If |maxValue| is not a positive [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/maxValue}} to |maxValue|.
+1.  Return |opts|.
+
+</div>
+
+## Fetch monkey patches ## {#fetch-monkey-patches}
+
+Modify [=HTTP-network fetch=] as follows:
+
+<div algorithm=fetch-monkey-patch>
+After the step
+
+> If <var ignore>includeCredentials</var> is true, then the user agent should parse and store response `Set-Cookie` headers given |request| and |response|.
+
+add the step
+
+1. [=Handle Attribution headers=] with |request| and |response|.
+
+</div>
+
 <div algorithm>
 To <dfn noexport>handle Attribution headers</dfn> given a [=request=] |request|
 and [=response=] |response|, run these steps:
@@ -2040,21 +2201,6 @@ and [=response=] |response|, run these steps:
 1.  If |impressionOptions| is an error, return.
 
 1.  [=save an impression|Save=] |impressionOptions| with |implicitInputs|.
-
-</div>
-
-## Fetch monkey patches ## {#fetch-monkey-patches}
-
-Modify [=HTTP-network fetch=] as follows:
-
-<div algorithm=fetch-monkey-patch>
-After the step
-
-> If <var ignore>includeCredentials</var> is true, then the user agent should parse and store response `Set-Cookie` headers given |request| and |response|.
-
-add the step
-
-1. [=Handle Attribution headers=] with |request| and |response|.
 
 </div>
 
@@ -3132,6 +3278,7 @@ urlPrefix:https://tc39.es/ecma262/#;type:dfn;spec:ecma-262
 spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     text: structured header; url: #name-introduction
     for: structured header
+        text: decimal; url: #decimal
         text: dictionary; url: #dictionary
         text: parse structured fields; url: #text-parse
         text: string; url: #string
