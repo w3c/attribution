@@ -532,10 +532,10 @@ export class Backend {
     const sortedImpressions = Array.from(matchedImpressions).toSorted(
       (a, b) => {
         if (a.priority < b.priority) {
-          return -1;
+          return 1;
         }
         if (a.priority > b.priority) {
-          return 1;
+          return -1;
         }
         return Temporal.Instant.compare(b.timestamp, a.timestamp);
       },
