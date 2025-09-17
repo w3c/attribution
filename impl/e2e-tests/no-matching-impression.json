@@ -1,0 +1,14 @@
+{
+  "events": [
+    {
+      "seconds": 1,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3
+      },
+      "expected": [0, 0, 0]
+    }
+  ]
+}
