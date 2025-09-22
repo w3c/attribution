@@ -1,0 +1,97 @@
+{
+  "$comment": "use different advertiser sites to avoid depending on budgeting",
+  "events": [
+    {
+      "seconds": 1,
+      "site": "publisher-1.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 1 }
+    },
+    {
+      "seconds": 2,
+      "site": "publisher-2.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 2 }
+    },
+    {
+      "seconds": 3,
+      "site": "publisher-3.example",
+      "intermediarySite": "adtech-1.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 3 }
+    },
+    {
+      "seconds": 4,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "$comment": "try to select 2 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "impressionCallers": ["publisher-1.example"],
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "expected": [0, 2, 0, 0]
+    },
+    {
+      "seconds": 5,
+      "site": "advertiser-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 2 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "impressionCallers": ["publisher-2.example"],
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "expected": [0, 0, 2, 0]
+    },
+    {
+      "seconds": 6,
+      "site": "advertiser-3.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "impressionCallers": ["publisher-1.example", "publisher-2.example"],
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "expected": [0, 1, 1, 0]
+    },
+    {
+      "seconds": 7,
+      "site": "advertiser-4.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "impressionCallers": ["publisher-3.example"],
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "$comment": "empty because publisher-3.example's impression had an intermediary site",
+      "expected": [0, 0, 0, 0]
+    },
+    {
+      "seconds": 8,
+      "site": "advertiser-4.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "impressionCallers": ["adtech-1.example"],
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "expected": [0, 0, 0, 2]
+    }
+  ]
+}
