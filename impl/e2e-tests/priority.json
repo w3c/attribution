@@ -38,7 +38,7 @@
         "maxValue": 10,
         "credit": [6, 2]
       },
-      "$comment": "index 1 has the highest priority; the others have equal priority but index 2 is more recent",
+      "$comment": "index 1 has the highest priority; the others have equal priority but index 2 is most recent",
       "expected": [0, 6, 2, 0]
     }
   ]
