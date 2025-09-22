@@ -724,7 +724,8 @@ contribute to the histogram, i.e., will be uniformly zero.
 
       <xmp highlight=js>
         const attributionDetails = {
-          credit: [.25, .25, .5]
+          // top impression's histogram index gets 50% of value, the next two 25% each
+          credit: [.5, .25, .25],
           value: 3,
           maxValue: 7,
         };
@@ -1815,11 +1816,11 @@ To <dfn>fill a histogram with last-n-touch attribution</dfn>, given a [=set=] of
   a [=list=] of doubles |credit|:
 
 1.  [=Assert=]: |matchedImpressions| is [=set/is empty|not empty=].
-1.  Let |sortedImpressions| be |matchedImpressions|, [=list/sorted in ascending order=]
+1.  Let |sortedImpressions| be |matchedImpressions|, [=list/sorted in descending order=]
     by [=impression/priority=], then by [=impression/timestamp=].
 1.  Let |N| be the minimum of the [=list/size=] of |credit|, and the [=list/size=] of |sortedImpressions|.
-1.  Let |lastNImpressions| be the last |N| entries of |sortedImpressions|.
-1.  [=list/remove|Remove=] all but the last |N| entries of |credit|.
+1.  Let |lastNImpressions| be the first |N| entries of |sortedImpressions|.
+1.  [=list/remove|Remove=] all but the first |N| entries of |credit|.
 1.  Let |normalizedCredit| be the result of [=fairly allocate credit|fairly allocating credit=] with |credit| and |value|.
 1.  Let |histogram| be the result of invoking [=create an all-zero histogram=]
     with |histogramSize|.

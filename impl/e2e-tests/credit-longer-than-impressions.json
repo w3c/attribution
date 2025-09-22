@@ -1,0 +1,29 @@
+{
+  "events": [
+    {
+      "seconds": 1,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 0 }
+    },
+    {
+      "seconds": 2,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 1 }
+    },
+    {
+      "seconds": 3,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "value": 12,
+        "maxValue": 12,
+        "credit": [6, 3, 3]
+      },
+      "expected": [4, 8, 0, 0]
+    }
+  ]
+}

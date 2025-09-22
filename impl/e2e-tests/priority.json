@@ -1,0 +1,45 @@
+{
+  "events": [
+    {
+      "seconds": 1,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0,
+        "priority": 200
+      }
+    },
+    {
+      "seconds": 2,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 1,
+        "priority": 300
+      }
+    },
+    {
+      "seconds": 3,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 2,
+        "priority": 200
+      }
+    },
+    {
+      "seconds": 4,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 10,
+        "credit": [6, 2]
+      },
+      "$comment": "index 1 has the highest priority; the others have equal priority but index 2 is most recent",
+      "expected": [0, 6, 2, 0]
+    }
+  ]
+}
