@@ -105,15 +105,15 @@ export class Backend {
     this.#delegate = delegate;
   }
 
-  get epochStarts(): Iterable<[string, Temporal.Instant]> {
-    return this.#epochStartStore.entries();
+  get epochStarts(): ReadonlyMap<string, Temporal.Instant> {
+    return this.#epochStartStore;
   }
 
-  get privacyBudgetEntries(): Iterable<Readonly<PrivacyBudgetStoreEntry>> {
+  get privacyBudgetEntries(): ReadonlyArray<Readonly<PrivacyBudgetStoreEntry>> {
     return this.#privacyBudgetStore;
   }
 
-  get impressions(): Iterable<Readonly<Impression>> {
+  get impressions(): ReadonlyArray<Readonly<Impression>> {
     return this.#impressions;
   }
 

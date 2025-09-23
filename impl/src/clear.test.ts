@@ -57,7 +57,7 @@ void test("clear-site-state", async () => {
   backend.clearState(["conv-one.example"], false);
 
   assert.equal(
-    [...backend.impressions].length,
+    backend.impressions.length,
     siteTable.length,
     "All the impressions remain unaffected",
   );
@@ -88,9 +88,9 @@ void test("forget-all-sites", async () => {
   const backend = await setupImpressions({ now, ...defaultConfig });
   backend.clearState([], true);
 
-  assert.equal([...backend.impressions].length, 0);
-  assert.equal([...backend.privacyBudgetEntries].length, 0);
-  assert.equal([...backend.epochStarts].length, 0);
+  assert.deepEqual(backend.impressions, []);
+  assert.deepEqual(backend.privacyBudgetEntries, []);
+  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(
     backend.lastBrowsingHistoryClear,
     Temporal.Instant.from(now),
@@ -104,12 +104,12 @@ void test("forget-one-site-impressions", async () => {
   backend.clearState(["imp-one.example"], true);
 
   assert.deepEqual(
-    [...backend.impressions].map((i) => i.impressionSite),
+    backend.impressions.map((i) => i.impressionSite),
     siteTable.map((i) => i.impression).filter((i) => i !== "imp-one.example"),
     "Impressions for the affected site are removed",
   );
-  assert.equal([...backend.privacyBudgetEntries].length, 0);
-  assert.equal([...backend.epochStarts].length, 0);
+  assert.deepEqual(backend.privacyBudgetEntries, []);
+  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(
     backend.lastBrowsingHistoryClear,
     Temporal.Instant.from(now),
@@ -128,15 +128,15 @@ void test("forget-one-site-conversions", async () => {
   });
   assert.ok(before.unencryptedHistogram!.some((v) => v > 0));
 
-  assert.ok([...backend.privacyBudgetEntries].length > 0);
-  assert.equal([...backend.epochStarts].length, 1);
+  assert.ok(backend.privacyBudgetEntries.length > 0);
+  assert.equal(backend.epochStarts.size, 1);
 
   backend.clearState(["conv-one.example"], true);
 
   // Conversions are unaffected, and conversion state is gone.
-  assert.equal([...backend.impressions].length, siteTable.length);
-  assert.equal([...backend.privacyBudgetEntries].length, 0);
-  assert.equal([...backend.epochStarts].length, 0);
+  assert.equal(backend.impressions.length, siteTable.length);
+  assert.deepEqual(backend.privacyBudgetEntries, []);
+  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(
     backend.lastBrowsingHistoryClear,
     Temporal.Instant.from(now),
@@ -151,7 +151,7 @@ void test("forget-one-site-conversions", async () => {
   assert.ok(after.unencryptedHistogram!.every((v) => v === 0));
 
   // Privacy budget entries aren't added; this epoch is off-limits.
-  assert.equal([...backend.privacyBudgetEntries].length, 0);
+  assert.deepEqual(backend.privacyBudgetEntries, []);
   // The epoch start will be initialized.
-  assert.equal([...backend.epochStarts].length, 1);
+  assert.equal(backend.epochStarts.size, 1);
 });
