@@ -93,7 +93,7 @@ function runTest(
   });
 
   for (const event of tc.events) {
-    const newNow = now.add({ seconds: event.seconds });
+    const newNow = Temporal.Instant.fromEpochMilliseconds(event.seconds * 1e3);
     if (Temporal.Instant.compare(newNow, now) <= 0) {
       throw new RangeError(
         "events must have strictly increasing seconds fields",
