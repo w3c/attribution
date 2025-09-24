@@ -18,7 +18,7 @@ interface Impression {
   impressionSite: string;
   intermediarySite: string | undefined;
   conversionSites: Set<string>;
-  conversionCallers: Set<string>;
+  conversionCallers: ReadonlySet<string>;
   timestamp: Temporal.Instant;
   lifetime: Temporal.Duration;
   histogramIndex: number;
@@ -39,9 +39,9 @@ interface ValidatedConversionOptions {
   epsilon: number;
   histogramSize: number;
   lookback: Temporal.Duration;
-  matchValues: Set<number>;
-  impressionSites: Set<string>;
-  impressionCallers: Set<string>;
+  matchValues: ReadonlySet<number>;
+  impressionSites: ReadonlySet<string>;
+  impressionCallers: ReadonlySet<string>;
   credit: readonly number[];
   value: number;
   maxValue: number;
@@ -105,15 +105,15 @@ export class Backend {
     this.#delegate = delegate;
   }
 
-  get epochStarts(): Iterable<[string, Temporal.Instant]> {
-    return this.#epochStartStore.entries();
+  get epochStarts(): ReadonlyMap<string, Temporal.Instant> {
+    return this.#epochStartStore;
   }
 
-  get privacyBudgetEntries(): Iterable<Readonly<PrivacyBudgetStoreEntry>> {
+  get privacyBudgetEntries(): ReadonlyArray<Readonly<PrivacyBudgetStoreEntry>> {
     return this.#privacyBudgetStore;
   }
 
-  get impressions(): Iterable<Readonly<Impression>> {
+  get impressions(): ReadonlyArray<Readonly<Impression>> {
     return this.#impressions;
   }
 
@@ -517,7 +517,7 @@ export class Backend {
   }
 
   #fillHistogramWithLastNTouchAttribution(
-    matchedImpressions: Set<Impression>,
+    matchedImpressions: ReadonlySet<Impression>,
     histogramSize: number,
     value: number,
     credit: readonly number[],
@@ -618,7 +618,7 @@ export class Backend {
     );
   }
 
-  #zeroBudgetForSites(sites: Set<string>): void {
+  #zeroBudgetForSites(sites: ReadonlySet<string>): void {
     if (sites.size === 0) {
       throw new RangeError("need to specify at least one site when forgetting");
     }

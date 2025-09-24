@@ -17,8 +17,9 @@ export interface TestConfig {
   privacyBudgetEpochDays: number;
 }
 
-export function makeBackend(overrideConfig?: Readonly<TestConfig>): Backend {
-  const config = overrideConfig ?? defaultConfig;
+export function makeBackend(
+  config: Readonly<TestConfig> = defaultConfig,
+): Backend {
   const now = config.now
     ? Temporal.Instant.from(config.now)
     : new Temporal.Instant(0n);
