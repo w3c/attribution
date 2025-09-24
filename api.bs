@@ -2358,6 +2358,45 @@ for a number of reasons:
     Without allocating [=privacy budget=] for new data,
     sites could exhaust their budget forever.
 
+### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
+The paper [[PPA-DP-2]] provides formal analysis of the mathematical privacy guarantees
+afforded by *per-site budgets* and by *safety limits*. Per-site
+budgets include [=site=] in the [=privacy unit=], whereas safety limits exclude it
+thereby enforcing a global individual DP guarantee.
+
+The analysis shows that *per-site individual DP guarantees* hold under a restricted system
+model that makes two assumptions, which may not always be satisfied in practice:
+
+1.  *No cross-site adaptivity in data generation.* A site’s queryable data stream (impressions
+and conversions) must be generated independently of past DP query results from other sites.
+1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
+reports are emitted to others.
+
+Assumption 1 is necessary because the system involves multiple sites that could interact
+with the same user over time and change the ads they show to the user, or impact the
+conversions the user has, based on each other’s DP measurements. For example, if one advertiser
+learns, from DP measurements, to make an ad more effective, a user may convert on their site
+rather than a competitor’s. In this case, the first site’s DP outputs -- counted only against
+its own per-site budget -- alter the data (or absence of data) visible to the competitor, yet
+this impact is not reflected in the competitor’s per-site budget. When Assumption 1 is violated,
+the analysis shows that per-site guarantees cannot be achieved.
+
+Assumption 2 is necessary when we have shared limits that span multiple sites. An example of
+such shared limits are the global safety limits that aim to provide a global DP guarantee.
+If queries from some sites cause a shared limit to be reached, reports to other sites may be
+filtered, creating dependencies across separate per-site privacy units and affecting the validity
+of the per-site guarantees. Thus, care must be taken when introducing any new shared limit, such
+as cross-site rate limiters on privacy loss. If only Assumption 2 is violated, it is unknown whether
+per-site guarantees can still be preserved, for example via special designs of the shared limits.
+
+These results suggest that per-site protections should be regarded as theoretically grounded approximations
+of an ideal per-site individual DP guarantee that can be established only under certain assumptions.
+The extent to which privacy protection from per-site budgets may be impacted in practice remains unknown.
+
+By contrast, the analysis shows that *safety limits* -- which operate at global level,
+excluding [=site=] from the [=privacy unit=] -- can be implemented to deliver *sound global individual
+DP guarantees* regardless of whether either assumption is satisfied.
+
 
 ### Browser Instances ### {#dp-instance}
 
@@ -3170,6 +3209,22 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     "href": "https://arxiv.org/abs/2405.16719",
     "title": "Cookie Monster: Efficient On-device Budgeting for Differentially-Private Ad-Measurement Systems",
     "publisher": "SOSP'24"
+  },
+  "ppa-dp-2": {
+    "authors": [
+      "Pierre Tholoniat",
+      "Alison Caulfield",
+      "Giorgio Cavicchioli",
+      "Mark Chen",
+      "Nikos Goutzoulias",
+      "Benjamin Case",
+      "Asaf Cidon",
+      "Roxana Geambasu",
+      "Mathias Lécuyer",
+      "Martin Thomson"
+    ],
+    "href": "https://arxiv.org/abs/2506.05290",
+    "title": "Big Bird: Privacy Budget Management for W3C's Privacy-Preserving Attribution API",
   },
   "prio": {
     "authors": [
