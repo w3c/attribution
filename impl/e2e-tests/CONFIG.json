@@ -5,8 +5,7 @@
   "maxConversionSitesPerImpression": 3,
   "maxConversionCallersPerImpression": 3,
   "maxCreditSize": 10,
-  "maxLifetimeDays": 30,
-  "maxLookbackDays": 60,
+  "maxLookbackDays": 30,
   "maxHistogramSize": 5,
   "privacyBudgetMicroEpsilons": 1000000,
   "privacyBudgetEpochDays": 7

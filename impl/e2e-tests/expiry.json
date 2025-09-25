@@ -48,7 +48,7 @@
       "expected": [0, 0, 2]
     },
     {
-      "seconds": 2592000,
+      "seconds": 2592002,
       "site": "advertiser-3.example",
       "event": "measureConversion",
       "$comment": "try to select 2 impressions to avoid depending on ordering",
@@ -59,8 +59,23 @@
         "maxValue": 2,
         "credit": [0.5, 0.5]
       },
-      "$comment": "even though the second impression hasn't expired yet, this currently fails due to step 2 of https://w3c.github.io/attribution/#common-matching-logic",
+      "$comment": "the second impression hasn't expired yet",
       "expected": [0, 0, 2]
+    },
+    {
+      "seconds": 2592003,
+      "site": "advertiser-4.example",
+      "event": "measureConversion",
+      "$comment": "try to select 2 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3,
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "$comment": "the second impression has expired",
+      "expected": [0, 0, 0]
     }
   ]
 }
