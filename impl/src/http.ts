@@ -4,6 +4,11 @@ import type { Dictionary } from "structured-headers";
 
 import { parseDictionary } from "structured-headers";
 
+const MAX_UINT32: number = 4294967295;
+
+const MIN_INT32: number = -2147483648;
+const MAX_INT32: number = 2147483647;
+
 function parseInnerListOfSites(dict: Dictionary, key: string): string[] {
   const [values] = dict.get(key) ?? [[]];
   if (!Array.isArray(values)) {
@@ -29,9 +34,12 @@ export function parseSaveImpressionHeader(
   if (
     typeof histogramIndex !== "number" ||
     !Number.isInteger(histogramIndex) ||
-    histogramIndex < 0
+    histogramIndex < 0 ||
+    histogramIndex > MAX_UINT32
   ) {
-    throw new RangeError("histogram-index must be a non-negative integer");
+    throw new RangeError(
+      "histogram-index must be an integer in the 32-bit unsigned range",
+    );
   }
 
   const conversionSites = parseInnerListOfSites(dict, "conversion-sites");
@@ -41,12 +49,15 @@ export function parseSaveImpressionHeader(
   if (
     typeof matchValue !== "number" ||
     !Number.isInteger(matchValue) ||
-    matchValue < 0
+    matchValue < 0 ||
+    matchValue > MAX_UINT32
   ) {
-    throw new RangeError("match-value must be a non-negative integer");
+    throw new RangeError(
+      "match-value must be an integer in the 32-bit unsigned range",
+    );
   }
 
-  const [lifetimeDays] = dict.get("lifetime-days") ?? [30];
+  let [lifetimeDays] = dict.get("lifetime-days") ?? [30];
   if (
     typeof lifetimeDays !== "number" ||
     !Number.isInteger(lifetimeDays) ||
@@ -55,9 +66,20 @@ export function parseSaveImpressionHeader(
     throw new RangeError("lifetime-days must be a positive integer");
   }
 
+  if (lifetimeDays > MAX_UINT32) {
+    lifetimeDays = MAX_UINT32;
+  }
+
   const [priority] = dict.get("priority") ?? [0];
-  if (typeof priority !== "number" || !Number.isInteger(priority)) {
-    throw new RangeError("priority must be an integer");
+  if (
+    typeof priority !== "number" ||
+    !Number.isInteger(priority) ||
+    priority < MIN_INT32 ||
+    priority > MAX_INT32
+  ) {
+    throw new RangeError(
+      "priority must be an integer in the 32-bit signed range",
+    );
   }
 
   return {
