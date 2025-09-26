@@ -82,14 +82,13 @@ function runTest(
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
     maxCreditSize: config.maxCreditSize,
-    maxLifetimeDays: config.maxLifetimeDays,
+    maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
 
     now: () => now,
     random: () => 0.5,
-    earliestEpochIndex: () => 0,
   });
 
   for (const event of tc.events) {

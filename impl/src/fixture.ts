@@ -11,7 +11,7 @@ export interface TestConfig {
   maxConversionSitesPerImpression: number;
   maxConversionCallersPerImpression: number;
   maxCreditSize: number;
-  maxLifetimeDays: number;
+  maxLookbackDays: number;
   maxHistogramSize: number;
   privacyBudgetMicroEpsilons: number;
   privacyBudgetEpochDays: number;
@@ -36,7 +36,7 @@ export function makeBackend(
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
     maxCreditSize: config.maxCreditSize,
-    maxLifetimeDays: config.maxLifetimeDays,
+    maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),

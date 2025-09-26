@@ -77,14 +77,13 @@ export interface Delegate {
   readonly maxConversionSitesPerImpression: number;
   readonly maxConversionCallersPerImpression: number;
   readonly maxCreditSize: number;
-  readonly maxLifetimeDays: number;
+  readonly maxLookbackDays: number;
   readonly maxHistogramSize: number;
   readonly privacyBudgetMicroEpsilons: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
 
   now(): Temporal.Instant;
   random(): number;
-  earliestEpochIndex(site: string): number;
 }
 
 function allZeroHistogram(size: number): number[] {
@@ -156,7 +155,7 @@ export class Backend {
     if (lifetimeDays <= 0 || !Number.isInteger(lifetimeDays)) {
       throw new RangeError("lifetimeDays must be a positive integer");
     }
-    lifetimeDays = Math.min(lifetimeDays, this.#delegate.maxLifetimeDays);
+    lifetimeDays = Math.min(lifetimeDays, this.#delegate.maxLookbackDays);
 
     const maxConversionSitesPerImpression =
       this.#delegate.maxConversionSitesPerImpression;
@@ -209,7 +208,7 @@ export class Backend {
     histogramSize,
     impressionSites = [],
     impressionCallers = [],
-    lookbackDays = this.#delegate.maxLifetimeDays,
+    lookbackDays = this.#delegate.maxLookbackDays,
     credit = [1],
     maxValue = index.DEFAULT_CONVERSION_MAX_VALUE,
     matchValues = [],
@@ -263,7 +262,7 @@ export class Backend {
     if (lookbackDays <= 0 || !Number.isInteger(lookbackDays)) {
       throw new RangeError("lookbackDays must be a positive integer");
     }
-    lookbackDays = Math.min(lookbackDays, this.#delegate.maxLifetimeDays);
+    lookbackDays = Math.min(lookbackDays, this.#delegate.maxLookbackDays);
 
     const matchValueSet = new Set<number>();
     for (const value of matchValues) {
@@ -399,7 +398,7 @@ export class Backend {
   ): number[] {
     let matchedImpressions;
     const currentEpoch = this.#getCurrentEpoch(topLevelSite, now);
-    const startEpoch = this.#getStartEpoch(topLevelSite);
+    const startEpoch = this.#getStartEpoch(topLevelSite, now);
     const earliestEpoch = this.#getCurrentEpoch(
       topLevelSite,
       now.subtract(options.lookback),
@@ -583,8 +582,12 @@ export class Backend {
     return Math.floor(elapsed);
   }
 
-  #getStartEpoch(site: string): number {
-    const startEpoch = this.#delegate.earliestEpochIndex(site);
+  #getStartEpoch(site: string, now: Temporal.Instant): number {
+    const earliestEpochIndex = this.#getCurrentEpoch(
+      site,
+      now.subtract(days(this.#delegate.maxLookbackDays)),
+    );
+    const startEpoch = earliestEpochIndex;
     if (this.#lastBrowsingHistoryClear) {
       let clearEpoch = this.#getCurrentEpoch(
         site,
@@ -623,9 +626,11 @@ export class Backend {
       throw new RangeError("need to specify at least one site when forgetting");
     }
 
+    const now = this.#delegate.now();
+
     for (const site of sites) {
-      const startEpoch = this.#getStartEpoch(site);
-      const currentEpoch = this.#getCurrentEpoch(site, this.#delegate.now());
+      const startEpoch = this.#getStartEpoch(site, now);
+      const currentEpoch = this.#getCurrentEpoch(site, now);
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
         const entry = this.#privacyBudgetStore.find(
           (e) => e.epoch === epoch && e.site === site,

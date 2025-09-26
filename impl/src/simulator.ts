@@ -19,17 +19,13 @@ const backend = new Backend({
   maxConversionSitesPerImpression: 10,
   maxConversionCallersPerImpression: 10,
   maxCreditSize: Infinity,
-  maxLifetimeDays: 30,
+  maxLookbackDays: 30,
   maxHistogramSize: 100,
   privacyBudgetMicroEpsilons: 1000000,
   privacyBudgetEpoch: days(7),
 
   now: () => now,
   random: () => 0.5,
-  earliestEpochIndex: (site: string) => {
-    void site; // TODO
-    return 0;
-  },
 });
 
 function numberOrUndefined(input: HTMLInputElement): number | undefined {

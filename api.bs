@@ -791,7 +791,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dt><dfn>histogramSize</dfn></dt>
   <dd>The number of histogram buckets to use in the [=conversion report=].</dd>
   <dt><dfn>lookbackDays</dfn></dt>
-  <dd>A positive integer number of days. Only impressions occurring within the past `lookbackDays` may match this [=conversion=]. If omitted, it is equivalent to an [=implementation-defined=] maximum.</dd>
+  <dd>A positive integer number of days. Only impressions occurring within the past `lookbackDays` may match this [=conversion=]. If omitted, it is equivalent to the [=maximum lookback=].</dd>
   <dt><dfn>matchValues</dfn></dt>
   <dd>A [=set=] of match values that can be used to select this [=impression=].</dd>
   <dt><dfn>impressionSites</dfn></dt>
@@ -1290,19 +1290,16 @@ is exposed.
 
 <div algorithm="get the starting epoch for attribution">
 To <dfn>get the starting epoch for attribution</dfn>
-given [=site=] |site|,
+given [=site=] |site| and [=moment=] |now|,
 returning an [=epoch index=]:
 
-1.  Let |startEpoch| be a [=user agent=]-defined value
-    for the <dfn>earliest epoch index</dfn>,
-    which is the first [=epoch index=]
-    that is supported for attribution on |site|.
+1.  Let |earliestEpochIndex| be the result of [=get the current epoch=]
+    with |site| and |now| − the [=maximum lookback=] [=days=].
 
     <p class=note>
-    This value is not a constant [=epoch index=].
-    A value is chosen for each site
-    based on [=user agent=] preferences or configuration;
-    see [[#impl-def]].
+    This ensures that all possible [=impressions=] can be queried.
+
+1.  Let |startEpoch| be |earliestEpochIndex|.
 
 1.  If the [=last browsing history clear=] is set,
     perform the following steps:
@@ -1346,7 +1343,7 @@ and a [=moment=] |now|:
 
         1.  Let |startingEpoch| be the result of
             invoking [=get the starting epoch for attribution=]
-            given |site|.
+            given |site| and |now|.
 
         1.  Let |currentEpoch| be the result of
             invoking [=get the current epoch=]
@@ -1421,7 +1418,7 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
     1.  If |options|.{{AttributionImpressionOptions/lifetimeDays}} is 0,
         return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Clamp |options|.{{AttributionImpressionOptions/lifetimeDays}} to
-        the [=user agent=]'s upper limit.
+        the [=maximum lookback=].
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionSites}} is
         greater than an [=implementation-defined=] maximum value, return
@@ -1455,8 +1452,7 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
          :   [=impression/Timestamp=]
          ::  |timestamp|
          :   [=impression/Lifetime=]
-         ::  |options|.{{AttributionImpressionOptions/lifetimeDays}},
-             multiplied by a [=duration=] of one day
+         ::  |options|.{{AttributionImpressionOptions/lifetimeDays}} [=days=]
          :   [=impression/Histogram Index=]
          ::  |options|.{{AttributionImpressionOptions/histogramIndex}}
          :   [=impression/Priority=]
@@ -1575,8 +1571,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
 1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
 1.  Let |lookback| be |options|.{{AttributionConversionOptions/lookbackDays}} [=days=]
-    if it [=map/exists=], the [=implementation-defined=] maximum otherwise.
-1.  Set |lookback| to the [=implementation-defined=] maximum
+    if it [=map/exists=], the [=maximum lookback=] [=days=] otherwise.
+1.  Set |lookback| to the [=maximum lookback=] [=days=]
     if it is larger than that maximum.
 1.  If |lookback| is 0 [=days=], throw a {{RangeError}}.
 1.  If the [=list/size=] of
@@ -1640,7 +1636,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     with |topLevelSite| and |now|.
 
 1.  Let |startEpoch| be the result of [=get the starting epoch for attribution=]
-    with |topLevelSite|.
+    with |topLevelSite| and |now|.
 
 1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
     passing |topLevelSite| and (|now| − |options|' [=validated conversion options/lookback=]).
@@ -1841,22 +1837,12 @@ This specification identifies several [=implementation-defined=] values.
 This section includes some recommendations for implementations
 regarding how to best set those values.
 
-An implementation sets [=implementation-defined=] maximum values
+An implementation sets an [=implementation-defined=] <dfn>maximum lookback</dfn>
 for {{AttributionImpressionOptions/lifetimeDays}} and
-{{AttributionConversionOptions/lookbackDays}}.
+{{AttributionConversionOptions/lookbackDays}}. It is a positive integer number of [=days=].
 There is no point to having different maximum values for
 these values as the smaller of the two values
 will determine which saved [=impressions=] are available for conversions.
-
-An implementation can also use the value it sets
-for {{AttributionImpressionOptions/lifetimeDays}} and
-{{AttributionConversionOptions/lookbackDays}}
-to set the [=earliest epoch index=]
-when executing the [=get the starting epoch for attribution=] algorithm.
-Invoking [=get the current epoch=] algorithm for the site,
-passing the current time less the corresponding duration
-ensures that the [=earliest epoch index=]
-includes all possible [=impressions=] that can be queried.
 
 Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
