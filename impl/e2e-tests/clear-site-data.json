@@ -167,6 +167,79 @@
         "credit": [1, 1, 1]
       },
       "expected": [0, 0, 0]
+    },
+    {
+      "seconds": 17,
+      "site": "e.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 3,
+        "conversionSites": ["advertiser-5.example"],
+        "conversionCallers": [
+          "intermediary-1.example",
+          "intermediary-2.example"
+        ]
+      }
+    },
+    {
+      "seconds": 18,
+      "site": "intermediary-1.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove no impressions, but remove this site from the conversionCallers of the impression with histogramIndex 3"
+    },
+    {
+      "seconds": 19,
+      "site": "advertiser-5.example",
+      "intermediarySite": "intermediary-1.example",
+      "event": "measureConversion",
+      "$comment": "try to select 4 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 8,
+        "credit": [1, 1, 1, 1]
+      },
+      "expected": [0, 0, 0, 0]
+    },
+    {
+      "seconds": 20,
+      "site": "advertiser-5.example",
+      "intermediarySite": "intermediary-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 4 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 8,
+        "credit": [1, 1, 1, 1]
+      },
+      "expected": [0, 0, 0, 8]
+    },
+    {
+      "seconds": 21,
+      "site": "intermediary-2.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove the impression with histogramIndex 3, as its conversion callers set should become empty"
+    },
+    {
+      "seconds": 22,
+      "site": "advertiser-5.example",
+      "intermediarySite": "intermediary-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 4 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 8,
+        "credit": [1, 1, 1, 1]
+      },
+      "expected": [0, 0, 0, 0]
     }
   ]
 }

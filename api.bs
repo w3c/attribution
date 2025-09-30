@@ -1004,18 +1004,25 @@ run these steps:
     1.  If |impression|'s [=impression/Intermediary Site=] is `undefined` and
         its [=impression/Impression Site=] is equal to |site|,
         [=set/remove=] |impression| from the [=impression store=] and [=iteration/continue=].
+
     1.  If |impression| has an [=impression/Intermediary Site=] equal to |site|,
         [=set/remove=] |impression| from the [=impression store=] and [=iteration/continue=].
 
-    1.  If |impression| has a [=impression/Conversion Sites=] [=set=]
-        that does not [=set/contain=] the value |site|, [=iteration/continue=].
+    1.  If |impression|'s [=impression/Conversion Sites=] [=set/contains=] |site|:
 
-    1.  If the [=set/size=] of |impression|'s [=impression/Conversion Sites=]
-        is greater than one,
-        [=set/remove|remove=] |site| from |impression|'s [=impression/Conversion Sites=]
-        and [=iteration/continue=].
+        1.  [=set/Remove=] |site| from |impression|'s [=impression/Conversion Sites=].
 
-    1.  Otherwise, [=set/remove=] |impression| from the [=impression store=].
+        1.  If |impression|'s [=impression/Conversion Sites=] [=set/is empty=],
+            [=set/remove=] |impression| from the [=impression store=] and
+            [=iteration/continue=].
+
+    1.  If |impression|'s [=impression/Conversion Callers=] [=set/contains=] |site|:
+
+        1.  [=set/Remove=] |site| from |impression|'s [=impression/Conversion Callers=].
+
+        1.  If |impression|'s [=impression/Conversion Callers=] [=set/is empty=],
+            [=set/remove=] |impression| from the [=impression store=] and
+            [=iteration/continue=].
 
 <p class=note>This process does not remove impressions
 that are saved with an empty [=set=] of [=impression/Conversion Sites=].
