@@ -601,8 +601,11 @@ export class Backend {
     return startEpoch;
   }
 
-  clearImpressionsForConversionSite(site: string): void {
+  clearImpressionsForSite(site: string): void {
     function shouldRemoveImpression(i: Impression): boolean {
+      if (i.intermediarySite === undefined && i.impressionSite === site) {
+        return true;
+      }
       if (i.intermediarySite === site) {
         return true;
       }

@@ -19,10 +19,7 @@ interface TestCase {
   events: Event[];
 }
 
-type Event =
-  | SaveImpression
-  | MeasureConversion
-  | ClearImpressionsForConversionSite;
+type Event = SaveImpression | MeasureConversion | ClearImpressionsForSite;
 
 type ExpectedError =
   | "RangeError"
@@ -50,8 +47,8 @@ interface MeasureConversion {
   expected: number[] | ExpectedError;
 }
 
-interface ClearImpressionsForConversionSite {
-  event: "clearImpressionsForConversionSite";
+interface ClearImpressionsForSite {
+  event: "clearImpressionsForSite";
   seconds: number;
   site: string;
 }
@@ -148,8 +145,8 @@ function runTest(
 
         break;
       }
-      case "clearImpressionsForConversionSite":
-        backend.clearImpressionsForConversionSite(event.site);
+      case "clearImpressionsForSite":
+        backend.clearImpressionsForSite(event.site);
         break;
     }
   }

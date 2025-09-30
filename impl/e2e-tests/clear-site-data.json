@@ -23,7 +23,7 @@
     {
       "seconds": 3,
       "site": "c.example",
-      "intermediarySite": "a.example",
+      "intermediarySite": "d.example",
       "event": "saveImpression",
       "options": { "histogramIndex": 2 }
     },
@@ -44,9 +44,9 @@
     },
     {
       "seconds": 5,
-      "site": "b.example",
-      "event": "clearImpressionsForConversionSite",
-      "$comment": "should remove no impressions"
+      "site": "c.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove no impressions, as although there is an impression site for c.example, it has a different intermediary site"
     },
     {
       "seconds": 6,
@@ -65,8 +65,8 @@
     },
     {
       "seconds": 7,
-      "site": "a.example",
-      "event": "clearImpressionsForConversionSite",
+      "site": "d.example",
+      "event": "clearImpressionsForSite",
       "$comment": "should remove only the impression with histogramIndex 2"
     },
     {
@@ -87,7 +87,7 @@
     {
       "seconds": 9,
       "site": "advertiser-1.example",
-      "event": "clearImpressionsForConversionSite",
+      "event": "clearImpressionsForSite",
       "$comment": "should remove no impressions, but remove this site from the conversionSites of the impression with histogramIndex 1"
     },
     {
@@ -108,7 +108,7 @@
     {
       "seconds": 11,
       "site": "advertiser-2.example",
-      "event": "clearImpressionsForConversionSite",
+      "event": "clearImpressionsForSite",
       "$comment": "should remove no impressions, but remove this site from the conversionSites of the impression with histogramIndex 1"
     },
     {
@@ -129,7 +129,7 @@
     {
       "seconds": 13,
       "site": "advertiser-3.example",
-      "event": "clearImpressionsForConversionSite",
+      "event": "clearImpressionsForSite",
       "$comment": "should remove the impression with histogramIndex 1, as its conversion sites set should become empty"
     },
     {
@@ -146,6 +146,27 @@
         "credit": [1, 1, 1]
       },
       "expected": [6, 0, 0]
+    },
+    {
+      "seconds": 15,
+      "site": "a.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove the impression with histogramIndex 0"
+    },
+    {
+      "seconds": 16,
+      "site": "advertiser-4.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [0, 0, 0]
     }
   ]
 }
