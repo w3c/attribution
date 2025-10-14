@@ -158,23 +158,28 @@ function updateBudgetAndEpochTables() {
     }
   }
 
-  const clear = document.querySelector<HTMLFormElement>("#clear")!;
-  clear.addEventListener("submit", function (this: HTMLFormElement, e) {
-    e.preventDefault();
+  document
+    .querySelector<HTMLFormElement>("#clear-as-user")!
+    .addEventListener("submit", function (this: HTMLFormElement, e) {
+      e.preventDefault();
 
-    const sites = this.elements.namedItem("clear-site") as HTMLInputElement;
-    backend.clearState(spaceSeparated(sites), false);
-    updateLastClear();
-  });
+      const sites = this.elements.namedItem("sites") as HTMLInputElement;
+      const forgetVisits = this.elements.namedItem(
+        "forget-visits",
+      ) as HTMLInputElement;
+      backend.clearState(spaceSeparated(sites), forgetVisits.checked);
+      updateLastClear();
+    });
 
-  const forget = document.querySelector<HTMLFormElement>("#forget")!;
-  forget.addEventListener("submit", function (this: HTMLFormElement, e) {
-    e.preventDefault();
+  document
+    .querySelector<HTMLFormElement>("#clear-as-site")!
+    .addEventListener("submit", function (this: HTMLFormElement, e) {
+      e.preventDefault();
 
-    const sites = this.elements.namedItem("forget-site") as HTMLInputElement;
-    backend.clearState(spaceSeparated(sites), true);
-    updateLastClear();
-  });
+      const site = this.elements.namedItem("site") as HTMLInputElement;
+      backend.clearImpressionsForConversionSite(site.value.trim());
+      updateImpressionsTable();
+    });
 }
 
 {

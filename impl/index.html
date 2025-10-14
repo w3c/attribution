@@ -126,25 +126,24 @@
             >
           </line>
         </form>
-        <form id="clear" class="simple">
+        <form id="clear-as-user" class="simple">
           <line>
             <input
-              id="clear-site"
+              name="sites"
               size="40"
-              min="1"
               placeholder="site.example (empty = all sites)"
             />
-            <button>Clear Site Data</button>
+            <label
+              ><input type="checkbox" name="forget-visits" /> Forget
+              Visits</label
+            >
+            <button>Clear Site Data as User</button>
           </line>
         </form>
-        <form id="forget" class="simple">
+        <form id="clear-as-site" class="simple">
           <line>
-            <input
-              id="forget-site"
-              size="40"
-              placeholder="site.example (empty = all sites)"
-            />
-            <button>Forget Site</button>
+            <input name="site" size="40" placeholder="site.example" required />
+            <button>Clear Site Data as Site</button>
           </line>
         </form>
         <line id="last-clear" style="display: none"
