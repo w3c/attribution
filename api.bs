@@ -1992,6 +1992,56 @@ To <dfn noexport>parse a `Save-Impression` header</dfn> given a [=header value=]
 
 </div>
 
+<div algorithm>
+To <dfn noexport>handle Attribution headers</dfn> given a [=request=] |request|
+and [=response=] |response|, run these steps:
+
+1.  If |request|'s [=request/destination=] is not one of the following,
+    return: `""`, `"image"`, `"script"`.
+
+1.  If |request|'s [=request/client=] is not a [=secure context=], return.
+
+1.  Let |saveImpressionHeader| be the result of [=header list/get|getting=] <code>[:Save-Impression:]</code> from |response|'s [=response/header list=].
+
+1.  If |saveImpressionHeader| is null, return.
+
+1.  Let |impressionOptions| be the result of [=parse a Save-Impression header|parsing=] |saveImpressionHeader|.
+
+1.  If |impressionOptions| is an error, return.
+
+1.  {{Attribution/saveImpression(options)|Save}} |impressionOptions|.
+
+Issue: Consider allowing the `"document"` and `"video"` [=destination types=].
+
+Issue: Allow processing only when |response|'s [=response/URL=] is a [=potentially trustworthy URL=] and HTTP-family.
+
+Issue: Figure out how to handle header-processing on intermediary responses during redirect.
+
+Issue: {{Attribution/saveImpression(options)}} can't really be called directly
+here, as it assumes the existence of a script context with a value for [=this=].
+We need to refactor it work in an HTTP context: The [=impression site=] will be
+the [=site=] corresponding to the top-level page, and the [=intermediary site=]
+will be the [=site=] corresponding to |response|'s [=response/URL=]. This
+probably entails using |request|'s [=request/client=] and/or |request|'s
+[=request/origin=].
+
+</div>
+
+## Fetch monkey patches ## {#fetch-monkey-patches}
+
+Modify [=HTTP-network fetch=] as follows:
+
+<div algorithm=fetch-monkey-patch>
+After the step
+
+> If <var ignore>includeCredentials</var> is true, then the user agent should parse and store response `Set-Cookie` headers given |request| and |response|.
+
+add the step
+
+1. [=Handle Attribution headers=] with |request| and |response|.
+
+</div>
+
 # Implementation Considerations # {#implementation-considerations}
 
 * Management and distribution of values for the following:
@@ -3029,6 +3079,7 @@ The privacy architecture is courtesy of the authors of [[PPA-DP]].
 <pre class=anchors>
 urlPrefix: https://fetch.spec.whatwg.org/; spec: html; type: dfn
     text: request origin; url: #concept-request-origin
+    text: HTTP-network fetch; url: #concept-http-network-fetch
 urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
     text: host; url: #concept-origin-host
     text: obtain a site
