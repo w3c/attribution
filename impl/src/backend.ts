@@ -18,7 +18,7 @@ interface Impression {
   impressionSite: string;
   intermediarySite: string | undefined;
   conversionSites: Set<string>;
-  conversionCallers: ReadonlySet<string>;
+  conversionCallers: Set<string>;
   timestamp: Temporal.Instant;
   lifetime: Temporal.Duration;
   histogramIndex: number;
@@ -601,19 +601,27 @@ export class Backend {
     return startEpoch;
   }
 
-  clearImpressionsForConversionSite(site: string): void {
+  clearImpressionsForSite(site: string): void {
     function shouldRemoveImpression(i: Impression): boolean {
+      if (i.intermediarySite === undefined && i.impressionSite === site) {
+        return true;
+      }
       if (i.intermediarySite === site) {
         return true;
       }
-      if (!i.conversionSites.has(site)) {
-        return false;
-      }
-      if (i.conversionSites.size > 1) {
+      if (i.conversionSites.has(site)) {
         i.conversionSites.delete(site);
-        return false;
+        if (i.conversionSites.size === 0) {
+          return true;
+        }
       }
-      return true;
+      if (i.conversionCallers.has(site)) {
+        i.conversionCallers.delete(site);
+        if (i.conversionCallers.size === 0) {
+          return true;
+        }
+      }
+      return false;
     }
 
     this.#impressions = this.#impressions.filter(

@@ -1,0 +1,245 @@
+{
+  "$comment": "use different advertiser sites to avoid depending on budgeting",
+  "events": [
+    {
+      "seconds": 1,
+      "site": "a.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 0 }
+    },
+    {
+      "seconds": 2,
+      "site": "b.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 1,
+        "conversionSites": [
+          "advertiser-1.example",
+          "advertiser-2.example",
+          "advertiser-3.example"
+        ]
+      }
+    },
+    {
+      "seconds": 3,
+      "site": "c.example",
+      "intermediarySite": "d.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 2 }
+    },
+    {
+      "seconds": 4,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [2, 2, 2]
+    },
+    {
+      "seconds": 5,
+      "site": "c.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove no impressions, as although there is an impression site for c.example, it has a different intermediary site"
+    },
+    {
+      "seconds": 6,
+      "site": "advertiser-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [2, 2, 2]
+    },
+    {
+      "seconds": 7,
+      "site": "d.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove only the impression with histogramIndex 2"
+    },
+    {
+      "seconds": 8,
+      "site": "advertiser-3.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [3, 3, 0]
+    },
+    {
+      "seconds": 9,
+      "site": "advertiser-1.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove no impressions, but remove this site from the conversionSites of the impression with histogramIndex 1"
+    },
+    {
+      "seconds": 10,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [6, 0, 0]
+    },
+    {
+      "seconds": 11,
+      "site": "advertiser-2.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove no impressions, but remove this site from the conversionSites of the impression with histogramIndex 1"
+    },
+    {
+      "seconds": 12,
+      "site": "advertiser-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [6, 0, 0]
+    },
+    {
+      "seconds": 13,
+      "site": "advertiser-3.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove the impression with histogramIndex 1, as its conversion sites set should become empty"
+    },
+    {
+      "seconds": 14,
+      "site": "advertiser-3.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [6, 0, 0]
+    },
+    {
+      "seconds": 15,
+      "site": "a.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove the impression with histogramIndex 0"
+    },
+    {
+      "seconds": 16,
+      "site": "advertiser-4.example",
+      "event": "measureConversion",
+      "$comment": "try to select 3 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 3,
+        "value": 6,
+        "maxValue": 6,
+        "credit": [1, 1, 1]
+      },
+      "expected": [0, 0, 0]
+    },
+    {
+      "seconds": 17,
+      "site": "e.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 3,
+        "conversionSites": ["advertiser-5.example"],
+        "conversionCallers": [
+          "intermediary-1.example",
+          "intermediary-2.example"
+        ]
+      }
+    },
+    {
+      "seconds": 18,
+      "site": "intermediary-1.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove no impressions, but remove this site from the conversionCallers of the impression with histogramIndex 3"
+    },
+    {
+      "seconds": 19,
+      "site": "advertiser-5.example",
+      "intermediarySite": "intermediary-1.example",
+      "event": "measureConversion",
+      "$comment": "try to select 4 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 8,
+        "credit": [1, 1, 1, 1]
+      },
+      "expected": [0, 0, 0, 0]
+    },
+    {
+      "seconds": 20,
+      "site": "advertiser-5.example",
+      "intermediarySite": "intermediary-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 4 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 8,
+        "credit": [1, 1, 1, 1]
+      },
+      "expected": [0, 0, 0, 8]
+    },
+    {
+      "seconds": 21,
+      "site": "intermediary-2.example",
+      "event": "clearImpressionsForSite",
+      "$comment": "should remove the impression with histogramIndex 3, as its conversion callers set should become empty"
+    },
+    {
+      "seconds": 22,
+      "site": "advertiser-5.example",
+      "intermediarySite": "intermediary-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 4 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.5,
+        "histogramSize": 4,
+        "value": 8,
+        "maxValue": 8,
+        "credit": [1, 1, 1, 1]
+      },
+      "expected": [0, 0, 0, 0]
+    }
+  ]
+}
