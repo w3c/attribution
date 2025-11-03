@@ -357,10 +357,10 @@ The histogram created by the [=conversion report=] is constructed as follows:
     or the [=privacy budget=] for the site is exhausted,
     a histogram consisting entirely of zeros (0) is constructed.
 
-*   If one or more matching impressions is found, the browser runs the attribution
-    logic (default last-n-touch) to select the most recent impression. The provided conversion
+*   If one or more matching impressions is found, the browser runs the last-n-touch
+    attribution logic to select the relevant impression(s). The provided conversion
     value is added to a histogram at the bucket that was specified at the time of the
-    attributed impression. All other buckets are set to zero.
+    attributed impression(s). All other buckets are set to zero.
 
 The browser updates the [=privacy budget store=] to reflect the reported conversion.
 
@@ -720,16 +720,12 @@ contribute to the histogram, i.e., will be uniformly zero.
         };
       </xmp>
 
-  1.  The choice of [=attribution logic=]
-      that the browser will apply,
-      plus any parameters that the logic needs.
+  1.  The [=attribution logic=] parameters.
 
       <xmp highlight=js>
         const attributionDetails = {
-          logic: "last-n-touch",
-          logicOptions: {
-            credit: [.25, .25, .5]
-          }
+          // top impression's histogram index gets 50% of value, the next two 25% each
+          credit: [.5, .25, .25],
           value: 3,
           maxValue: 7,
         };
@@ -767,18 +763,9 @@ dictionary AttributionConversionOptions {
   sequence<USVString> impressionSites = [];
   sequence<USVString> impressionCallers = [];
 
-  AttributionLogic logic = "last-n-touch";
-  AttributionLogicOptions logicOptions;
+  sequence<double> credit;
   unsigned long value = 1;
   unsigned long maxValue = 1;
-};
-
-enum AttributionLogic {
-  "last-n-touch",
-};
-
-dictionary AttributionLogicOptions {
-  sequence<double> credit;
 };
 
 dictionary AttributionConversionResult {
@@ -804,7 +791,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dt><dfn>histogramSize</dfn></dt>
   <dd>The number of histogram buckets to use in the [=conversion report=].</dd>
   <dt><dfn>lookbackDays</dfn></dt>
-  <dd>A positive integer number of days. Only impressions occurring within the past `lookbackDays` may match this [=conversion=]. If omitted, it is equivalent to an [=implementation-defined=] maximum.</dd>
+  <dd>A positive integer number of days. Only impressions occurring within the past `lookbackDays` may match this [=conversion=]. If omitted, it is equivalent to the [=maximum lookback=].</dd>
   <dt><dfn>matchValues</dfn></dt>
   <dd>A [=set=] of match values that can be used to select this [=impression=].</dd>
   <dt><dfn>impressionSites</dfn></dt>
@@ -823,11 +810,8 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
     only [=impressions=] recorded by one of the listed sites
     are eligible to match this [=conversion=].
   </dd>
-  <dt><dfn>logic</dfn></dt>
-  <dd>
-    A selection from <a enum>AttributionLogic</a> indicating the
-    [=attribution logic=] to use.
-  </dd>
+  <dt><dfn>credit</dfn></dt>
+  <dd>A [=list=] of numbers.</dd>
   <dt><dfn>value</dfn></dt>
   <dd>
     The [=conversion value=]. If an attribution is made and [[#dp|privacy]]
@@ -1143,7 +1127,7 @@ given a [=privacy budget key=] |key|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|, and
-nullable integer |attributedValueForSingleEpochOpt|:
+nullable integer |l1Norm|:
 
 1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
     its value of |key| to be a [=user agent=]-defined value,
@@ -1157,17 +1141,21 @@ nullable integer |attributedValueForSingleEpochOpt|:
 1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
     in the [=privacy budget store=].
 
-1.  Let |singleEpochQuery| be true if |attributedValueForSingleEpochOpt| is non-null, false otherwise.
-
-1.  Let |halfReportGlobalSensitivity| be |attributedValueForSingleEpochOpt|/2 if |singleEpochQuery| is true, |value| otherwise.
+1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, 2 * |value| otherwise.
 
 1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
 
-1.  Let |deductionFp| be |halfReportGlobalSensitivity| / |noiseScale|.
+1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
 
-<p class=note>Single epoch attributions do not cause any cascading effects across epochs,
-so they do not need to consume double the budget. The deduction here is assuming Laplace
-noise is added to the histogram with scale param |maxValue| / |epsilon|.
+
+<p class=note>Single epoch attributions &mdash;
+the only case that |l1Norm| is non-null &mdash;
+do not cause any cascading effects across epochs.
+Attribution that involves multiple epochs consumes double the budget
+because of the potential for one change to affect attribution across epochs.
+Doubling the deduction assumes that Laplace noise
+proportional to |maxValue| / |epsilon|
+is added to the aggregated histogram.
 
 1.  If |deductionFp| is negative or greater than [=maximum epsilon=],
     [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
@@ -1302,19 +1290,16 @@ is exposed.
 
 <div algorithm="get the starting epoch for attribution">
 To <dfn>get the starting epoch for attribution</dfn>
-given [=site=] |site|,
+given [=site=] |site| and [=moment=] |now|,
 returning an [=epoch index=]:
 
-1.  Let |startEpoch| be a [=user agent=]-defined value
-    for the <dfn>earliest epoch index</dfn>,
-    which is the first [=epoch index=]
-    that is supported for attribution on |site|.
+1.  Let |earliestEpochIndex| be the result of [=get the current epoch=]
+    with |site| and |now| − the [=maximum lookback=] [=days=].
 
     <p class=note>
-    This value is not a constant [=epoch index=].
-    A value is chosen for each site
-    based on [=user agent=] preferences or configuration;
-    see [[#impl-def]].
+    This ensures that all possible [=impressions=] can be queried.
+
+1.  Let |startEpoch| be |earliestEpochIndex|.
 
 1.  If the [=last browsing history clear=] is set,
     perform the following steps:
@@ -1341,6 +1326,67 @@ returning an [=epoch index=]:
         return |clearEpoch|.
 
 1.  Return |startEpoch|.
+
+</div>
+
+<div algorithm="clear browsing history for attribution">
+To <dfn>clear browsing history for attribution</dfn>,
+given a [=set=] of [=sites=] |sites|,
+a [=boolean=] |forgetVisits|,
+and a [=moment=] |now|:
+
+1.  If |forgetVisits| is false:
+
+    1.  [=Assert=]: |sites| [=set/is empty|is not empty=].
+
+    1.  [=set/iterate|For each=] |site| in |sites|:
+
+        1.  Let |startingEpoch| be the result of
+            invoking [=get the starting epoch for attribution=]
+            given |site| and |now|.
+
+        1.  Let |currentEpoch| be the result of
+            invoking [=get the current epoch=]
+            given |site| and |now|.
+
+        1.  [=set/iterate|For each=] |epoch| in [=the inclusive range=]
+            from |startingEpoch| to |currentEpoch|:
+
+            1.  Let |key| be the [=privacy budget key=] formed
+                from |site| and |epoch|.
+
+            1.  [=map/Set=] [=privacy budget store=]\[|key|] to 0.
+
+    1.  Return.
+
+1.  If |sites| [=set/is empty=]:
+
+    1.  [=set/empty|Clear=] the [=impression store=].
+
+    1.  [=map/clear|Clear=] the [=privacy budget store=].
+
+    1.  [=map/clear|Clear=] the [=epoch start store=].
+
+1.  If |sites| [=set/is empty|is not empty=]:
+
+    1.  [=set/iterate|For each=] |impression| in the [=impression store=],
+        if |sites| [=set/contains=] |impression|'s [=impression/impression site=],
+        [=set/remove=] |impression| from the [=impression store=].
+
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],
+        if |sites| [=set/contains=] the [=site=] component of |key|,
+        [=map/remove=] [=privacy budget store=]\[|key|].
+
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=epoch start store=],
+        if |sites| [=set/contains=] |key|,
+        [=map/remove=] [=epoch start store=]\[|key|].
+
+1.  Set the [=last browsing history clear=] to |now|.
+
+    <p class=note>Setting the [=last browsing history clear=]
+    while only clearing state for some sites
+    (that is, when |sites| [=set/is empty|is not empty=])
+    will make some impressions unreachable for sites that are not present in that set.
 
 </div>
 
@@ -1372,7 +1418,7 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
     1.  If |options|.{{AttributionImpressionOptions/lifetimeDays}} is 0,
         return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Clamp |options|.{{AttributionImpressionOptions/lifetimeDays}} to
-        the [=user agent=]'s upper limit.
+        the [=maximum lookback=].
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionSites}} is
         greater than an [=implementation-defined=] maximum value, return
@@ -1406,8 +1452,7 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
          :   [=impression/Timestamp=]
          ::  |timestamp|
          :   [=impression/Lifetime=]
-         ::  |options|.{{AttributionImpressionOptions/lifetimeDays}},
-             multiplied by a [=duration=] of one day
+         ::  |options|.{{AttributionImpressionOptions/lifetimeDays}} [=days=]
          :   [=impression/Histogram Index=]
          ::  |options|.{{AttributionImpressionOptions/histogramIndex}}
          :   [=impression/Priority=]
@@ -1493,8 +1538,7 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
 <dfn>Match Values</dfn>: A [=set=] of [=32-bit unsigned integers=].
 <dfn>Impression Sites</dfn>: A [=set=] of [=sites=].
 <dfn>Impression Callers</dfn>: A [=set=] of [=sites=].
-<dfn>Logic</dfn>: An {{AttributionLogic}}.
-<dfn>Logic Options</dfn>: An {{AttributionLogicOptions}}.
+<dfn>Credit</dfn>: A [=list=] of numbers.
 <dfn>Value</dfn>: A [=32-bit unsigned integer=].
 <dfn>Max Value</dfn>: A [=32-bit unsigned integer=].
 </pre>
@@ -1517,28 +1561,18 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     or is greater than the <dfn ignore>maximum aggregation-service histogram size</dfn>,
     if any, for |options|.{{AttributionConversionOptions/aggregationService}},
     throw a {{RangeError}}.
-1.  Let |credit| be «1».
-1.  Switch on the value of |options|.{{AttributionConversionOptions/logic}}:
-    <dl class="switch">
-        :   <a enum-value for=AttributionLogic>"last-n-touch"</a>
-        ::  Perform the following steps:
-            1.  If |options|.{{AttributionConversionOptions/value}} is 0,
-                throw a {{RangeError}}.
-            1.  If |options|.{{AttributionConversionOptions/value}}
-                is greater than |options|.{{AttributionConversionOptions/maxValue}},
-                throw a {{RangeError}}.
-            1.  If |options|.{{AttributionConversionOptions/logicOptions}}.{{AttributionLogicOptions/credit}} [=map/exists=]:
-                1.  Set |credit| to |options|.{{AttributionConversionOptions/logicOptions}}.{{AttributionLogicOptions/credit}}.
-                1.  If |credit| is not a [=list=] or [=list/is empty=], throw a {{RangeError}}.
-                1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
-                1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
-    </dl>
-1.  Let |validatedLogicOptions| be a {{AttributionLogicOptions}} with the following fields:
-    : {{AttributionLogicOptions/credit}}
-    :: |credit|
+1.  If |options|.{{AttributionConversionOptions/value}} is 0,
+    throw a {{RangeError}}.
+1.  If |options|.{{AttributionConversionOptions/value}}
+    is greater than |options|.{{AttributionConversionOptions/maxValue}},
+    throw a {{RangeError}}.
+1.  Let |credit| be |options|.{{AttributionConversionOptions/credit}} if it [=map/exists=], «1» otherwise.
+1.  If |credit| [=list/is empty=], throw a {{RangeError}}.
+1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
+1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
 1.  Let |lookback| be |options|.{{AttributionConversionOptions/lookbackDays}} [=days=]
-    if it [=map/exists=], the [=implementation-defined=] maximum otherwise.
-1.  Set |lookback| to the [=implementation-defined=] maximum
+    if it [=map/exists=], the [=maximum lookback=] [=days=] otherwise.
+1.  Set |lookback| to the [=maximum lookback=] [=days=]
     if it is larger than that maximum.
 1.  If |lookback| is 0 [=days=], throw a {{RangeError}}.
 1.  If the [=list/size=] of
@@ -1575,10 +1609,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     :: |impressionSites|
     : [=validated conversion options/Impression Callers=]
     :: |impressionCallers|
-    : [=validated conversion options/Logic=]
-    :: |options|.{{AttributionConversionOptions/logic}}
-    : [=validated conversion options/Logic Options=]
-    :: |validatedLogicOptions|
+    : [=validated conversion options/Credit=]
+    :: |credit|
     : [=validated conversion options/Value=]
     :: |options|.{{AttributionConversionOptions/value}}
     : [=validated conversion options/Max Value=]
@@ -1589,14 +1621,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 
 ### Attribution Logic ### {#s-logic}
 
-A site that measures conversions can specify <dfn>attribution logic</dfn>,
-which determines how the [=conversion value=] is allocated to histogram buckets.
-The <a method for=Attribution>measureConversion()</a> function
-accepts a <a dict-member for=AttributionConversionOptions>logic</a> parameter
-that specifies the [=attribution logic=].
-
-Each attribution logic specifies a process for allocating values to histogram buckets,
-after the [=common matching logic=] is applied and privacy budgeting occurs.
+<dfn>Attribution logic</dfn> determines how the [=conversion value=] is allocated to histogram buckets.
 
 <div algorithm>
 To <dfn>do attribution and fill a histogram</dfn>, given
@@ -1611,7 +1636,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     with |topLevelSite| and |now|.
 
 1.  Let |startEpoch| be the result of [=get the starting epoch for attribution=]
-    with |topLevelSite|.
+    with |topLevelSite| and |now|.
 
 1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
     passing |topLevelSite| and (|now| − |options|' [=validated conversion options/lookback=]).
@@ -1645,19 +1670,10 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     [=create an all-zero histogram=] with
     |options|' [=validated conversion options/histogram size=].
 
-1.  Let |histogram| be null.
-
-1.  Switch on |options|' [=validated conversion options/logic=]:
-      <dl class="switch">
-      : <a enum-value for=AttributionLogic>"last-n-touch"</a>
-      :: Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
-        |options|' [=validated conversion options/histogram size=],
-        |options|' [=validated conversion options/value=], and
-        |options|' [=validated conversion options/logic options=].{{AttributionLogicOptions/credit}}.
-
-      </dl>
-
-1.  [=Assert=]: |histogram| is not null.
+1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+    |options|' [=validated conversion options/histogram size=],
+    |options|' [=validated conversion options/value=], and
+    |options|' [=validated conversion options/credit=].
 
 1.  If |singleEpoch| is true:
     1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
@@ -1796,11 +1812,11 @@ To <dfn>fill a histogram with last-n-touch attribution</dfn>, given a [=set=] of
   a [=list=] of doubles |credit|:
 
 1.  [=Assert=]: |matchedImpressions| is [=set/is empty|not empty=].
-1.  Let |sortedImpressions| be |matchedImpressions|, [=list/sorted in ascending order=]
+1.  Let |sortedImpressions| be |matchedImpressions|, [=list/sorted in descending order=]
     by [=impression/priority=], then by [=impression/timestamp=].
 1.  Let |N| be the minimum of the [=list/size=] of |credit|, and the [=list/size=] of |sortedImpressions|.
-1.  Let |lastNImpressions| be the last |N| entries of |sortedImpressions|.
-1.  [=list/remove|Remove=] all but the last |N| entries of |credit|.
+1.  Let |lastNImpressions| be the first |N| entries of |sortedImpressions|.
+1.  [=list/remove|Remove=] all but the first |N| entries of |credit|.
 1.  Let |normalizedCredit| be the result of [=fairly allocate credit|fairly allocating credit=] with |credit| and |value|.
 1.  Let |histogram| be the result of invoking [=create an all-zero histogram=]
     with |histogramSize|.
@@ -1821,22 +1837,12 @@ This specification identifies several [=implementation-defined=] values.
 This section includes some recommendations for implementations
 regarding how to best set those values.
 
-An implementation sets [=implementation-defined=] maximum values
+An implementation sets an [=implementation-defined=] <dfn>maximum lookback</dfn>
 for {{AttributionImpressionOptions/lifetimeDays}} and
-{{AttributionConversionOptions/lookbackDays}}.
+{{AttributionConversionOptions/lookbackDays}}. It is a positive integer number of [=days=].
 There is no point to having different maximum values for
 these values as the smaller of the two values
 will determine which saved [=impressions=] are available for conversions.
-
-An implementation can also use the value it sets
-for {{AttributionImpressionOptions/lifetimeDays}} and
-{{AttributionConversionOptions/lookbackDays}}
-to set the [=earliest epoch index=]
-when executing the [=get the starting epoch for attribution=] algorithm.
-Invoking [=get the current epoch=] algorithm for the site,
-passing the current time less the corresponding duration
-ensures that the [=earliest epoch index=]
-includes all possible [=impressions=] that can be queried.
 
 Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
@@ -2894,13 +2900,19 @@ to ensure that [=privacy budgets=] are not inadvertently exceeded.
 
 When clearing site data at the request of a [=user=],
 but retaining browsing history,
-a [=user agent=] can [=map/set=] the value
-in the [=privacy budget store=] to 0 for all [=epochs=]
-for all affected [=sites=].
+a [=user agent=] invokes [=clear browsing history for attribution=],
+given the [=set=] of affected [=sites=],
+false (for |forgetVisits|),
+and the time that the action was taken.
+This sets the privacy budget for that site to zero,
+preventing any use of conversion measurement on that site.
+This does not remove saved impressions from the [=impression store=];
+logically, impressions are transferred to the [=conversion site=]
+at the time they are saved.
 
 When clearing site data at the request of a [=site=],
 through the use of the [:Clear-Site-Data:] header,
-a [=user agent=] only [[#removing-impressions|removes impressions]],
+a [=user agent=] only [=clear impressions for a conversion site|removes impressions=],
 without altering either the [=privacy budget store=]
 or the [=epoch start store=] for affected [=sites=].
 
@@ -2914,6 +2926,12 @@ necessary to prevent privacy loss toward sites
 leaves information about visits to sites
 for other users of a computer to discover
 when removing browsing history.
+
+A user agent that clears browsing history
+invokes [=clear browsing history for attribution=],
+given the [=set=] of affected [=sites=],
+true (for |forgetVisits|),
+and the time that the operation was initiated.
 
 When clearing browsing history,
 [=user agents=] need to

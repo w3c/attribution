@@ -1,4 +1,4 @@
-.PHONY: all venv clean images simulator
+.PHONY: all venv clean images simulator check
 .SUFFIXES: .bs .html
 
 IMAGES := $(wildcard images/*.svg)
@@ -44,3 +44,8 @@ build/simulator.js: impl/dist/simulator.js build
 impl/dist/index.html impl/dist/simulator.js: impl/index.html impl/package-lock.json impl/package.json impl/tsconfig.json impl/webpack.config.js impl/src/*.ts
 	@ npm ci --prefix ./impl
 	@ npm run pack --prefix ./impl
+
+check:
+	@ npm run --prefix ./impl pretty:check
+	@ npm run --prefix ./impl build
+	@ npm run --prefix ./impl test

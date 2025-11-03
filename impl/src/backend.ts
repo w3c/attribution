@@ -5,7 +5,6 @@ import type {
   AttributionConversionResult,
   AttributionImpressionOptions,
   AttributionImpressionResult,
-  AttributionLogic,
 } from "./index";
 
 import * as index from "./index";
@@ -19,7 +18,7 @@ interface Impression {
   impressionSite: string;
   intermediarySite: string | undefined;
   conversionSites: Set<string>;
-  conversionCallers: Set<string>;
+  conversionCallers: ReadonlySet<string>;
   timestamp: Temporal.Instant;
   lifetime: Temporal.Duration;
   histogramIndex: number;
@@ -40,17 +39,12 @@ interface ValidatedConversionOptions {
   epsilon: number;
   histogramSize: number;
   lookback: Temporal.Duration;
-  matchValues: Set<number>;
-  impressionSites: Set<string>;
-  impressionCallers: Set<string>;
-  logic: AttributionLogic;
-  logicOptions: ValidatedLogicOptions;
+  matchValues: ReadonlySet<number>;
+  impressionSites: ReadonlySet<string>;
+  impressionCallers: ReadonlySet<string>;
+  credit: readonly number[];
   value: number;
   maxValue: number;
-}
-
-interface ValidatedLogicOptions {
-  credit: readonly number[];
 }
 
 export function days(days: number): Temporal.Duration {
@@ -68,6 +62,14 @@ function parseSite(input: string): string {
   return site;
 }
 
+function parseSites(input: readonly string[]): Set<string> {
+  const parsed = new Set<string>();
+  for (const site of input) {
+    parsed.add(parseSite(site));
+  }
+  return parsed;
+}
+
 export interface Delegate {
   readonly aggregationServices: AttributionAggregationServices;
   readonly includeUnencryptedHistogram?: boolean;
@@ -75,14 +77,13 @@ export interface Delegate {
   readonly maxConversionSitesPerImpression: number;
   readonly maxConversionCallersPerImpression: number;
   readonly maxCreditSize: number;
-  readonly maxLifetimeDays: number;
+  readonly maxLookbackDays: number;
   readonly maxHistogramSize: number;
   readonly privacyBudgetMicroEpsilons: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
 
   now(): Temporal.Instant;
   random(): number;
-  earliestEpochIndex(site: string): number;
 }
 
 function allZeroHistogram(size: number): number[] {
@@ -95,7 +96,7 @@ export class Backend {
   readonly #delegate: Delegate;
   #impressions: Readonly<Impression>[] = [];
   readonly #epochStartStore: Map<string, Temporal.Instant> = new Map();
-  readonly #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
+  #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
 
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
 
@@ -103,20 +104,24 @@ export class Backend {
     this.#delegate = delegate;
   }
 
-  get epochStarts(): Iterable<[string, Temporal.Instant]> {
-    return this.#epochStartStore.entries();
+  get epochStarts(): ReadonlyMap<string, Temporal.Instant> {
+    return this.#epochStartStore;
   }
 
-  get privacyBudgetEntries(): Iterable<Readonly<PrivacyBudgetStoreEntry>> {
+  get privacyBudgetEntries(): ReadonlyArray<Readonly<PrivacyBudgetStoreEntry>> {
     return this.#privacyBudgetStore;
   }
 
-  get impressions(): Iterable<Readonly<Impression>> {
+  get impressions(): ReadonlyArray<Readonly<Impression>> {
     return this.#impressions;
   }
 
   get aggregationServices(): AttributionAggregationServices {
     return this.#delegate.aggregationServices;
+  }
+
+  get lastBrowsingHistoryClear(): Temporal.Instant | null {
+    return this.#lastBrowsingHistoryClear;
   }
 
   saveImpression(
@@ -150,7 +155,7 @@ export class Backend {
     if (lifetimeDays <= 0 || !Number.isInteger(lifetimeDays)) {
       throw new RangeError("lifetimeDays must be a positive integer");
     }
-    lifetimeDays = Math.min(lifetimeDays, this.#delegate.maxLifetimeDays);
+    lifetimeDays = Math.min(lifetimeDays, this.#delegate.maxLookbackDays);
 
     const maxConversionSitesPerImpression =
       this.#delegate.maxConversionSitesPerImpression;
@@ -159,10 +164,7 @@ export class Backend {
         `conversionSites.length must be <= ${maxConversionSitesPerImpression}`,
       );
     }
-    const parsedConversionSites = new Set<string>();
-    for (const site of conversionSites) {
-      parsedConversionSites.add(parseSite(site));
-    }
+    const parsedConversionSites = parseSites(conversionSites);
 
     const maxConversionCallersPerImpression =
       this.#delegate.maxConversionCallersPerImpression;
@@ -171,10 +173,7 @@ export class Backend {
         `conversionCallers.length must be <= ${maxConversionCallersPerImpression}`,
       );
     }
-    const parsedConversionCallers = new Set<string>();
-    for (const site of conversionCallers) {
-      parsedConversionCallers.add(parseSite(site));
-    }
+    const parsedConversionCallers = parseSites(conversionCallers);
 
     if (matchValue < 0 || !Number.isInteger(matchValue)) {
       throw new RangeError("matchValue must be a non-negative integer");
@@ -209,9 +208,8 @@ export class Backend {
     histogramSize,
     impressionSites = [],
     impressionCallers = [],
-    lookbackDays = this.#delegate.maxLifetimeDays,
-    logic = index.DEFAULT_CONVERSION_LOGIC,
-    logicOptions,
+    lookbackDays = this.#delegate.maxLookbackDays,
+    credit = [1],
     maxValue = index.DEFAULT_CONVERSION_MAX_VALUE,
     matchValues = [],
     value = index.DEFAULT_CONVERSION_VALUE,
@@ -239,43 +237,32 @@ export class Backend {
       );
     }
 
-    let credit = [1];
+    if (value <= 0 || !Number.isInteger(value)) {
+      throw new RangeError("value must be a positive integer");
+    }
+    if (maxValue <= 0 || !Number.isInteger(value)) {
+      throw new RangeError("maxValue must be a positive integer");
+    }
+    if (value > maxValue) {
+      throw new RangeError("value must be <= maxValue");
+    }
 
-    switch (logic) {
-      case "last-n-touch":
-        if (value <= 0 || !Number.isInteger(value)) {
-          throw new RangeError("value must be a positive integer");
-        }
-        if (maxValue <= 0 || !Number.isInteger(value)) {
-          throw new RangeError("maxValue must be a positive integer");
-        }
-        if (value > maxValue) {
-          throw new RangeError("value must be <= maxValue");
-        }
-        if (logicOptions?.credit) {
-          credit = logicOptions.credit;
-          const maxCreditSize = this.#delegate.maxCreditSize;
-          if (credit.length === 0 || credit.length > maxCreditSize) {
-            throw new RangeError(
-              `credit size must be in the range [1, ${maxCreditSize}]`,
-            );
-          }
-          for (const c of credit) {
-            if (c <= 0 || !Number.isFinite(value)) {
-              throw new RangeError("credit must be positive and finite");
-            }
-          }
-        }
-
-        break;
-      default:
-        throw new RangeError("unknown logic");
+    const maxCreditSize = this.#delegate.maxCreditSize;
+    if (credit.length === 0 || credit.length > maxCreditSize) {
+      throw new RangeError(
+        `credit size must be in the range [1, ${maxCreditSize}]`,
+      );
+    }
+    for (const c of credit) {
+      if (c <= 0 || !Number.isFinite(value)) {
+        throw new RangeError("credit must be positive and finite");
+      }
     }
 
     if (lookbackDays <= 0 || !Number.isInteger(lookbackDays)) {
       throw new RangeError("lookbackDays must be a positive integer");
     }
-    lookbackDays = Math.min(lookbackDays, this.#delegate.maxLifetimeDays);
+    lookbackDays = Math.min(lookbackDays, this.#delegate.maxLookbackDays);
 
     const matchValueSet = new Set<number>();
     for (const value of matchValues) {
@@ -285,26 +272,15 @@ export class Backend {
       matchValueSet.add(value);
     }
 
-    const parsedImpressionSites = new Set<string>();
-    for (const site of impressionSites) {
-      parsedImpressionSites.add(parseSite(site));
-    }
-
-    const parsedImpressionCallers = new Set<string>();
-    for (const site of impressionCallers) {
-      parsedImpressionCallers.add(parseSite(site));
-    }
-
     return {
       aggregationService: aggregationServiceEntry,
       epsilon,
       histogramSize,
       lookback: days(lookbackDays),
       matchValues: matchValueSet,
-      impressionSites: parsedImpressionSites,
-      impressionCallers: parsedImpressionCallers,
-      logic,
-      logicOptions: { credit },
+      impressionSites: parseSites(impressionSites),
+      impressionCallers: parseSites(impressionCallers),
+      credit,
       value,
       maxValue,
     };
@@ -422,7 +398,7 @@ export class Backend {
   ): number[] {
     let matchedImpressions;
     const currentEpoch = this.#getCurrentEpoch(topLevelSite, now);
-    const startEpoch = this.#getStartEpoch(topLevelSite);
+    const startEpoch = this.#getStartEpoch(topLevelSite, now);
     const earliestEpoch = this.#getCurrentEpoch(
       topLevelSite,
       now.subtract(options.lookback),
@@ -454,7 +430,7 @@ export class Backend {
             options.epsilon,
             options.value,
             options.maxValue,
-            /*attributedValueForSingleEpochOpt=*/ null,
+            /*l1Norm=*/ null,
           );
           if (budgetOk) {
             for (const i of impressions) {
@@ -469,17 +445,12 @@ export class Backend {
       return allZeroHistogram(options.histogramSize);
     }
 
-    let histogram;
-    switch (options.logic) {
-      case "last-n-touch":
-        histogram = this.#fillHistogramWithLastNTouchAttribution(
-          matchedImpressions,
-          options.histogramSize,
-          options.value,
-          options.logicOptions.credit,
-        );
-        break;
-    }
+    let histogram = this.#fillHistogramWithLastNTouchAttribution(
+      matchedImpressions,
+      options.histogramSize,
+      options.value,
+      options.credit,
+    );
 
     if (singleEpoch) {
       const l1Norm = histogram.reduce((a, b) => a + b);
@@ -516,7 +487,7 @@ export class Backend {
     epsilon: number,
     value: number,
     maxValue: number,
-    attributedValueForSingleEpochOpt: number | null,
+    l1Norm: number | null,
   ): boolean {
     let entry = this.#privacyBudgetStore.find(
       (e) => e.epoch === key.epoch && e.site === key.site,
@@ -528,12 +499,9 @@ export class Backend {
       };
       this.#privacyBudgetStore.push(entry);
     }
-    const singleEpochQuery = attributedValueForSingleEpochOpt !== null;
-    const halfReportGlobalSensitivity = singleEpochQuery
-      ? attributedValueForSingleEpochOpt / 2
-      : value;
+    const sensitivity = l1Norm ?? 2 * value;
     const noiseScale = (2 * maxValue) / epsilon;
-    const deductionFp = halfReportGlobalSensitivity / noiseScale;
+    const deductionFp = sensitivity / noiseScale;
     if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
       entry.value = 0;
       return false;
@@ -548,7 +516,7 @@ export class Backend {
   }
 
   #fillHistogramWithLastNTouchAttribution(
-    matchedImpressions: Set<Impression>,
+    matchedImpressions: ReadonlySet<Impression>,
     histogramSize: number,
     value: number,
     credit: readonly number[],
@@ -563,10 +531,10 @@ export class Backend {
     const sortedImpressions = Array.from(matchedImpressions).toSorted(
       (a, b) => {
         if (a.priority < b.priority) {
-          return -1;
+          return 1;
         }
         if (a.priority > b.priority) {
-          return 1;
+          return -1;
         }
         return Temporal.Instant.compare(b.timestamp, a.timestamp);
       },
@@ -575,6 +543,8 @@ export class Backend {
     const N = Math.min(credit.length, sortedImpressions.length);
 
     const lastNImpressions = sortedImpressions.slice(0, N);
+
+    credit = credit.slice(0, N);
 
     const normalizedCredit = fairlyAllocateCredit(credit, value, () =>
       this.#delegate.random(),
@@ -612,8 +582,12 @@ export class Backend {
     return Math.floor(elapsed);
   }
 
-  #getStartEpoch(site: string): number {
-    const startEpoch = this.#delegate.earliestEpochIndex(site);
+  #getStartEpoch(site: string, now: Temporal.Instant): number {
+    const earliestEpochIndex = this.#getCurrentEpoch(
+      site,
+      now.subtract(days(this.#delegate.maxLookbackDays)),
+    );
+    const startEpoch = earliestEpochIndex;
     if (this.#lastBrowsingHistoryClear) {
       let clearEpoch = this.#getCurrentEpoch(
         site,
@@ -645,6 +619,59 @@ export class Backend {
     this.#impressions = this.#impressions.filter(
       (i) => !shouldRemoveImpression(i),
     );
+  }
+
+  #zeroBudgetForSites(sites: ReadonlySet<string>): void {
+    if (sites.size === 0) {
+      throw new RangeError("need to specify at least one site when forgetting");
+    }
+
+    const now = this.#delegate.now();
+
+    for (const site of sites) {
+      const startEpoch = this.#getStartEpoch(site, now);
+      const currentEpoch = this.#getCurrentEpoch(site, now);
+      for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
+        const entry = this.#privacyBudgetStore.find(
+          (e) => e.epoch === epoch && e.site === site,
+        );
+        if (entry === undefined) {
+          this.#privacyBudgetStore.push({
+            site,
+            epoch,
+            value: 0,
+          });
+        } else {
+          entry.value = 0;
+        }
+      }
+    }
+  }
+
+  clearState(sites: readonly string[], forgetVisits: boolean): void {
+    const parsedSites = parseSites(sites);
+    if (!forgetVisits) {
+      this.#zeroBudgetForSites(parsedSites);
+      return;
+    }
+
+    if (parsedSites.size === 0) {
+      this.#impressions = [];
+      this.#privacyBudgetStore = [];
+      this.#epochStartStore.clear();
+    } else {
+      this.#impressions = this.#impressions.filter((e) => {
+        return !parsedSites.has(e.impressionSite);
+      });
+      this.#privacyBudgetStore = this.#privacyBudgetStore.filter((e) => {
+        return !parsedSites.has(e.site);
+      });
+      for (const site of parsedSites) {
+        this.#epochStartStore.delete(site);
+      }
+    }
+
+    this.#lastBrowsingHistoryClear = this.#delegate.now();
   }
 
   clearExpiredImpressions(): void {

@@ -1,0 +1,81 @@
+{
+  "$comment": "use different advertiser sites to avoid depending on budgeting",
+  "events": [
+    {
+      "seconds": 1,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 1,
+        "lifetimeDays": 2
+      }
+    },
+    {
+      "seconds": 2,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "$comment": "lifetimeDays defaults to 30",
+      "options": { "histogramIndex": 2 }
+    },
+    {
+      "seconds": 172801,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "$comment": "try to select 2 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3,
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "$comment": "neither impression has expired",
+      "expected": [0, 1, 1]
+    },
+    {
+      "seconds": 172802,
+      "site": "advertiser-2.example",
+      "event": "measureConversion",
+      "$comment": "try to select 2 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3,
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "$comment": "the first impression has expired",
+      "expected": [0, 0, 2]
+    },
+    {
+      "seconds": 2592002,
+      "site": "advertiser-3.example",
+      "event": "measureConversion",
+      "$comment": "try to select 2 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3,
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "$comment": "the second impression hasn't expired yet",
+      "expected": [0, 0, 2]
+    },
+    {
+      "seconds": 2592003,
+      "site": "advertiser-4.example",
+      "event": "measureConversion",
+      "$comment": "try to select 2 impressions to avoid depending on ordering",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3,
+        "value": 2,
+        "maxValue": 2,
+        "credit": [0.5, 0.5]
+      },
+      "$comment": "the second impression has expired",
+      "expected": [0, 0, 0]
+    }
+  ]
+}
