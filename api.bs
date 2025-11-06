@@ -472,9 +472,20 @@ This provides three key functions:
 
 ## Finding a Supported Aggregation Service ## {#find-aggregation-service}
 
-The <dfn attribute for=Attribution>aggregationServices</dfn> attribute
-contains a set of aggregation services supported by the [=user agent=]. The page
-must select and specify one of these services when calling the
+The user agent maintains a [=map=] of <dfn>aggregation services</dfn>, whose
+keys are [=URLs=] and whose values are {{AttributionAggregationProtocol}}.
+
+<div algorithm>
+The <dfn attribute for=Attribution>aggregationServices</dfn> getter steps are:
+
+1.  Let |map| be a new [=map=].
+1.  [=map/iterate|For each=] |url| → |protocol| of [=aggregation services=]:
+    1. [=map/Set=] |map|[|url|] to «[ {{AttributionAggregationService/protocol}} → |protocol| ]».
+1.  Return |map|.
+
+</div>
+
+The page must select and specify one of these services when calling the
 <a method for=Attribution>measureConversion()</a> method.
 It may also be useful to query the supported services
 before registering an impression,
@@ -1506,8 +1517,8 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
      1.  If the Attribution API is [[#opt-out|enabled]], set |report| to the
          result of [=do attribution and fill a histogram=] with |validatedOptions|,
          |topLevelSite|, |intermediarySite|, and |now|.
-     1.  Let |aggregationService| be |validatedOptions|'s [=validated conversion options/aggregation service=].
-     1.  Switch on the value of |aggregationService|.{{AttributionAggregationService/protocol}}:
+     1.  Let |protocol| be the result of [=map/getting=] |validatedOptions|'s [=validated conversion options/aggregation service URL=] from [=aggregation services=].
+     1.  Switch on the value of |protocol|:
          <dl class="switch">
             :   <a enum-value for=AttributionAggregationProtocol>`dap-15-histogram`</a>
             ::  Perform the following steps:
@@ -1531,7 +1542,7 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
 
 <div dfn-for="validated conversion options">
 <pre class=simpledef>
-<dfn>Aggregation Service</dfn>: An instance of {{AttributionAggregationService}}.
+<dfn>Aggregation Service URL</dfn>: A [=URL=].
 <dfn>Epsilon</dfn>: A finite positive number.
 <dfn>Histogram Size</dfn>: A [=32-bit unsigned integer=].
 <dfn>Lookback</dfn>: A positive [=duration=].
@@ -1547,12 +1558,11 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
 <div algorithm="validate AttributionConversionOptions">
 To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 
-1.  If <a attribute for=Attribution>aggregationServices</a> does not [=map/exist|contain=]
-    an [=map/entry=] with a [=map/key=] of |options|.{{AttributionConversionOptions/aggregationService}},
+1.  Let |aggregationServiceUrl| be the result of running the [=URL parser=] on
+    |options|.{{AttributionConversionOptions/aggregationService}}.
+1.  If |aggregationServiceUrl| is failure or null, throw a {{"SyntaxError"}} {{DOMException}}.
+1.  If [=aggregation services=] does not [=map/contain=] |aggregationServiceUrl|,
     throw a {{ReferenceError}}.
-1.  Let |aggregationService| be the result of [=map/get|getting the value=]
-    from {{AttributionAggregationServices}},
-    given |options|.{{AttributionConversionOptions/aggregationService}}.
 1.  If |options|.{{AttributionConversionOptions/epsilon}}
     is less than or equal to 0 or is greater than [=maximum epsilon=],
     throw a {{RangeError}}.
@@ -1595,8 +1605,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     for each value in |options|.{{AttributionConversionOptions/impressionCallers}}.
 1.  If any result in |impressionCallers| is failure, throw a {{"SyntaxError"}} {{DOMException}}.
 1.  Return a [=validated conversion options=] with the following fields:
-    : [=validated conversion options/Aggregation Service=]
-    :: |aggregationService|
+    : [=validated conversion options/Aggregation Service URL=]
+    :: |aggregationServiceUrl|
     : [=validated conversion options/Epsilon=]
     :: |options|.{{AttributionConversionOptions/epsilon}}
     : [=validated conversion options/Histogram Size=]
@@ -2188,7 +2198,7 @@ and a [=list=] of [=integers=] |histogram|:
     1.  Let |pkR| be the public key of the corresponding role from
         the [=aggregation service=] [HPKE configuration](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.1)
         obtained for the [=aggregation service=]
-        indicated by |options|.[=validated conversion options/Aggregation Service=].
+        indicated by |options|.[=validated conversion options/Aggregation Service URL=].
 
         <p class=note>The URL for <a enum-value for=AttributionAggregationProtocol>"dap-15-histogram"</a> is expected to identify the DAP Leader role.
         Implementations need to obtain HPKE configuration for both Aggregators statically.
