@@ -1186,7 +1186,6 @@ is added to the aggregated histogram.
 
 
 
-</div>
 
 ### Global Privacy Budget Store ### {#s-global-privacy-budget-store}
 
@@ -1802,7 +1801,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  If |singleEpoch| is true:
     1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
-    1. TODO safety limits in single-epoch case.
 
 1.  If |singleEpoch| is false:
     1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
