@@ -1103,6 +1103,11 @@ These stores have some additional constraints
 on how information is cleared;
 see [[#clear-budget-store]] for details.
 
+<p class=issue>
+Some references to clearing
+the [=impression store=] may need to be
+updated to refer to the [=privacy budget store=] as well.
+
 
 ### Privacy Budget Store ### {#s-privacy-budget-store}
 
@@ -1179,111 +1184,7 @@ is added to the aggregated histogram.
 
 </div>
 
-<div algorithm>
-To <dfn>check and deduct safety limit budgets for impression sites</dfn>,
-given [=epoch index=] |epoch|,
-[=set=] of [=impression sites=] |impressionSites|,
-[=conversion site=] |conversionSite|,
-[=user action context=] |uaContext|,
-[[WEBIDL#idl-double|double]] |epsilon|,
-integer |value|,
-integer |maxValue|,
-and nullable integer |l1Norm|:
 
-1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, 2 * |value| otherwise.
-
-1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
-
-1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
-
-1.  If |deductionFp| is negative or greater than [=maximum epsilon=],
-    return false.
-
-1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
-
-1.  Let |accessedSites| be the [=map/get|value=] of |uaContext|
-    in the [=user action context store=],
-    or an empty [=set=] if not present.
-
-1.  Let |newSiteCount| be 0.
-
-1.  [=set/iterate|For each=] |impressionSite| in |impressionSites|:
-
-    1.  If |accessedSites| does not [=set/contain=] |impressionSite|,
-        increment |newSiteCount| by 1.
-
-1.  If |accessedSites| does not [=set/contain=] |conversionSite|,
-    increment |newSiteCount| by 1.
-
-1.  If ([=set/size=] of |accessedSites|) + |newSiteCount|
-    is greater than the [=quota count cap=], return false.
-
-    <p class=note>This check enforces the quota-count cap (<var>k</var><sub>quota-count</sub>)
-    from the Big Bird algorithm, which limits how many distinct sites
-    can create new quota budgets within a single user action.
-
-1.  Let |globalBudget| be the [=map/get|value=] of |epoch|
-    in the [=global privacy budget store=],
-    or the [=global budget per epoch=] if not present.
-
-1.  If |deduction| is greater than |globalBudget|, return false.
-
-1.  [=set/iterate|For each=] |impressionSite| in |impressionSites|:
-
-    1.  Let |impressionKey| be an [=impression site quota key=]
-        with |epoch| and |impressionSite|.
-
-    1.  Let |impressionQuota| be the [=map/get|value=] of |impressionKey|
-        in the [=impression site quota store=],
-        or the [=impression site quota per epoch=] if not present.
-
-    1.  If |deduction| is greater than |impressionQuota|, return false.
-
-1.  Let |conversionKey| be a [=conversion site quota key=]
-    with |epoch| and |conversionSite|.
-
-1.  Let |conversionQuota| be the [=map/get|value=] of |conversionKey|
-    in the [=conversion site quota store=],
-    or the [=conversion site quota per epoch=] if not present.
-
-1.  If |deduction| is greater than |conversionQuota|, return false.
-
-    <p class=note>The above steps implement the "Check" phase of the atomic two-phase commit protocol
-    from the Big Bird algorithm. All budget checks (quota-count, global budget, impression-site quotas,
-    and conversion-site quota) must succeed before any deductions are made.
-    If any check fails, the transaction aborts and NO budgets are deducted.
-
-1.  [=map/Set=] the [=global privacy budget store=]\[|epoch|]
-    to |globalBudget| − |deduction|.
-
-1.  [=set/iterate|For each=] |impressionSite| in |impressionSites|:
-
-    1.  Let |impressionKey| be an [=impression site quota key=]
-        with |epoch| and |impressionSite|.
-
-    1.  Let |impressionQuota| be the [=map/get|value=] of |impressionKey|
-        in the [=impression site quota store=],
-        or the [=impression site quota per epoch=] if not present.
-
-    1.  [=map/Set=] the [=impression site quota store=]\[|impressionKey|]
-        to |impressionQuota| − |deduction|.
-
-1.  [=map/Set=] the [=conversion site quota store=]\[|conversionKey|]
-    to |conversionQuota| − |deduction|.
-
-    <p class=note>The above steps implement the "Consume" phase of the atomic transaction.
-    Since all checks passed, we now commit by deducting from all relevant budgets.
-
-1.  [=set/iterate|For each=] |impressionSite| in |impressionSites|:
-
-    1.  [=set/Append=] |impressionSite| to |accessedSites|.
-
-1.  [=set/Append=] |conversionSite| to |accessedSites|.
-
-1.  [=map/Set=] the [=user action context store=]\[|uaContext|]
-    to |accessedSites|.
-
-1.  Return true.
 
 </div>
 
@@ -1476,7 +1377,7 @@ returning an [=epoch index=]:
 
 *   <dfn>Impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>):
     The maximum privacy budget that a single [=impression site=]
-    can contribute to the [=global privacy budget=] per [=epoch=],
+    can enable to be consumed from the [=global privacy budget=] per [=epoch=],
     specified in [=microepsilons=].
 
 *   <dfn>Conversion site quota per epoch</dfn> (&epsilon;<sub>conv-quota</sub>):
@@ -1490,12 +1391,7 @@ returning an [=epoch index=]:
     within a single [=user action context=].
 
 <p class=note>Typical values might be:
-&epsilon;<sub>global</sub> = 10 &times; &epsilon;<sub>conv-quota</sub>,
-&epsilon;<sub>conv-quota</sub> = 1.5 &times; &epsilon;<sub>querier</sub>,
-&epsilon;<sub>imp-quota</sub> = <var>n</var> &times; 1.5 &times; &epsilon;<sub>querier</sub>,
-where &epsilon;<sub>querier</sub> is a typical per-site budget (e.g., 1.0)
-and <var>n</var> is the expected number of [=conversion sites=]
-that query a single [=impression site=] (e.g., 3-5).
+TODO
 
 
 ### Last Browsing History Clear Time ### {#last-clear}
@@ -1692,26 +1588,6 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
     1.  If any result in |conversionCallers| is failure, return
         [=a promise rejected with=] a {{"SyntaxError"}} {{DOMException}} in |realm|.
 1.  Run the following steps [=in parallel=]:
-     1.  Let |uaContext| be the [=current user action context=].
-
-     1.  Let |accessedSites| be the [=map/get|value=] of |uaContext|
-         in the [=user action context store=],
-         or an empty [=set=] if not present.
-
-     1.  If |accessedSites| does not [=set/contain=] |site|:
-
-         1.  If the [=set/size=] of |accessedSites| is greater than or equal to
-             the [=quota count cap=], return.
-
-             <p class=note>This implements the quota-count cap check from the Big Bird algorithm,
-             preventing a single user action from creating new impression-site quotas
-             for more than [=quota count cap=] distinct sites.
-
-         1.  [=set/Append=] |site| to |accessedSites|.
-
-         1.  [=map/Set=] the [=user action context store=]\[|uaContext|]
-             to |accessedSites|.
-
      1.  Construct |impression| as a [=impression|saved impression=] comprising:
          :   [=impression/Match Value=]
          ::  |options|.{{AttributionImpressionOptions/matchValue}}
@@ -1734,9 +1610,6 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
      1.  If the Attribution API is [[#opt-out|enabled]],
          save |impression| to the [=impression store=].
 
-         <p class=note>Impressions are stored with their timestamp,
-         which is later used to determine which [=epoch=] they belong to
-         when matching during conversion measurement.
 1.  Let |result| be a new {{AttributionImpressionResult}}.
 1.  Return [=a promise resolved with=] |result| in |realm|.
 
@@ -1929,33 +1802,15 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  If |singleEpoch| is true:
     1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
+    1. TODO safety limits in single-epoch case.
 
 1.  If |singleEpoch| is false:
-
-    <p class=note>When attributing across multiple [=epochs=],
-    each [=epoch=]'s [=impressions=] are evaluated separately.
-    [=Impressions=] are organized by [=epoch=] based on their [=impression/timestamp=]
-    relative to the [=conversion site=].
-    For each [=epoch=], both the per-[=site=] [=privacy budget=] and [=safety limits=]
-    are checked and deducted independently using an atomic transaction.
-    This approach ensures that budget consumption is properly tracked across time periods.
-
     1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
 
         1.  Let |impressions| be the result of invoking [=common matching logic=]
             with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
 
-            <p class=note>The [=common matching logic=] filters [=impressions=]
-            from the [=impression store=] by comparing each impression's [=impression/timestamp=]
-            against |topLevelSite| to determine which [=epoch=] it belongs to.
-            Only [=impressions=] that fall within the current |epoch| are selected.
-
         1.  If |impressions| [=set/is empty|is not empty=]:
-
-            1.  Let |impressionSites| be an [=set/is empty|empty=] [=set=].
-
-            1.  [=set/iterate|For each=] |impression| in |impressions|,
-                [=set/append=] |impression|'s [=impression/impression site=] to |impressionSites|.
 
             1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
 
@@ -1977,24 +1832,12 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
             1.  If |budgetOk| is true and |safetyOk| is true, [=set/extend=] |matchedImpressions| with |impressions|.
 
-                <p class=note>If either the per-[=site=] [=privacy budget=] or the [=safety limits=]
-                for a given [=epoch=] are insufficient, [=impressions=] from that [=epoch=] are excluded
-                from attribution (by dropping that epoch's data), but [=impressions=] from other [=epochs=]
-                with sufficient budget may still be included.
-                This implements the per-epoch atomic transaction pattern from the Big Bird algorithm.
+
 
 1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
     [=create an all-zero histogram=] with
     |options|' [=validated conversion options/histogram size=].
 
-1.  Let |impressionSites| be an [=set/is empty|empty=] [=set=].
-
-1.  [=set/iterate|For each=] |impression| in |matchedImpressions|,
-    [=set/append=] |impression|'s [=impression/impression site=] to |impressionSites|.
-
-    <p class=note>The [=common matching logic=] can select [=impressions=]
-    from multiple [=impression sites=],
-    such as to support cross-publisher attribution.
 
 1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
     |options|' [=validated conversion options/histogram size=],
