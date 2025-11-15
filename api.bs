@@ -3056,6 +3056,9 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
         text: item; url: #item
         text: inner list; url: #inner-list
 </pre>
+<pre class=link-defaults>
+spec:css-2025; type:dfn; text:user
+</pre>
 <pre class=biblio>
 {
   "coppacalypse": {
