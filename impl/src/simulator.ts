@@ -177,7 +177,7 @@ function updateBudgetAndEpochTables() {
       e.preventDefault();
 
       const site = this.elements.namedItem("site") as HTMLInputElement;
-      backend.clearImpressionsForConversionSite(site.value.trim());
+      backend.clearImpressionsForSite(site.value.trim());
       updateImpressionsTable();
     });
 }
