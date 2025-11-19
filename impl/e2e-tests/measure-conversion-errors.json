@@ -148,6 +148,19 @@
         "error": "DOMException",
         "name": "SyntaxError"
       }
+    },
+    {
+      "seconds": 14,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "!",
+        "histogramSize": 1
+      },
+      "expected": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
     }
   ]
 }

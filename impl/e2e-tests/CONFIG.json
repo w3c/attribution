@@ -1,6 +1,6 @@
 {
   "aggregationServices": {
-    "https://agg-service.example": "dap-15-histogram"
+    "https://agg-service.example/": "dap-15-histogram"
   },
   "maxConversionSitesPerImpression": 3,
   "maxConversionCallersPerImpression": 3,

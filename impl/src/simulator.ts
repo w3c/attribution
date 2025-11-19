@@ -11,8 +11,12 @@ import { Temporal } from "temporal-polyfill";
 
 let now = new Temporal.Instant(0n);
 
+const AGGREGATION_SERVICE = "https://aggregator.example/";
+
 const backend = new Backend({
-  aggregationServices: new Map([["", { protocol: "dap-15-histogram" }]]),
+  aggregationServices: new Map([
+    [AGGREGATION_SERVICE, { protocol: "dap-15-histogram" }],
+  ]),
   includeUnencryptedHistogram: true,
 
   // TODO: Allow these values to be configured in the UI.
@@ -314,7 +318,7 @@ function updateBudgetAndEpochTables() {
     }
 
     const opts: AttributionConversionOptions = {
-      aggregationService: "",
+      aggregationService: AGGREGATION_SERVICE,
       epsilon: numberOrUndefined(epsilon),
       histogramSize: histogramSize.valueAsNumber,
       matchValues: spaceSeparated(matchValues).map((v) =>

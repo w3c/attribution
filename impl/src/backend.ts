@@ -70,6 +70,15 @@ function parseSites(input: readonly string[]): Set<string> {
   return parsed;
 }
 
+function parseAggregationServiceURL(input: string): string {
+  const url = URL.parse(input);
+  if (url === null) {
+    throw new DOMException("invalid aggregation service URL", "SyntaxError");
+  }
+  // Return the normalized form.
+  return url.toString();
+}
+
 export interface Delegate {
   readonly aggregationServices: AttributionAggregationServices;
   readonly includeUnencryptedHistogram?: boolean;
@@ -102,6 +111,15 @@ export class Backend {
 
   constructor(delegate: Delegate) {
     this.#delegate = delegate;
+
+    for (const url of this.#delegate.aggregationServices.keys()) {
+      const normalized = parseAggregationServiceURL(url);
+      if (url !== normalized) {
+        throw new RangeError(
+          `aggregation service key must be normalized: got ${url}, want ${normalized}`,
+        );
+      }
+    }
   }
 
   get epochStarts(): ReadonlyMap<string, Temporal.Instant> {
@@ -214,6 +232,8 @@ export class Backend {
     matchValues = [],
     value = index.DEFAULT_CONVERSION_VALUE,
   }: AttributionConversionOptions): ValidatedConversionOptions {
+    aggregationService = parseAggregationServiceURL(aggregationService);
+
     const aggregationServiceEntry =
       this.aggregationServices.get(aggregationService);
     if (aggregationServiceEntry === undefined) {
