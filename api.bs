@@ -995,36 +995,45 @@ defined in [[CLEAR-SITE-DATA#header]].
 
 When the [[CLEAR-SITE-DATA#clear-response|clear site data for response]] algorithm is invoked,
 if the list of types [=set/contains=] \``"impressions"`\`,
-the [=clear impressions for a conversion site=] is invoked,
+the [=clear impressions for a site=] is invoked,
 passing the <var ignore=''>origin</var>.
 
 <div algorithm>
-To <dfn>clear impressions for a conversion site</dfn>,
+To <dfn>clear impressions for a site</dfn>,
 given an [=origin=] |origin|,
 run these steps:
 
-1.  If |origin| is not a [=tuple origin=] with a [=scheme=] of `https`,
-    return.
+1.  If |origin| is not a [=tuple origin=], return.
 
 1.  Let |site| be the value returned
     by invoking [=registrable domain|obtain a registrable domain=],
-    passing the [=host=] part of the [=tuple origin|origin tuple=].
+    passing |origin|'s [=host=] part.
 
 1.  [=set/iterate|For each=] [=impression=] |impression| of
     the [=impression store=]:
 
+    1.  If |impression|'s [=impression/Intermediary Site=] is `undefined` and
+        its [=impression/Impression Site=] is equal to |site|,
+        [=set/remove=] |impression| from the [=impression store=] and [=iteration/continue=].
+
     1.  If |impression| has an [=impression/Intermediary Site=] equal to |site|,
         [=set/remove=] |impression| from the [=impression store=] and [=iteration/continue=].
 
-    1.  If |impression| has a [=impression/Conversion Sites=] [=set=]
-        that does not [=set/contain=] the value |site|, [=iteration/continue=].
+    1.  If |impression|'s [=impression/Conversion Sites=] [=set/contains=] |site|:
 
-    1.  If the [=set/size=] of |impression|'s [=impression/Conversion Sites=]
-        is greater than one,
-        [=set/remove|remove=] |site| from |impression|'s [=impression/Conversion Sites=]
-        and [=iteration/continue=].
+        1.  [=set/Remove=] |site| from |impression|'s [=impression/Conversion Sites=].
 
-    1.  Otherwise, [=set/remove=] |impression| from the [=impression store=].
+        1.  If |impression|'s [=impression/Conversion Sites=] [=set/is empty=],
+            [=set/remove=] |impression| from the [=impression store=] and
+            [=iteration/continue=].
+
+    1.  If |impression|'s [=impression/Conversion Callers=] [=set/contains=] |site|:
+
+        1.  [=set/Remove=] |site| from |impression|'s [=impression/Conversion Callers=].
+
+        1.  If |impression|'s [=impression/Conversion Callers=] [=set/is empty=],
+            [=set/remove=] |impression| from the [=impression store=] and
+            [=iteration/continue=].
 
 <p class=note>This process does not remove impressions
 that are saved with an empty [=set=] of [=impression/Conversion Sites=].
@@ -2884,7 +2893,7 @@ at the time they are saved.
 
 When clearing site data at the request of a [=site=],
 through the use of the [:Clear-Site-Data:] header,
-a [=user agent=] only [=clear impressions for a conversion site|removes impressions=],
+a [=user agent=] only [=clear impressions for a site|removes impressions=],
 without altering either the [=privacy budget store=]
 or the [=epoch start store=] for affected [=sites=].
 

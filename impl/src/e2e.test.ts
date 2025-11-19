@@ -19,11 +19,7 @@ interface TestCase {
   events: Event[];
 }
 
-type Event = {
-  seconds: number;
-  site: string;
-  intermediarySite?: string | undefined;
-} & (SaveImpression | MeasureConversion);
+type Event = SaveImpression | MeasureConversion | ClearImpressionsForSite;
 
 type ExpectedError =
   | "RangeError"
@@ -35,14 +31,26 @@ type ExpectedError =
 
 interface SaveImpression {
   event: "saveImpression";
+  seconds: number;
+  site: string;
+  intermediarySite?: string | undefined;
   options: AttributionImpressionOptions;
   expectedError?: ExpectedError;
 }
 
 interface MeasureConversion {
   event: "measureConversion";
+  seconds: number;
+  site: string;
+  intermediarySite?: string | undefined;
   options: AttributionConversionOptions;
   expected: number[] | ExpectedError;
+}
+
+interface ClearImpressionsForSite {
+  event: "clearImpressionsForSite";
+  seconds: number;
+  site: string;
 }
 
 function assertThrows(
@@ -137,6 +145,9 @@ function runTest(
 
         break;
       }
+      case "clearImpressionsForSite":
+        backend.clearImpressionsForSite(event.site);
+        break;
     }
   }
 }
