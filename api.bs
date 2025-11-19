@@ -2103,7 +2103,7 @@ optional keys are populated the same way as the corresponding
   <dd>
     A [=structured header/string=] containing the [=potentially trustworthy URL=]
     to which the resulting report, if any, will be `POST`ed. The URL may be
-    relative to the request URL, and its [=url/scheme=] must be "`http`" or "`https`".
+    relative to the response URL. Its [=url/scheme=] must be "`http`" or "`https`".
     This key is required.
   </dd>
 </dl>
@@ -2119,7 +2119,7 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
 1.  Let |aggregationService| be |dict|["<code>[=measure-conversion/aggregation-service=]</code>"] [=map/with default=] `undefined`.
 1.  If |aggregationService| is not a [=structured header/string=], return an error.
 1.  Let |histogramSize| be |dict|["<code>[=measure-conversion/histogram-size=]</code>"] [=map/with default=] `undefined`.
-1.  If |histogramSize| is not a positive [=structured header/integer=], return an error.
+1.  If |histogramSize| is not a positive [=structured header/integer=] in the [=32-bit unsigned integer=] range, return an error.
 1.  Let |reportUrlString| be |dict|["<code>[=measure-conversion/report-url=]</code>"] [=map/with default=] `undefined`.
 1.  If |reportUrlString| is not a [=structured header/string=], return an error.
 1.  Let |reportUrl| be the result of applying the [=URL parser=] to |reportUrlString|, with |baseUrl|.
@@ -2142,8 +2142,8 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
 1.  If |dict|["<code>[=measure-conversion/match-values=]</code>"] [=map/exists=]:
      1.  Let |matchValues| be its [=map/value=].
      1.  If |matchValues| is not an [=structured header/inner list=], or if any of
-         |matchValues|' [=list/items=] is not a non-negative [=structured header/integer=],
-         return an error.
+         |matchValues|' [=list/items=] is not a [=structured header/integer=] in
+         the [=32-bit unsigned integer=] range, return an error.
      1.  Set |opts|.{{AttributionConversionOptions/matchValues}} to |matchValues|.
 1.  If |dict|["<code>[=measure-conversion/impression-sites=]</code>"] [=map/exists=]:
      1.  Let |impressionSites| be its [=map/value=].
@@ -2165,11 +2165,13 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
      1.  Set |opts|.{{AttributionConversionOptions/credit}} to |credit|.
 1.  If |dict|["<code>[=measure-conversion/value=]</code>"] [=map/exists=]:
      1.  Let |value| be its [=map/value=].
-     1.  If |value| is not a positive [=structured header/integer=], return an error.
+     1.  If |value| is not a positive [=structured header/integer=] in the
+         [=32-bit unsigned integer=] range, return an error.
      1.  Set |opts|.{{AttributionConversionOptions/value}} to |value|.
 1.  If |dict|["<code>[=measure-conversion/max-value=]</code>"] [=map/exists=]:
      1.  Let |maxValue| be its [=map/value=].
-     1.  If |maxValue| is not a positive [=structured header/integer=], return an error.
+     1.  If |maxValue| is not a positive [=structured header/integer=] in the
+         [=32-bit unsigned integer=] range, return an error.
      1.  Set |opts|.{{AttributionConversionOptions/maxValue}} to |maxValue|.
 1.  Return (|opts|, |reportUrl|).
 
