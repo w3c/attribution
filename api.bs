@@ -2002,6 +2002,10 @@ and [=response=] |response|, run these steps:
 
 1.  If |request|'s [=request/client=] is not a [=secure context=], return.
 
+1.  If |response|'s [=response/URL=] is not a [=potentially trustworthy URL=], return.
+
+1.  If |response|'s [=response/URL=]'s [=url/scheme=] is not not "`http`" or "`https`", return.
+
 1.  Let |saveImpressionHeader| be the result of [=header list/get|getting=] <code>[:Save-Impression:]</code> from |response|'s [=response/header list=].
 
 1.  If |saveImpressionHeader| is null, return.
@@ -2011,8 +2015,6 @@ and [=response=] |response|, run these steps:
 1.  If |impressionOptions| is an error, return.
 
 1.  {{Attribution/saveImpression(options)|Save}} |impressionOptions|.
-
-Issue: Allow processing only when |response|'s [=response/URL=] is a [=potentially trustworthy URL=] and HTTP-family.
 
 Issue: Figure out how to handle header-processing on intermediary responses during redirect.
 
