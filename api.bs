@@ -2176,13 +2176,13 @@ a [=URL=] |url|, and an [=environment settings object=] |settings|:
     ::  "`cors`"
     :   [=request/cache mode=]
     ::  "`no-store`"
+    :   [=request/keepalive=]
+    ::  true
 1. [=Fetch=] |request|, optionally retrying in the event of an error.
 
 Issue: Should the request use a more specific content-type?
 
 Issue: What is the correct [=request/credentials mode=]?
-
-Issue: Should the request use [=request/keepalive=]?
 
 </div>
 
