@@ -74,6 +74,23 @@ runTests([
   { name: "histogram-index-not-integer", input: "histogram-index=1.2" },
 
   {
+    name: "valid-histogram-index-eq-32-bit-max",
+    input: "histogram-index=4294967295",
+    expected: {
+      histogramIndex: 4294967295,
+      matchValue: 0,
+      conversionSites: [],
+      conversionCallers: [],
+      lifetimeDays: 30,
+      priority: 0,
+    },
+  },
+  {
+    name: "histogram-index-gt-32-bit-max",
+    input: "histogram-index=4294967296",
+  },
+
+  {
     name: "conversion-sites-wrong-type",
     input: "conversion-sites=a, histogram-index=1",
   },
@@ -97,6 +114,22 @@ runTests([
     name: "match-value-not-integer",
     input: "match-value=1.2, histogram-index=1",
   },
+  {
+    name: "valid-match-value-eq-32-bit-max",
+    input: "match-value=4294967295, histogram-index=1",
+    expected: {
+      histogramIndex: 1,
+      matchValue: 4294967295,
+      conversionSites: [],
+      conversionCallers: [],
+      lifetimeDays: 30,
+      priority: 0,
+    },
+  },
+  {
+    name: "match-value-gt-32-bit-max",
+    input: "match-value=4294967296, histogram-index=1",
+  },
 
   {
     name: "lifetime-days-wrong-type",
@@ -111,7 +144,51 @@ runTests([
     input: "lifetime-days=1.2, histogram-index=1",
   },
   { name: "lifetime-days-zero", input: "lifetime-days=0, histogram-index=1" },
+  {
+    name: "valid-lifetime-days-maximal-clamped",
+    input: "lifetime-days=999999999999999, histogram-index=1",
+    expected: {
+      histogramIndex: 1,
+      matchValue: 0,
+      conversionSites: [],
+      conversionCallers: [],
+      lifetimeDays: 4294967295,
+      priority: 0,
+    },
+  },
 
   { name: "priority-wrong-type", input: "priority=a, histogram-index=1" },
   { name: "priority-not-integer", input: "priority=1.2, histogram-index=1" },
+  {
+    name: "valid-priority-eq-32-bit-max",
+    input: "priority=2147483647, histogram-index=1",
+    expected: {
+      histogramIndex: 1,
+      matchValue: 0,
+      conversionSites: [],
+      conversionCallers: [],
+      lifetimeDays: 30,
+      priority: 2147483647,
+    },
+  },
+  {
+    name: "valid-priority-eq-32-bit-min",
+    input: "priority=-2147483648, histogram-index=1",
+    expected: {
+      histogramIndex: 1,
+      matchValue: 0,
+      conversionSites: [],
+      conversionCallers: [],
+      lifetimeDays: 30,
+      priority: -2147483648,
+    },
+  },
+  {
+    name: "priority-gt-32-bit-max",
+    input: "priority=2147483648, histogram-index=1",
+  },
+  {
+    name: "priority-lt-32-bit-min",
+    input: "priority=-2147483649, histogram-index=1",
+  },
 ]);
