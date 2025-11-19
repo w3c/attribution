@@ -521,7 +521,7 @@ and impressions are not scoped to a single aggregation service.
 enum AttributionAggregationProtocol { "dap-15-histogram", "tee-00" };
 
 dictionary AttributionAggregationService {
-  required DOMString protocol;
+  required AttributionAggregationProtocol protocol;
 };
 
 [SecureContext, Exposed=Window]
