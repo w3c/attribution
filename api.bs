@@ -2154,6 +2154,38 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
 
 </div>
 
+<div algorithm>
+To <dfn noexport>send a report</dfn> given a [=byte sequence=] |report|,
+a [=URL=] |url|, and an [=environment settings object=] |settings|:
+
+1. [=Assert=]: |url| is a [=potentially trustworthy URL=].
+1. [=Assert=]: |url|'s [=url/scheme=] is "`http`" or "`https`".
+1. Let |headers| be a new [=header list=] containing a [=header=] named `"Content-Type"` whose value is `"application/octet-stream"`.
+1. Let |request| be a new [=request=] with the following properties:
+    :   [=request/method=]
+    ::  "`POST`"
+    :   [=request/URL=]
+    ::  |url|
+    :   [=request/header list=]
+    ::  |headers|
+    :   [=request/body=]
+    ::  |report|
+    :   [=request/client=]
+    ::  |settings|
+    :   [=request/mode=]
+    ::  "`cors`"
+    :   [=request/cache mode=]
+    ::  "`no-store`"
+1. [=Fetch=] |request|, optionally retrying in the event of an error.
+
+Issue: Should the request use a more specific content-type?
+
+Issue: What is the correct [=request/credentials mode=]?
+
+Issue: Should the request use [=request/keepalive=]?
+
+</div>
+
 
 # Implementation Considerations # {#implementation-considerations}
 
