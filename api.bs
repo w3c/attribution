@@ -518,7 +518,7 @@ and impressions are not scoped to a single aggregation service.
 </div>
 
 <xmp class=idl>
-enum AttributionAggregationProtocol { "dap-15-histogram", "tee-00" };
+enum AttributionAggregationProtocol { "dap-15-histogram" };
 
 dictionary AttributionAggregationService {
   required AttributionAggregationProtocol protocol;
@@ -560,8 +560,6 @@ used by different [=aggregation services=]. This document defines two protocols:
 <dl dfn-for=AttributionAggregationProtocol dfn-type=enum-value>
   <dt><dfn>dap-15-histogram</dfn></dt>
   <dd>A DAP-based protocol [[DAP]] that uses [=MPC=]; see [[#s-mpc]].</dd>
-  <dt><dfn>tee-00</dfn></dt>
-  <dd>A protocol for submission to a [=TEE=]; see [[#s-tee]].</dd>
 </dl>
 
 ## Saving Impressions ## {#save-impression-api}
@@ -1533,10 +1531,6 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
             ::  Perform the following steps:
                 1.  Let |encryptedReport| be the result of invoking <a>construct a DAP report</a>,
                     given |validatedOptions|, |topLevelSite|, |now|, and |report|.
-
-            :   <a enum-value for=AttributionAggregationProtocol>`tee-00`</a>
-            ::  Perform the following steps:
-                1.  TODO: see [#130](https://github.com/w3c/attribution/issues/130)
          </dl>
      1.  Let |result| be a {{AttributionConversionResult}} with the following items:
           : {{AttributionConversionResult/report}}
@@ -2243,15 +2237,6 @@ and a [=list=] of [=integers=] |histogram|:
 1.  Return |report|.
 
 </div>
-
-
-## Trusted Execution Environments ## {#s-tee}
-
-A <dfn lt=TEE>Trusted Execution Environment (TEE)</dfn> uses specialized hardware
-to ensure that computation is isolated
-from other programs that run on the same hardware.
-
-TODO
 
 
 ## Anti-Replay Requirements ## {#anti-replay}
