@@ -1,277 +1,254 @@
 <!doctype html>
 <html lang="en" dir="ltr">
-  <head>
-    <meta charset="utf-8" />
-    <title>Attribution Simulator</title>
-    <style>
-      * {
-        box-sizing: border-box;
+
+<head>
+  <meta charset="utf-8" />
+  <title>Attribution Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    dl {
+      display: grid;
+      grid-gap: 0.25em;
+      grid-template-columns: max-content;
+
+      output & dt::after {
+        content: " = ";
       }
 
-      dl {
-        display: grid;
-        grid-gap: 0.25em;
-        grid-template-columns: max-content;
+      dd {
+        grid-column-start: 2;
 
-        output & dt::after {
-          content: " = ";
-        }
-
-        dd {
-          grid-column-start: 2;
-
-          input,
-          select {
-            width: 100%;
-          }
-        }
-      }
-
-      body,
-      div,
-      nav {
-        display: flex;
-        gap: 1em;
-        width: 100%;
-        max-width: 1500px;
-      }
-
-      body {
-        flex-direction: column;
-        margin: 0;
-        padding: 0.5em;
-      }
-
-      form:not(.simple),
-      section {
-        border: 1px solid #000;
-        padding: 3px 1ch;
-        flex: 1;
-      }
-
-      form.simple {
-        margin: 0;
-      }
-
-      form {
-        max-height: 36lh;
-        display: flex;
-        flex-direction: column;
-
-        output {
-          margin: 3px 0;
-          overflow-y: auto;
-
-          h3 {
-            position: sticky;
-            background-color: #ddd;
-            top: 0;
-            padding: 3px 1ch;
-          }
+        input,
+        select {
+          width: 100%;
         }
       }
+    }
 
-      line {
-        margin: 0.5lh 1ch;
-      }
+    body,
+    div,
+    nav {
+      display: flex;
+      gap: 1em;
+      width: 100%;
+      max-width: 1500px;
+    }
 
-      #db {
-        max-height: 32lh;
+    body {
+      flex-direction: column;
+      margin: 0;
+      padding: 0.5em;
+    }
+
+    form:not(.simple),
+    section {
+      border: 1px solid #000;
+      padding: 3px 1ch;
+      flex: 1;
+    }
+
+    form.simple {
+      margin: 0;
+    }
+
+    form {
+      max-height: 36lh;
+      display: flex;
+      flex-direction: column;
+
+      output {
+        margin: 3px 0;
         overflow-y: auto;
-      }
 
-      table {
-        border-collapse: collapse;
-        width: 100%;
-
-        thead {
+        h3 {
           position: sticky;
           background-color: #ddd;
           top: 0;
-        }
-
-        th,
-        td {
           padding: 3px 1ch;
         }
-
-        td:nth-child(n + 4):nth-child(-n + 7) {
-          text-align: right;
-        }
-
-        tr:nth-child(2n) {
-          background-color: #eee;
-        }
       }
-    </style>
-  </head>
+    }
 
-  <body>
-    <nav>
-      <section>
-        <form id="time" class="simple">
-          <h2>Time: <time></time></h2>
-          <line
-            ><button>Advance</button> by
-            <label
-              ><input
-                id="days"
-                type="number"
-                min="0"
-                value="1"
-                step="0.25"
-                size="6"
-              />
-              days</label
-            >
-          </line>
-        </form>
-        <form id="clear-as-user" class="simple">
-          <line>
-            <input
-              name="sites"
-              size="40"
-              placeholder="site.example (empty = all sites)"
-            />
-            <label
-              ><input type="checkbox" name="forget-visits" /> Forget
-              Visits</label
-            >
-            <button>Clear Site Data as User</button>
-          </line>
-        </form>
-        <form id="clear-as-site" class="simple">
-          <line>
-            <input name="site" size="40" placeholder="site.example" required />
-            <button>Clear Site Data as Site</button>
-          </line>
-        </form>
-        <line id="last-clear" style="display: none"
-          ><a href="https://w3c.github.io/attribution/#last-clear"
-            >Last history clear</a
-          >: <time></time
-        ></line>
-      </section>
-      <section>
-        <h2>
-          <a href="https://w3c.github.io/attribution/#s-epoch-start"
-            >Epoch Starts</a
-          >
-        </h2>
-        <dl id="epochStarts"></dl>
-      </section>
-      <section>
-        <h2>
-          <a href="https://w3c.github.io/attribution/#dp-budget"
-            >Privacy Budget</a
-          >
-          Entries (&mu;&epsi;)
-        </h2>
-        <dl id="privacyBudgetEntries"></dl>
-      </section>
-    </nav>
-    <div>
-      <form id="saveImpression">
-        <h2>
-          <a href="https://w3c.github.io/attribution/#save-impression-api"
-            >Save Impression</a
-          >
-        </h2>
-        <dl>
-          <dt><label for="impressionSite">Impression Site</label></dt>
-          <dd><input id="impressionSite" value="publisher.example" /></dd>
-          <dt><label for="impressionIntermediary">Intermediary Site</label></dt>
-          <dd><input id="impressionIntermediary" /></dd>
-          <dt><label for="histogramIndex">Histogram Index</label></dt>
-          <dd>
-            <input type="number" required id="histogramIndex" />
-          </dd>
-          <dt><label for="matchValue">Match Value</label></dt>
-          <dd><input type="number" id="matchValue" /></dd>
-          <dt><label for="lifetimeDays">Lifetime Days</label></dt>
-          <dd><input type="number" id="lifetimeDays" /></dd>
-          <dt><label for="priority">Priority</label></dt>
-          <dd><input type="number" id="priority" /></dd>
-          <dt><label for="conversionSites">Conversion Sites</label></dt>
-          <dd><input id="conversionSites" /></dd>
-          <dt><label for="conversionCallers">Conversion Callers</label></dt>
-          <dd><input id="conversionCallers" /></dd>
-        </dl>
-        <button>Save Impression</button>
-        <output>
-          <h3>Results</h3>
-          <ol></ol>
-        </output>
-      </form>
-      <form id="measureConversion">
-        <h2>
-          <a href="https://w3c.github.io/attribution/#measure-conversion-api"
-            >Measure Conversion</a
-          >
-        </h2>
-        <dl>
-          <dt><label for="conversionSite">Conversion Site</label></dt>
-          <dd>
-            <input id="conversionSite" value="advertiser.example" />
-          </dd>
-          <dt><label for="conversionIntermediary">Intermediary Site</label></dt>
-          <dd><input id="conversionIntermediary" /></dd>
-          <dt><label for="histogramSize">Histogram Size</label></dt>
-          <dd><input type="number" required id="histogramSize" /></dd>
-          <dt><label for="lookbackDays">Lookback Days</label></dt>
-          <dd><input type="number" id="lookbackDays" /></dd>
-          <dt><label for="matchValues">Match Values</label></dt>
-          <dd>
-            <input id="matchValues" pattern="^\s*([0-9]+)(\s+[0-9]+)*\s*$" />
-          </dd>
-          <dt><label for="credit">Credit</label></dt>
-          <dd>
-            <input
-              id="credit"
-              pattern="^\s*([0-9]+(\.[0-9]+)?)(\s+[0-9]+(\.[0-9]+)?)*\s*$"
-              value="1"
-            />
-          </dd>
-          <dt><label for="value">Value</label></dt>
-          <dd><input type="number" id="value" /></dd>
-          <dt><label for="maxValue">Max Value</label></dt>
-          <dd><input type="number" id="maxValue" /></dd>
-          <dt><label for="epsilon">Epsilon</label></dt>
-          <dd>
-            <input type="number" id="epsilon" />
-          </dd>
-          <dt><label for="impressionSites">Impression Sites</label></dt>
-          <dd><input id="impressionSites" /></dd>
-          <dt><label for="impressionCallers">Impression Callers</label></dt>
-          <dd><input id="impressionCallers" /></dd>
-        </dl>
-        <button>Measure Conversion</button>
-        <output>
-          <h3>Results</h3>
-          <ol></ol>
-        </output>
-      </form>
-    </div>
+    line {
+      margin: 0.5lh 1ch;
+    }
+
+    #db {
+      max-height: 32lh;
+      overflow-y: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+
+      thead {
+        position: sticky;
+        background-color: #ddd;
+        top: 0;
+      }
+
+      th,
+      td {
+        padding: 3px 1ch;
+      }
+
+      td:nth-child(n + 4):nth-child(-n + 7) {
+        text-align: right;
+      }
+
+      tr:nth-child(2n) {
+        background-color: #eee;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav>
     <section>
-      <h2>Impression Database</h2>
-      <div id="db">
-        <table>
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>Impression Site</th>
-              <th>Intermediary Site</th>
-              <th>Histogram Index</th>
-              <th>Match Value</th>
-              <th>Lifetime Days</th>
-              <th>Priority</th>
-              <th>Conversion Sites</th>
-              <th>Conversion Callers</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <form id="time" class="simple">
+        <div class="time-controls">
+          <label>Time: <time></time></label>
+          <line>
+            <button>Advance</button> by
+            <label>
+              <input id="days" type="number" min="0" value="1" step="0.25" size="6" />
+              days
+            </label>
+          </line>
+        </div>
+      </form>
+
+      <form id="clear-as-user" class="simple">
+        <line>
+          <input name="sites" size="40" placeholder="site.example (empty = all sites)" />
+          <label><input type="checkbox" name="forget-visits" /> Forget
+            Visits</label>
+          <button>Clear Site Data as User</button>
+        </line>
+      </form>
+      <form id="clear-as-site" class="simple">
+        <line>
+          <input name="site" size="40" placeholder="site.example" required />
+          <button>Clear Site Data as Site</button>
+        </line>
+      </form>
+      <line id="last-clear" style="display: none"><a href="https://w3c.github.io/attribution/#last-clear">Last history
+          clear</a>: <time></time></line>
     </section>
-  </body>
+    <section>
+      <h2>
+        <a href="https://w3c.github.io/attribution/#s-epoch-start">Epoch Starts</a>
+      </h2>
+      <dl id="epochStarts"></dl>
+    </section>
+    <section>
+      <h2>
+        <a href="https://w3c.github.io/attribution/#dp-budget">Privacy Budget</a>
+        Entries (&mu;&epsi;)
+      </h2>
+      <dl id="privacyBudgetEntries"></dl>
+    </section>
+  </nav>
+  <div>
+    <form id="saveImpression">
+      <h2>
+        <a href="https://w3c.github.io/attribution/#save-impression-api">Save Impression</a>
+      </h2>
+      <dl>
+        <dt><label for="impressionSite">Impression Site</label></dt>
+        <dd><input id="impressionSite" value="publisher.example" /></dd>
+        <dt><label for="impressionIntermediary">Intermediary Site</label></dt>
+        <dd><input id="impressionIntermediary" /></dd>
+        <dt><label for="histogramIndex">Histogram Index</label></dt>
+        <dd>
+          <input type="number" required id="histogramIndex" />
+        </dd>
+        <dt><label for="matchValue">Match Value</label></dt>
+        <dd><input type="number" id="matchValue" /></dd>
+        <dt><label for="lifetimeDays">Lifetime Days</label></dt>
+        <dd><input type="number" id="lifetimeDays" /></dd>
+        <dt><label for="priority">Priority</label></dt>
+        <dd><input type="number" id="priority" /></dd>
+        <dt><label for="conversionSites">Conversion Sites</label></dt>
+        <dd><input id="conversionSites" /></dd>
+        <dt><label for="conversionCallers">Conversion Callers</label></dt>
+        <dd><input id="conversionCallers" /></dd>
+      </dl>
+      <button>Save Impression</button>
+      <output>
+        <h3>Results</h3>
+        <ol></ol>
+      </output>
+    </form>
+    <form id="measureConversion">
+      <h2>
+        <a href="https://w3c.github.io/attribution/#measure-conversion-api">Measure Conversion</a>
+      </h2>
+      <dl>
+        <dt><label for="conversionSite">Conversion Site</label></dt>
+        <dd>
+          <input id="conversionSite" value="advertiser.example" />
+        </dd>
+        <dt><label for="conversionIntermediary">Intermediary Site</label></dt>
+        <dd><input id="conversionIntermediary" /></dd>
+        <dt><label for="histogramSize">Histogram Size</label></dt>
+        <dd><input type="number" required id="histogramSize" /></dd>
+        <dt><label for="lookbackDays">Lookback Days</label></dt>
+        <dd><input type="number" id="lookbackDays" /></dd>
+        <dt><label for="matchValues">Match Values</label></dt>
+        <dd>
+          <input id="matchValues" pattern="^\s*([0-9]+)(\s+[0-9]+)*\s*$" />
+        </dd>
+        <dt><label for="credit">Credit</label></dt>
+        <dd>
+          <input id="credit" pattern="^\s*([0-9]+(\.[0-9]+)?)(\s+[0-9]+(\.[0-9]+)?)*\s*$" value="1" />
+        </dd>
+        <dt><label for="value">Value</label></dt>
+        <dd><input type="number" id="value" /></dd>
+        <dt><label for="maxValue">Max Value</label></dt>
+        <dd><input type="number" id="maxValue" /></dd>
+        <dt><label for="epsilon">Epsilon</label></dt>
+        <dd>
+          <input type="number" id="epsilon" />
+        </dd>
+        <dt><label for="impressionSites">Impression Sites</label></dt>
+        <dd><input id="impressionSites" /></dd>
+        <dt><label for="impressionCallers">Impression Callers</label></dt>
+        <dd><input id="impressionCallers" /></dd>
+      </dl>
+      <button>Measure Conversion</button>
+      <output>
+        <h3>Results</h3>
+        <ol></ol>
+      </output>
+    </form>
+  </div>
+  <section>
+    <h2>Impression Database</h2>
+    <div id="db">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Impression Site</th>
+            <th>Intermediary Site</th>
+            <th>Histogram Index</th>
+            <th>Match Value</th>
+            <th>Lifetime Days</th>
+            <th>Priority</th>
+            <th>Conversion Sites</th>
+            <th>Conversion Callers</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</body>
+
 </html>
