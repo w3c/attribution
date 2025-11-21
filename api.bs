@@ -2016,8 +2016,6 @@ and [=response=] |response|, run these steps:
 
 1.  {{Attribution/saveImpression(options)|Save}} |impressionOptions|.
 
-Issue: Figure out how to handle header-processing on intermediary responses during redirect.
-
 Issue: {{Attribution/saveImpression(options)}} can't really be called directly
 here, as it assumes the existence of a script context with a value for [=this=].
 We need to refactor it work in an HTTP context: The [=impression site=] will be
