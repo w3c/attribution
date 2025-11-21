@@ -1402,14 +1402,21 @@ and a [=moment=] |now|:
 <div algorithm>
 The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are:
 
-1.  Let |realm| be [=this=]'s [=relevant realm=].
-1.  Let |window| be [=this=]'s [=relevant global object=].
-1.  [=Assert=]: |window| is a {{Window}}.
-1.  If |window|'s [=associated Document=] is not
-    [=allowed to use=] the [=policy-controlled feature=] named
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
+1.  [=Assert=]: |implicitInputs| is not null.
+1.  Return the result of running [=save an impression=] with |options| and |implicitInputs|.
+
+</div>
+
+<div algorithm>
+To <dfn>save an impression</dfn> given {{AttributionImpressionOptions}} |options|
+and [=implicit API inputs=] |implicitInputs|:
+
+1.  Let |document| be |implicitInputs|'s [=implicit API inputs/associated document=].
+1.  Let |realm| be |document|'s [=relevant realm=].
+1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/save-impression}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
-1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -1478,16 +1485,20 @@ The <dfn>implicit API inputs</dfn> is a [=struct=] with the following fields:
 <dfn>Top-Level Site</dfn>: A [=site=].
 <dfn>Intermediary Site</dfn>: A [=site=] or `undefined`.
 <dfn>Timestamp</dfn>: A [=moment=].
+<dfn>Associated Document</dfn>: A {{Document}}.
 </pre>
 </div>
 
 <div algorithm>
-To <dfn>obtain the implicit API inputs</dfn> from [=this=]:
+To <dfn>obtain the implicit API inputs</dfn> from [=realm=] |realm| with
+optional [=origin=] (default null):
 
-1.  Let |settings| be [=this=]'s [=relevant settings object=].
+1.  Let |window| be |realm|'s [=realm/global object=].
+1.  If |window| is not a {{Window}}, return null.
+1.  Let |settings| be |realm|'s [=realm/settings object=].
 1.  Let |timestamp| be |settings|' [=environment settings object/current wall time=].
 1.  Let |topLevelOrigin| be |settings|' [=environment/top-level origin=].
-1.  Let |origin| be |settings|' [=environment settings object/origin=].
+1.  If |origin| is null, set |origin| to |settings|' [=environment settings object/origin=].
 1.  Let |topLevelSite| be the result of [=obtain a site|obtaining a site=] from |topLevelOrigin|.
 1.  Let |intermediarySite| be:
     1.   a value of `undefined` if |origin| is [=same site=] with |topLevelOrigin|,
@@ -1499,6 +1510,8 @@ To <dfn>obtain the implicit API inputs</dfn> from [=this=]:
     ::  |intermediarySite|
     :   [=implicit API inputs/timestamp=]
     ::  |timestamp|
+    :   [=implicit API inputs/associated document=]:
+    ::  |window|'s [=associated document=]
 
 </div>
 
@@ -1510,14 +1523,13 @@ asynchronously, queuing work on the <dfn>Attribution [=task source=]</dfn>.
 <div algorithm>
 The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps are:
 
-1.  Let |realm| be [=this=]'s [=relevant realm=].
-1.  Let |window| be [=this=]'s [=relevant global object=].
-1.  [=Assert=]: |window| is a {{Window}}.
-1.  If |window|'s [=associated Document=] is not
-    [=allowed to use=] the [=policy-controlled feature=] named
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
+1.  [=Assert=]: |implicitInputs| is not null.
+1.  Let |document| be |implicitInputs|'s [=implicit API inputs/associated document=].
+1.  Let |realm| be |document|'s [=relevant realm=].
+1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
-1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
 1.  Let |validatedOptions| be the result of
     [=validate AttributionConversionOptions|validating=] |options|,
     returning [=a promise rejected with=] any thrown reason.
@@ -2006,6 +2018,11 @@ and [=response=] |response|, run these steps:
 
 1.  If |response|'s [=response/URL=]'s [=url/scheme=] is not not "`http`" or "`https`", return.
 
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from |request|'s [=request/client=]
+    with |response|'s [=response/URL=]'s [=url/origin=].
+
+1.  If |implicitInputs| is null, return.
+
 1.  Let |saveImpressionHeader| be the result of [=header list/get|getting=] <code>[:Save-Impression:]</code> from |response|'s [=response/header list=].
 
 1.  If |saveImpressionHeader| is null, return.
@@ -2014,15 +2031,7 @@ and [=response=] |response|, run these steps:
 
 1.  If |impressionOptions| is an error, return.
 
-1.  {{Attribution/saveImpression(options)|Save}} |impressionOptions|.
-
-Issue: {{Attribution/saveImpression(options)}} can't really be called directly
-here, as it assumes the existence of a script context with a value for [=this=].
-We need to refactor it work in an HTTP context: The [=impression site=] will be
-the [=site=] corresponding to the top-level page, and the [=intermediary site=]
-will be the [=site=] corresponding to |response|'s [=response/URL=]. This
-probably entails using |request|'s [=request/client=] and/or |request|'s
-[=request/origin=].
+1.  [=save an impression|Save=] |impressionOptions| with |implicitInputs|.
 
 </div>
 
@@ -3108,6 +3117,8 @@ urlPrefix: https://w3ctag.github.io/privacy-principles/; type: dfn;
 urlPrefix: https://www.w3.org/TR/fingerprinting-guidance/; type: dfn;
     text: fingerprint; url: #dfn-browser-fingerprinting
     text: fingerprinting; url: #dfn-browser-fingerprinting
+urlPrefix:https://tc39.es/ecma262/#;type:dfn;spec:ecma-262
+    url:realm;text:realm
 </pre>
 <pre class=anchors>
 spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
