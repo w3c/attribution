@@ -1530,8 +1530,8 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
          |implicitInputs|' [=implicit API inputs/top-level site=],
          |implicitInputs|' [=implicit API inputs/intermediary site=], and
          |implicitInputs|' [=implicit API inputs/timestamp=].
-     1.  Let |protocol| be the result of [=map/getting=] |validatedOptions|'s [=validated conversion options/aggregation service URL=] from [=aggregation services=].
-     1.  Switch on the value of |protocol|:
+     1.  Let |aggregationService| be |validatedOptions|'s [=validated conversion options/aggregation service=].
+     1.  Switch on the value of |aggregationService|.{{AttributionAggregationService/protocol}}:
          <dl class="switch">
             :   <a enum-value for=AttributionAggregationProtocol>`dap-15-histogram`</a>
             ::  Perform the following steps:
