@@ -1403,21 +1403,13 @@ and a [=moment=] |now|:
 The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are:
 
 1.  Let |realm| be [=this=]'s [=relevant realm=].
-1.  If [=this=]'s [=relevant global object=]'s [=associated Document=] is not
+1.  Let |window| be [=this=]'s [=relevant global object=].
+1.  [=Assert=]: |window| is a {{Window}}.
+1.  If |window|'s [=associated Document=] is not
     [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/save-impression}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
-1.  Let |settings| be [=this=]'s [=relevant settings object=].
-1.  Collect the implicit API inputs from |settings|:
-    1.  Let |timestamp| be |settings|' [=environment settings object/current wall time=].
-    1.  The [=impression site=] |site| is set to the result of
-        [=obtain a site|obtaining a site=] from the [=top-level origin=].
-    1.  The [=intermediary site=] |intermediarySite| is set to
-        1.   a value of `undefined` if the [=origin=] is [=same site=]
-             with the [=top-level origin=],
-        1.   otherwise, the result of
-             [=obtain a site|obtaining a site=]
-             from |settings|' [=environment settings object/origin=].
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -1449,15 +1441,15 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
          :   [=impression/Match Value=]
          ::  |options|.{{AttributionImpressionOptions/matchValue}}
          :   [=impression/Impression Site=]
-         ::  |site|
+         ::  |implicitInputs|' [=implicit API inputs/top-level site=]
          :   [=impression/Intermediary Site=]
-         ::  |intermediarySite|
+         ::  |implicitInputs|' [=implicit API inputs/intermediary site=]
          :   [=impression/Conversion Sites=]
          ::  |conversionSites|
          :   [=impression/Conversion Callers=]
          ::  |conversionCallers|
          :   [=impression/Timestamp=]
-         ::  |timestamp|
+         ::  |implicitInputs|' [=implicit API inputs/timestamp=]
          :   [=impression/Lifetime=]
          ::  |options|.{{AttributionImpressionOptions/lifetimeDays}} [=days=]
          :   [=impression/Histogram Index=]
@@ -1479,6 +1471,37 @@ whether the API is enabled.
 
 </div>
 
+The <dfn>implicit API inputs</dfn> is a [=struct=] with the following fields:
+
+<div dfn-for="implicit API inputs">
+<pre class=simpledef>
+<dfn>Top-Level Site</dfn>: A [=site=].
+<dfn>Intermediary Site</dfn>: A [=site=] or `undefined`.
+<dfn>Timestamp</dfn>: A [=moment=].
+</pre>
+</div>
+
+<div algorithm>
+To <dfn>obtain the implicit API inputs</dfn> from [=this=]:
+
+1.  Let |settings| be [=this=]'s [=relevant settings object=].
+1.  Let |timestamp| be |settings|' [=environment settings object/current wall time=].
+1.  Let |topLevelOrigin| be |settings|' [=environment/top-level origin=].
+1.  Let |origin| be |settings|' [=environment settings object/origin=].
+1.  Let |topLevelSite| be the result of [=obtain a site|obtaining a site=] from |topLevelOrigin|.
+1.  Let |intermediarySite| be:
+    1.   a value of `undefined` if |origin| is [=same site=] with |topLevelOrigin|,
+    1.   otherwise, the result of [=obtain a site|obtaining a site=] from |origin|.
+1.  Return an [=implicit API inputs=] with the following fields:
+    :   [=implicit API inputs/top-level site=]
+    ::  |topLevelSite|
+    :   [=implicit API inputs/intermediary site=]
+    ::  |intermediarySite|
+    :   [=implicit API inputs/timestamp=]
+    ::  |timestamp|
+
+</div>
+
 ## Measure Conversion Algorithm ## {#measure-conversion-api-operation}
 
 The <a method for=Attribution>measureConversion()</a> method completes
@@ -1488,21 +1511,13 @@ asynchronously, queuing work on the <dfn>Attribution [=task source=]</dfn>.
 The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps are:
 
 1.  Let |realm| be [=this=]'s [=relevant realm=].
-1.  If [=this=]'s [=relevant global object=]'s [=associated Document=] is not
+1.  Let |window| be [=this=]'s [=relevant global object=].
+1.  [=Assert=]: |window| is a {{Window}}.
+1.  If |window|'s [=associated Document=] is not
     [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
-1.  Let |settings| be [=this=]'s [=relevant settings object=].
-1.  Collect the implicit API inputs from |settings|:
-    1.  Let |now| be |settings|' [=environment settings object/current wall time=].
-    1.  Let |topLevelSite| (the [=conversion site=]) be the result of
-        [=obtain a site|obtaining a site=] from the [=top-level origin=].
-    1.  Let |intermediarySite| be:
-        1.   a value of `undefined` if the [=origin=] is [=same site=]
-             with the [=top-level origin=],
-        1.   otherwise, the result of
-             [=obtain a site|obtaining a site=]
-             from |settings|' [=environment settings object/origin=].
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
 1.  Let |validatedOptions| be the result of
     [=validate AttributionConversionOptions|validating=] |options|,
     returning [=a promise rejected with=] any thrown reason.
@@ -1512,14 +1527,18 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
          |validatedOptions|' [=validated conversion options/histogram size=].
      1.  If the Attribution API is [[#opt-out|enabled]], set |report| to the
          result of [=do attribution and fill a histogram=] with |validatedOptions|,
-         |topLevelSite|, |intermediarySite|, and |now|.
-     1.  Let |aggregationService| be |validatedOptions|'s [=validated conversion options/aggregation service=].
-     1.  Switch on the value of |aggregationService|.{{AttributionAggregationService/protocol}}:
+         |implicitInputs|' [=implicit API inputs/top-level site=],
+         |implicitInputs|' [=implicit API inputs/intermediary site=], and
+         |implicitInputs|' [=implicit API inputs/timestamp=].
+     1.  Let |protocol| be the result of [=map/getting=] |validatedOptions|'s [=validated conversion options/aggregation service URL=] from [=aggregation services=].
+     1.  Switch on the value of |protocol|:
          <dl class="switch">
             :   <a enum-value for=AttributionAggregationProtocol>`dap-15-histogram`</a>
             ::  Perform the following steps:
                 1.  Let |encryptedReport| be the result of invoking <a>construct a DAP report</a>,
-                    given |validatedOptions|, |topLevelSite|, |now|, and |report|.
+                    given |validatedOptions|,
+                    |implicitInputs|' [=implicit API inputs/top-level site=],
+                    |implicitInputs|' [=implicit API inputs/timestamp=], and |report|.
          </dl>
      1.  Let |result| be a {{AttributionConversionResult}} with the following items:
           : {{AttributionConversionResult/report}}
