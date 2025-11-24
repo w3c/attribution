@@ -2211,19 +2211,6 @@ Issue: What is the correct [=request/credentials mode=]?
 
 ## Fetch monkey patches ## {#fetch-monkey-patches}
 
-Modify [=HTTP-network fetch=] as follows:
-
-<div algorithm=fetch-monkey-patch>
-After the step
-
-> If <var ignore>includeCredentials</var> is true, then the user agent should parse and store response `Set-Cookie` headers given |request| and |response|.
-
-add the step
-
-1. [=Handle Attribution headers=] with |request| and |response|.
-
-</div>
-
 <div algorithm>
 To <dfn noexport>handle Attribution headers</dfn> given a [=request=] |request|
 and [=response=] |response|, run these steps:
@@ -2252,6 +2239,19 @@ and [=response=] |response|, run these steps:
 1.  If |impressionOptions| is an error, return.
 
 1.  [=save an impression|Save=] |impressionOptions| with |implicitInputs|.
+
+</div>
+
+Modify [=HTTP-network fetch=] as follows:
+
+<div algorithm=fetch-monkey-patch>
+After the step
+
+> If <var ignore>includeCredentials</var> is true, then the user agent should parse and store response `Set-Cookie` headers given |request| and |response|.
+
+add the step
+
+1. [=Handle Attribution headers=] with |request| and |response|.
 
 </div>
 
