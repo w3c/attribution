@@ -288,8 +288,7 @@ is called a <dfn>conversion value</dfn>.
 A higher conversion value might be used for larger purchases
 or any outcome that is more highly valued.
 A conversion value might also be split between multiple impressions
-to split credit,
-though this capability is not presently supported in the API.
+to split credit.
 
 <!-- TODO
 * Compatibility with privacy-preserving aggregation services
