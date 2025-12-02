@@ -147,7 +147,7 @@ that does not enable tracking.
 
 The measurement of advertising performance creates new cross-site flows of information.
 That information flow creates a privacy risk or cost--
-of [cross-context recognition=]--
+of [=cross-context recognition=]--
 that needs to be justified in terms of benefits to end users.
 
 Any benefits realized by end users through the use of [=attribution=] are indirect.
