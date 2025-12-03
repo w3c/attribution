@@ -35,7 +35,7 @@
       "event": "saveImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionSites": ["a"]
+        "conversionSites": [":"]
       },
       "expectedError": {
         "error": "DOMException",
@@ -59,7 +59,7 @@
       "event": "saveImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionCallers": ["a"]
+        "conversionCallers": [":"]
       },
       "expectedError": {
         "error": "DOMException",
