@@ -1933,7 +1933,7 @@ Save-Impression: histogram-index=3, match-value=2, conversion-sites=("advertiser
 The following keys are defined, corresponding to the members of
 the {{AttributionImpressionOptions}} dictionary passed to
 <a method for=Attribution>saveImpression()</a>. Default values for omitted
-optional keys are populated the same way as the corresponding
+optional keys are treated the same way as the corresponding
 {{AttributionImpressionOptions}} field.
 
 
