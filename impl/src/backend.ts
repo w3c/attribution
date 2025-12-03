@@ -62,6 +62,12 @@ function parseSite(input: string): string {
   return site;
 }
 
+function validateSite(input: string): void {
+  if (parseSite(input) !== input) {
+    throw new TypeError("input must already be a valid site");
+  }
+}
+
 function parseSites(input: readonly string[]): Set<string> {
   const parsed = new Set<string>();
   for (const site of input) {
@@ -136,10 +142,9 @@ export class Backend {
       priority = index.DEFAULT_IMPRESSION_PRIORITY,
     }: AttributionImpressionOptions,
   ): AttributionImpressionResult {
-    impressionSite = parseSite(impressionSite);
-
+    validateSite(impressionSite);
     if (intermediarySite !== undefined) {
-      intermediarySite = parseSite(intermediarySite);
+      validateSite(intermediarySite);
     }
 
     const timestamp = this.#delegate.now();
@@ -291,10 +296,9 @@ export class Backend {
     intermediarySite: string | undefined,
     options: AttributionConversionOptions,
   ): AttributionConversionResult {
-    topLevelSite = parseSite(topLevelSite);
-
+    validateSite(topLevelSite);
     if (intermediarySite !== undefined) {
-      intermediarySite = parseSite(intermediarySite);
+      validateSite(intermediarySite);
     }
 
     const now = this.#delegate.now();
