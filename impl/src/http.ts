@@ -1,6 +1,6 @@
 import type { AttributionImpressionOptions } from "./index";
 
-import type { Dictionary } from "structured-headers";
+import type { BareItem, Dictionary, Item } from "structured-headers";
 
 import { parseDictionary } from "structured-headers";
 
@@ -9,8 +9,49 @@ const MAX_UINT32: number = 4294967295;
 const MIN_INT32: number = -2147483648;
 const MAX_INT32: number = 2147483647;
 
-function parseInnerListOfSites(dict: Dictionary, key: string): string[] {
-  const [values] = dict.get(key) ?? [[]];
+function get(dict: Dictionary, key: string): BareItem | Item[] | undefined {
+  const [value] = dict.get(key) ?? [undefined];
+  return value;
+}
+
+function getInteger(dict: Dictionary, key: string): number | undefined {
+  const value = get(dict, key);
+  if (value === undefined) {
+    return value;
+  }
+
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    throw new TypeError(`${key} must be an integer`);
+  }
+
+  return value;
+}
+
+function get32BitUnsignedInteger(
+  dict: Dictionary,
+  key: string,
+): number | undefined {
+  const value = getInteger(dict, key);
+  if (value === undefined) {
+    return value;
+  }
+
+  if (value < 0 || value > MAX_UINT32) {
+    throw new RangeError(`${key} must be in the 32-bit unsigned range`);
+  }
+
+  return value;
+}
+
+function parseInnerListOfSites(
+  dict: Dictionary,
+  key: string,
+): string[] | undefined {
+  const values = get(dict, key);
+  if (values === undefined) {
+    return values;
+  }
+
   if (!Array.isArray(values)) {
     throw new TypeError(`${key} must be an inner list`);
   }
@@ -30,64 +71,30 @@ export function parseSaveImpressionHeader(
 ): AttributionImpressionOptions {
   const dict = parseDictionary(input);
 
-  const [histogramIndex] = dict.get("histogram-index") ?? [undefined];
+  const histogramIndex = get32BitUnsignedInteger(dict, "histogram-index");
+  if (histogramIndex === undefined) {
+    throw new TypeError("histogram-index is required");
+  }
+
+  const opts: AttributionImpressionOptions = { histogramIndex };
+
+  opts.conversionSites = parseInnerListOfSites(dict, "conversion-sites");
+  opts.conversionCallers = parseInnerListOfSites(dict, "conversion-callers");
+
+  opts.matchValue = get32BitUnsignedInteger(dict, "match-value");
+
+  opts.lifetimeDays = getInteger(dict, "lifetime-days");
+  if (opts.lifetimeDays !== undefined && opts.lifetimeDays <= 0) {
+    throw new RangeError("lifetime-days must be positive");
+  }
+
+  opts.priority = getInteger(dict, "priority");
   if (
-    typeof histogramIndex !== "number" ||
-    !Number.isInteger(histogramIndex) ||
-    histogramIndex < 0 ||
-    histogramIndex > MAX_UINT32
+    opts.priority !== undefined &&
+    (opts.priority < MIN_INT32 || opts.priority > MAX_INT32)
   ) {
-    throw new RangeError(
-      "histogram-index must be an integer in the 32-bit unsigned range",
-    );
+    throw new RangeError("priority must be in the 32-bit signed range");
   }
 
-  const conversionSites = parseInnerListOfSites(dict, "conversion-sites");
-  const conversionCallers = parseInnerListOfSites(dict, "conversion-callers");
-
-  const [matchValue] = dict.get("match-value") ?? [0];
-  if (
-    typeof matchValue !== "number" ||
-    !Number.isInteger(matchValue) ||
-    matchValue < 0 ||
-    matchValue > MAX_UINT32
-  ) {
-    throw new RangeError(
-      "match-value must be an integer in the 32-bit unsigned range",
-    );
-  }
-
-  let [lifetimeDays] = dict.get("lifetime-days") ?? [30];
-  if (
-    typeof lifetimeDays !== "number" ||
-    !Number.isInteger(lifetimeDays) ||
-    lifetimeDays <= 0
-  ) {
-    throw new RangeError("lifetime-days must be a positive integer");
-  }
-
-  if (lifetimeDays > MAX_UINT32) {
-    lifetimeDays = MAX_UINT32;
-  }
-
-  const [priority] = dict.get("priority") ?? [0];
-  if (
-    typeof priority !== "number" ||
-    !Number.isInteger(priority) ||
-    priority < MIN_INT32 ||
-    priority > MAX_INT32
-  ) {
-    throw new RangeError(
-      "priority must be an integer in the 32-bit signed range",
-    );
-  }
-
-  return {
-    histogramIndex,
-    matchValue,
-    conversionSites,
-    conversionCallers,
-    lifetimeDays,
-    priority,
-  };
+  return opts;
 }
