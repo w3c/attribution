@@ -45,7 +45,7 @@
       "$comment": "Greater than CONFIG.maxConversionSitesPerImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionSites": ["a", "a", "a", "a"]
+        "conversionSites": ["a.example", "a.example", "a.example", "a.example"]
       },
       "expectedError": "RangeError"
     },
@@ -69,7 +69,12 @@
       "$comment": "Greater than CONFIG.maxConversionCallersPerImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionCallers": ["a", "a", "a", "a"]
+        "conversionCallers": [
+          "a.example",
+          "a.example",
+          "a.example",
+          "a.example"
+        ]
       },
       "expectedError": "RangeError"
     },
