@@ -1133,7 +1133,7 @@ A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items
 </dl>
 
 <div algorithm>
-To <dfn>deduct privacy budget</dfn>
+To <dfn>deduct privacy and safety budgets</dfn>
 given a [=privacy budget key=] |key|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
@@ -1905,25 +1905,19 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
         1.  If |impressions| [=set/is empty|is not empty=]:
 
+            1.  Let |quotaCountOk| be the result of invoking [=check conversion site allowance=]
+                with |topLevelSite|, |epoch|, and |uaContext|.
+
             1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
 
-            1.  Let |budgetOk| be the result of invoking [=deduct privacy budget=]
+            1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
                 with |key|, |options|' [=validated conversion options/epsilon=],
                 |options|' [=validated conversion options/value=],
                 |options|'s [=validated conversion options/max value=],
                 and null.
 
-            1.  Let |safetyOk| be the result of invoking [=check and deduct safety limit budgets for impression sites=]
-                with |epoch|,
-                |impressionSites|,
-                |topLevelSite|,
-                |uaContext|,
-                |options|' [=validated conversion options/epsilon=],
-                |options|' [=validated conversion options/value=],
-                |options|'s [=validated conversion options/max value=],
-                and null.
-
-            1.  If |budgetOk| is true and |safetyOk| is true, [=set/extend=] |matchedImpressions| with |impressions|.
+            1.  If |quotaCountOk| is true and |budgetAndSafetyOk| is true,
+                [=set/extend=] |matchedImpressions| with |impressions|.
 
 
 
@@ -1944,23 +1938,13 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
     1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
 
-    1.  Let |budgetOk| be the result of [=deduct privacy budget=]
+    1.  Let |budgetAndSafetyOk| be the result of [=deduct privacy and safety budgets=]
         with |key|, |options|' [=validated conversion options/epsilon=],
         |options|' [=validated conversion options/value=]
         |options|'s [=validated conversion options/max value=],
         and |l1Norm|.
 
-    1.  Let |safetyOk| be the result of invoking [=check and deduct safety limit budgets for impression sites=]
-        with |currentEpoch|,
-        |impressionSites|,
-        |topLevelSite|,
-        |uaContext|,
-        |options|' [=validated conversion options/epsilon=],
-        |options|' [=validated conversion options/value=],
-        |options|'s [=validated conversion options/max value=],
-        and |l1Norm|.
-
-    1.  If |budgetOk| is false or |safetyOk| is false, set |histogram| to the result of invoking
+    1.  If |budgetAndSafetyOk| is false, set |histogram| to the result of invoking
         [=create an all-zero histogram=] with |options|' [=validated conversion options/histogram size=].
 
 1.  Return |histogram|.
