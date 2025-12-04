@@ -2387,6 +2387,10 @@ By contrast, the analysis shows that *safety limits* -- which operate at global 
 excluding [=site=] from the [=privacy unit=] -- can be implemented to deliver *sound global individual
 DP guarantees* regardless of whether either assumption is satisfied.
 
+In addition to facing safety limits discussed above, an attacker using multiple colluding sites to gain
+more DP budget about users also face the practical limitation of being able to link a user across sites.
+This is limitation does not itself provide a theoretical DP benefit but does impose a significant
+challenge in practice to the attacker when the user agent has made such cross-site linking difficult.
 
 ### Browser Instances ### {#dp-instance}
 
