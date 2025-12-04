@@ -68,8 +68,17 @@ function validateSite(input: string): void {
   }
 }
 
-function parseSites(input: readonly string[]): Set<string> {
+function parseSites(
+  input: readonly string[],
+  label: string,
+  limit: number,
+): Set<string> {
   const parsed = new Set<string>();
+  if (limit !== null && input.length > limit) {
+    throw new RangeError(
+      `number of values in ${label} exceeds limit of ${limit}`,
+    );
+  }
   for (const site of input) {
     parsed.add(parseSite(site));
   }
@@ -80,10 +89,21 @@ export interface Delegate {
   readonly aggregationServices: AttributionAggregationServices;
   readonly includeUnencryptedHistogram?: boolean;
 
+  /// The maximum number of conversion callers per impression.
   readonly maxConversionSitesPerImpression: number;
+  /// The maximum number of conversion sites per impression.
   readonly maxConversionCallersPerImpression: number;
+  /// The maximum number of impression sites for conversion.
+  readonly maxImpressionSitesForConversion: number;
+  /// The maximum number of impression callers for conversion.
+  readonly maxImpressionCallersForConversion: number;
+  /// The maximum number of credit values.
   readonly maxCreditSize: number;
+  /// The maximum number of match values.
+  readonly maxMatchValues: number;
+  /// The maximum lookback in days.
   readonly maxLookbackDays: number;
+  /// The maximum size of histograms.
   readonly maxHistogramSize: number;
   readonly privacyBudgetMicroEpsilons: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
@@ -162,23 +182,16 @@ export class Backend {
     }
     lifetimeDays = Math.min(lifetimeDays, this.#delegate.maxLookbackDays);
 
-    const maxConversionSitesPerImpression =
-      this.#delegate.maxConversionSitesPerImpression;
-    if (conversionSites.length > maxConversionSitesPerImpression) {
-      throw new RangeError(
-        `conversionSites.length must be <= ${maxConversionSitesPerImpression}`,
-      );
-    }
-    const parsedConversionSites = parseSites(conversionSites);
-
-    const maxConversionCallersPerImpression =
-      this.#delegate.maxConversionCallersPerImpression;
-    if (conversionCallers.length > maxConversionCallersPerImpression) {
-      throw new RangeError(
-        `conversionCallers.length must be <= ${maxConversionCallersPerImpression}`,
-      );
-    }
-    const parsedConversionCallers = parseSites(conversionCallers);
+    const parsedConversionSites = parseSites(
+      conversionSites,
+      "conversionSites",
+      this.#delegate.maxConversionSitesPerImpression,
+    );
+    const parsedConversionCallers = parseSites(
+      conversionCallers,
+      "conversionCallers",
+      this.#delegate.maxConversionCallersPerImpression,
+    );
 
     if (matchValue < 0 || !Number.isInteger(matchValue)) {
       throw new RangeError("matchValue must be a non-negative integer");
@@ -270,6 +283,12 @@ export class Backend {
     lookbackDays = Math.min(lookbackDays, this.#delegate.maxLookbackDays);
 
     const matchValueSet = new Set<number>();
+    const maxMatchValues = this.#delegate.maxMatchValues;
+    if (matchValues.length > maxMatchValues) {
+      throw new RangeError(
+        `matchValues size must be in the range [0,${maxMatchValues}]`,
+      );
+    }
     for (const value of matchValues) {
       if (value < 0 || !Number.isInteger(value)) {
         throw new RangeError("match value must be a non-negative integer");
@@ -277,14 +296,25 @@ export class Backend {
       matchValueSet.add(value);
     }
 
+    const parsedImpressionSites = parseSites(
+      impressionSites,
+      "impressionSites",
+      this.#delegate.maxImpressionSitesForConversion,
+    );
+    const parsedImpressionCallers = parseSites(
+      impressionCallers,
+      "impressionCallers",
+      this.#delegate.maxImpressionCallersForConversion,
+    );
+
     return {
       aggregationService: aggregationServiceEntry,
       epsilon,
       histogramSize,
       lookback: days(lookbackDays),
       matchValues: matchValueSet,
-      impressionSites: parseSites(impressionSites),
-      impressionCallers: parseSites(impressionCallers),
+      impressionSites: parsedImpressionSites,
+      impressionCallers: parsedImpressionCallers,
       credit,
       value,
       maxValue,
@@ -661,7 +691,7 @@ export class Backend {
   }
 
   clearState(sites: readonly string[], forgetVisits: boolean): void {
-    const parsedSites = parseSites(sites);
+    const parsedSites = parseSites(sites, "sites", Infinity);
     if (!forgetVisits) {
       this.#zeroBudgetForSites(parsedSites);
       return;

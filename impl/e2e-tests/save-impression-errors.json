@@ -4,7 +4,9 @@
       "seconds": 1,
       "site": "publisher.example",
       "event": "saveImpression",
-      "options": { "histogramIndex": -1 },
+      "options": {
+        "histogramIndex": -1
+      },
       "expectedError": "RangeError"
     },
     {
@@ -12,7 +14,9 @@
       "site": "publisher.example",
       "event": "saveImpression",
       "$comment": "Equal to CONFIG.maxHistogramSize",
-      "options": { "histogramIndex": 5 },
+      "options": {
+        "histogramIndex": 5
+      },
       "expectedError": "RangeError"
     },
     {
