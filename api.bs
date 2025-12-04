@@ -1426,8 +1426,9 @@ and [=implicit API inputs=] |implicitInputs|:
         the [=maximum lookback=].
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionSites}} is
-        greater than an [=implementation-defined=] maximum value, return
-        [=a promise rejected with=] a {{RangeError}} in |realm|.
+        greater than the [=implementation-defined=]
+        [=maximum number of conversion sites per impression=],
+        return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Let |conversionSites| be the [=set=] that is the result
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionSites}}.
@@ -1435,8 +1436,9 @@ and [=implicit API inputs=] |implicitInputs|:
         [=a promise rejected with=] a {{"SyntaxError"}} {{DOMException}} in |realm|.
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionCallers}} is
-        greater than an [=implementation-defined=] maximum value, return
-        [=a promise rejected with=] a {{RangeError}} in |realm|.
+        greater than the [=implementation-defined=]
+        [=maximum number of conversion callers per impression=],
+        return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Let |conversionCallers| be the [=set=] that is the result
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionCallers}}.
@@ -1598,8 +1600,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     is less than or equal to 0 or is greater than [=maximum epsilon=],
     throw a {{RangeError}}.
 1.  If |options|.{{AttributionConversionOptions/histogramSize}}
-    is 0 or greater than the [=implementation-defined=] <dfn>maximum histogram size</dfn>,
-    or is greater than the <dfn ignore>maximum aggregation-service histogram size</dfn>,
+    is 0 or greater than the [=implementation-defined=] [=maximum histogram size=],
+    or is greater than the [=maximum aggregation-service histogram size=],
     if any, for |options|.{{AttributionConversionOptions/aggregationService}},
     throw a {{RangeError}}.
 1.  If |options|.{{AttributionConversionOptions/value}} is 0,
@@ -1610,7 +1612,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  Let |credit| be |options|.{{AttributionConversionOptions/credit}} if it [=map/exists=], «1» otherwise.
 1.  If |credit| [=list/is empty=], throw a {{RangeError}}.
 1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
-1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
+1.  If the [=list/size=] of |credit| exceeds the [=implementation-defined=]
+    [=maximum number of credit values=], throw a {{RangeError}}.
 1.  Let |lookback| be |options|.{{AttributionConversionOptions/lookbackDays}} [=days=]
     if it [=map/exists=], the [=maximum lookback=] [=days=] otherwise.
 1.  Set |lookback| to the [=maximum lookback=] [=days=]
@@ -1618,19 +1621,22 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  If |lookback| is 0 [=days=], throw a {{RangeError}}.
 1.  If the [=list/size=] of
     |options|.{{AttributionConversionOptions/matchValues}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    greater than the [=implementation-defined=] [=maximum number of match values=],
+    throw a {{RangeError}}.
 1.  Let |matchValues| be the result of running [=set/create|creating a set=] with
     |options|.{{AttributionConversionOptions/matchValues}}.
 1.  If the [=list/size=] of
-    |options|.{{AttributionConversionOptions/impressionSites}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    |options|.{{AttributionConversionOptions/impressionSites}} is greater than
+    the [=implementation-defined=] [=maximum number of impression sites for conversion=],
+    throw a {{RangeError}}.
 1.  Let |impressionSites| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionSites}}.
 1.  If any result in |impressionSites| is failure, throw a {{"SyntaxError"}} {{DOMException}}.
 1.  If the [=list/size=] of
-    |options|.{{AttributionConversionOptions/impressionCallers}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    |options|.{{AttributionConversionOptions/impressionCallers}} is greater than
+    the [=implementation-defined=] [=maximum number of impression callers for conversion=],
+    throw a {{RangeError}}.
 1.  Let |impressionCallers| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionCallers}}.
@@ -1880,10 +1886,48 @@ regarding how to best set those values.
 
 An implementation sets an [=implementation-defined=] <dfn>maximum lookback</dfn>
 for {{AttributionImpressionOptions/lifetimeDays}} and
-{{AttributionConversionOptions/lookbackDays}}. It is a positive integer number of [=days=].
+{{AttributionConversionOptions/lookbackDays}}.
+[=Maximum lookback=] is a positive integer number of [=days=].
 There is no point to having different maximum values for
 these values as the smaller of the two values
 will determine which saved [=impressions=] are available for conversions.
+
+Implementations [=must=] set a [=maximum lookback=] of at least 30 days.
+However, because some users of the API
+benefit from a longer lookback period,
+setting [=maximum lookback=] to 90 days
+is more likely to produce good results.
+
+An [=implementation-defined=] value is chosen for the lists of sites
+passed to [=saveImpression()=] and [=measureConversion()=].
+The <dfn>maximum number of conversion sites per impression</dfn>
+is a limit on the number of values for {{AttributionImpressionOptions/conversionSites}};
+implementations [=must=] set this value to at least 5.
+The <dfn>maximum number of conversion callers per impression</dfn>
+and <dfn>maximum number of impression callers for conversion</dfn>
+are limits on the number of values for {{AttributionImpressionOptions/conversionCallers}}
+and {{AttributionConversionOptions/impressionCallers}} respectively;
+implementations [=must=] set each of these values to at least 10.
+The <dfn>maximum number of impression sites for conversion</dfn>
+is a limit on the number of values for {{AttributionConversionOptions/impressionSites}};
+implementations [=must=] set this value to at least 30.
+
+An [=implementation-defined=] value is chosen for
+the <dfn>maximum number of credit values</dfn>,
+which is a limit on the number of values for {{AttributionConversionOptions/credit}};
+implementations [=must=] set this value to at least 5.
+An [=implementation-defined=] value is chosen for
+the <dfn>maximum number of match values</dfn>,
+which is a limit on the number of values for {{AttributionConversionOptions/matchValues}};
+implementations [=must=] set this value to at least 30.
+
+The size of histograms produced by [=measureConversion()=]
+is subject to both an [=implementation-define=] <dfn>maximum histogram size</dfn>
+and <dfn>maximum aggregation-service histogram size</dfn>.
+The [=maximum histogram size=] [=must=] be at least 1000.
+Note that the [=maximum aggregation-service histogram size=]
+will be a fixed value that is determined by the [=aggregation service=];
+it is not [=implementation-defined=].
 
 Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
