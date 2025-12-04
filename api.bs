@@ -3214,7 +3214,7 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
       "Martin Thomson"
     ],
     "href": "https://arxiv.org/abs/2506.05290",
-    "title": "Big Bird: Privacy Budget Management for W3C's Privacy-Preserving Attribution API",
+    "title": "Big Bird: Privacy Budget Management for W3C's Privacy-Preserving Attribution API"
   },
   "prio": {
     "authors": [
