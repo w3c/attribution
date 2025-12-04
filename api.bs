@@ -1899,7 +1899,8 @@ setting [=maximum lookback=] to 90 days
 is more likely to produce good results.
 
 An [=implementation-defined=] value is chosen for the lists of sites
-passed to [=saveImpression()=] and [=measureConversion()=].
+passed to <a method for=Attribution>saveImpression()</a>
+and <a method for=Attribution>measureConversion()</a>.
 The <dfn>maximum number of conversion sites per impression</dfn>
 is a limit on the number of values for {{AttributionImpressionOptions/conversionSites}};
 implementations [=must=] set this value to at least 5.
@@ -1921,7 +1922,8 @@ the <dfn>maximum number of match values</dfn>,
 which is a limit on the number of values for {{AttributionConversionOptions/matchValues}};
 implementations [=must=] set this value to at least 30.
 
-The size of histograms produced by [=measureConversion()=]
+The size of histograms
+produced by <a method for=Attribution>measureConversion()</a>
 is subject to both an [=implementation-define=] <dfn>maximum histogram size</dfn>
 and <dfn>maximum aggregation-service histogram size</dfn>.
 The [=maximum histogram size=] [=must=] be at least 1000.
