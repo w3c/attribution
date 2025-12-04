@@ -1253,19 +1253,44 @@ limiting its ability to rapidly deplete the [=global privacy budget=].
 ### User Action Context Store ### {#s-user-action-context-store}
 
 The <dfn>user action context store</dfn> is a [=map=] keyed by [=user action contexts=]
-and containing values that are [=sets=] of [=sites=].
+and containing values that are [=user action context entries=].
 
 A <dfn>user action context</dfn> is an identifier
 for a sequence of API invocations
 that are associated with a single intentional user action,
 such as a navigation or click.
 
+A <dfn>user action context entry</dfn> is a [=struct=] with the following fields:
+
+<dl dfn-for="user action context entry">
+: <dfn>Allowed Impression Sites</dfn>
+:: A [=set=] of [=impression sites=] that have been permitted
+   to save [=impressions=] within this [=user action context=].
+: <dfn>Impression Site Counter</dfn>
+:: A non-negative integer representing the remaining number of
+   new [=impression sites=] that may save [=impressions=]
+   within this [=user action context=].
+   Initialized to an [=implementation-defined=] <dfn>impression site count cap</dfn>.
+: <dfn>Allowed Conversion Sites</dfn>
+:: A [=map=] keyed by [=epoch index=] and containing values that are [=sets=]
+   of [=conversion sites=] that have been permitted to measure [=conversions=]
+   within this [=user action context=] for that [=epoch=].
+: <dfn>Conversion Site Counters</dfn>
+:: A [=map=] keyed by [=epoch index=] and containing values that are
+   non-negative integers representing the remaining number of
+   new [=conversion sites=] that may measure [=conversions=]
+   within this [=user action context=] for that [=epoch=].
+   Each counter is initialized to an [=implementation-defined=] <dfn>conversion site count cap</dfn>.
+</dl>
+
 The [=user action context store=] tracks which [=sites=]
 have accessed quota [=privacy budgets=]
 (either [=impression site quota store|impression site quotas=]
 or [=conversion site quota store|conversion site quotas=])
 within the current [=user action context=].
-This enables enforcement of the [=quota count cap=].
+This enables enforcement of site count caps,
+limiting the number of distinct sites that can participate
+in attribution within a single user action.
 
 <p class=note>A [=user action context=] typically corresponds to
 a top-level navigation or other substantial user interaction.
@@ -1280,13 +1305,80 @@ returning a [=user action context=]:
     associated with the current execution context, return it.
 
 1.  Otherwise, create a new [=user action context=] identifier,
-    add it to the [=user action context store=] with an empty [=set=] value,
-    and return it.
+    create a new [=user action context entry=] with:
+    *   [=user action context entry/Allowed Impression Sites=] set to an empty [=set=],
+    *   [=user action context entry/Impression Site Counter=] set to the [=impression site count cap=],
+    *   [=user action context entry/Allowed Conversion Sites=] set to an empty [=map=],
+    *   [=user action context entry/Conversion Site Counters=] set to an empty [=map=],
+
+    add the identifier and entry to the [=user action context store=],
+    and return the identifier.
 
 <p class=note>The [=user agent=] determines when [=user action contexts=] expire
 and are removed from the [=user action context store=].
 Contexts typically expire after some period of inactivity
 or when a new top-level navigation occurs.
+
+</div>
+
+<div algorithm>
+To <dfn>check impression site allowance</dfn>,
+given an [=impression site=] |impSite|
+and a [=user action context=] |uaContext|,
+returning a [=boolean=]:
+
+1.  Let |entry| be the result of [=map/get|getting=] |uaContext|
+    from the [=user action context store=].
+
+1.  If |entry|'s [=user action context entry/Allowed Impression Sites=]
+    [=set/contains=] |impSite|, return true.
+
+1.  If |entry|'s [=user action context entry/Impression Site Counter=] is 0,
+    return false.
+
+1.  [=set/Append=] |impSite| to |entry|'s
+    [=user action context entry/Allowed Impression Sites=].
+
+1.  Decrement |entry|'s [=user action context entry/Impression Site Counter=] by 1.
+
+1.  Return true.
+
+</div>
+
+<div algorithm>
+To <dfn>check conversion site allowance</dfn>,
+given a [=conversion site=] |convSite|,
+an [=epoch index=] |epoch|,
+and a [=user action context=] |uaContext|,
+returning a [=boolean=]:
+
+1.  Let |entry| be the result of [=map/get|getting=] |uaContext|
+    from the [=user action context store=].
+
+1.  If |entry|'s [=user action context entry/Conversion Site Counters=]
+    does not [=map/contain=] |epoch|:
+
+    1.  [=map/Set=] |entry|'s [=user action context entry/Conversion Site Counters=]\[|epoch|]
+        to the [=conversion site count cap=].
+
+    1.  [=map/Set=] |entry|'s [=user action context entry/Allowed Conversion Sites=]\[|epoch|]
+        to an empty [=set=].
+
+1.  Let |allowedSites| be the result of [=map/get|getting=] |epoch|
+    from |entry|'s [=user action context entry/Allowed Conversion Sites=].
+
+1.  If |allowedSites| [=set/contains=] |convSite|, return true.
+
+1.  Let |counter| be the result of [=map/get|getting=] |epoch|
+    from |entry|'s [=user action context entry/Conversion Site Counters=].
+
+1.  If |counter| is 0, return false.
+
+1.  [=set/Append=] |convSite| to |allowedSites|.
+
+1.  Decrement |entry|'s [=user action context entry/Conversion Site Counters=]\[|epoch|] by 1.
+
+1.  Return true.
 
 </div>
 
@@ -1560,6 +1652,7 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
         1.   otherwise, the result of
              [=obtain a site|obtaining a site=]
              from |settings|' [=environment settings object/origin=].
+    1.  Let |uaContext| be the [=current user action context=].
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -1606,8 +1699,10 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
          ::  |options|.{{AttributionImpressionOptions/histogramIndex}}
          :   [=impression/Priority=]
          ::  |options|.{{AttributionImpressionOptions/priority}}
-     1.  If the Attribution API is [[#opt-out|enabled]],
-         save |impression| to the [=impression store=].
+     1.  If the Attribution API is [[#opt-out|enabled]]:
+         1.  Let |allowed| be the result of [=check impression site allowance|checking impression site allowance=]
+             given |site| and |uaContext|.
+         1.  If |allowed| is true, save |impression| to the [=impression store=].
 
 1.  Let |result| be a new {{AttributionImpressionResult}}.
 1.  Return [=a promise resolved with=] |result| in |realm|.
