@@ -1,12 +1,12 @@
 import { AttributionProtocol } from "./index";
-import { Backend, Delegate, days } from "./backend";
+import { Backend, days } from "./backend";
 import { Temporal } from "temporal-polyfill";
 import e2eConfig from "../e2e-tests/CONFIG.json";
 
 export const defaultConfig = e2eConfig as Readonly<TestConfig>;
 
 export interface TestConfig {
-  now?: string;
+  now?: Temporal.Instant;
   aggregationServices: Record<string, AttributionProtocol>;
   maxConversionSitesPerImpression: number;
   maxConversionCallersPerImpression: number;
@@ -20,9 +20,7 @@ export interface TestConfig {
 export function makeBackend(
   config: Readonly<TestConfig> = defaultConfig,
 ): Backend {
-  const now = config.now
-    ? Temporal.Instant.from(config.now)
-    : new Temporal.Instant(0n);
+  const now = config.now ?? new Temporal.Instant(0n);
 
   return new Backend({
     aggregationServices: new Map(
@@ -43,6 +41,5 @@ export function makeBackend(
 
     now: () => now,
     random: () => 0.5,
-    earliestEpochIndex: () => 0,
-  } as Delegate);
+  });
 }
