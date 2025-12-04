@@ -2149,7 +2149,7 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
 1.  If |dict|["<code>[=measure-conversion/match-values=]</code>"] [=map/exists=]:
      1.  Let |matchValues| be its [=map/value=].
      1.  If |matchValues| is not an [=structured header/inner list=], or if any of
-         |matchValues|' [=list/items=] is not a [=structured header/integer=] in
+         |matchValues|' [=list/items=] is not an [=structured header/integer=] in
          the [=32-bit unsigned integer=] range, return an error.
      1.  Set |opts|.{{AttributionConversionOptions/matchValues}} to |matchValues|.
 1.  If |dict|["<code>[=measure-conversion/impression-sites=]</code>"] [=map/exists=]:
