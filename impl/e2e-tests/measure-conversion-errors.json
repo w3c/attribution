@@ -128,7 +128,7 @@
       "options": {
         "aggregationService": "https://agg-service.example",
         "histogramSize": 1,
-        "impressionSites": ["a"]
+        "impressionSites": [":"]
       },
       "expected": {
         "error": "DOMException",
@@ -142,7 +142,7 @@
       "options": {
         "aggregationService": "https://agg-service.example",
         "histogramSize": 1,
-        "impressionCallers": ["a"]
+        "impressionCallers": [":"]
       },
       "expected": {
         "error": "DOMException",
