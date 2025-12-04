@@ -1,5 +1,5 @@
 import { AttributionProtocol } from "./index";
-import { Backend, Delegate, days } from "./backend";
+import { Backend, days } from "./backend";
 import { Temporal } from "temporal-polyfill";
 import e2eConfig from "../e2e-tests/CONFIG.json";
 
@@ -43,6 +43,5 @@ export function makeBackend(
 
     now: () => now,
     random: () => 0.5,
-    earliestEpochIndex: () => 0,
-  } as Delegate);
+  });
 }
