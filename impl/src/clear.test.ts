@@ -84,22 +84,19 @@ void test("clear-site-state", async () => {
 
 // Forgetting all sites resets the entire thing, except the last reset time.
 void test("forget-all-sites", async () => {
-  const now = "2025-01-01T00:00Z";
+  const now = Temporal.Instant.from("2025-01-01T00:00Z");
   const backend = await setupImpressions({ now, ...defaultConfig });
   backend.clearState([], true);
 
   assert.deepEqual(backend.impressions, []);
   assert.deepEqual(backend.privacyBudgetEntries, []);
   assert.deepEqual(backend.epochStarts, new Map());
-  assert.deepEqual(
-    backend.lastBrowsingHistoryClear,
-    Temporal.Instant.from(now),
-  );
+  assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 });
 
 // Forgetting a site with impressions removes impressions.
 void test("forget-one-site-impressions", async () => {
-  const now = "2025-01-01T00:00Z";
+  const now = Temporal.Instant.from("2025-01-01T00:00Z");
   const backend = await setupImpressions({ now, ...defaultConfig });
   backend.clearState(["imp-one.example"], true);
 
@@ -110,15 +107,12 @@ void test("forget-one-site-impressions", async () => {
   );
   assert.deepEqual(backend.privacyBudgetEntries, []);
   assert.deepEqual(backend.epochStarts, new Map());
-  assert.deepEqual(
-    backend.lastBrowsingHistoryClear,
-    Temporal.Instant.from(now),
-  );
+  assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 });
 
 // Forgetting a site with conversion state removes those.
 void test("forget-one-site-conversions", async () => {
-  const now = "2025-01-01T00:00Z";
+  const now = Temporal.Instant.from("2025-01-01T00:00Z");
   const backend = await setupImpressions({ now, ...defaultConfig });
 
   const before = backend.measureConversion("conv-one.example", undefined, {
@@ -137,10 +131,7 @@ void test("forget-one-site-conversions", async () => {
   assert.equal(backend.impressions.length, siteTable.length);
   assert.deepEqual(backend.privacyBudgetEntries, []);
   assert.deepEqual(backend.epochStarts, new Map());
-  assert.deepEqual(
-    backend.lastBrowsingHistoryClear,
-    Temporal.Instant.from(now),
-  );
+  assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 
   // Re-run a query and it should return an all zero result.
   const after = backend.measureConversion("conv-one.example", undefined, {
