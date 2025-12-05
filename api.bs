@@ -815,8 +815,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dt><dfn>value</dfn></dt>
   <dd>
     The [=conversion value=]. If an attribution is made and [[#dp|privacy]]
-    restrictions are satisfied, this value will be encoded into the [=conversion
-    report=].
+    restrictions are satisfied, this value will be encoded into the [=conversion report=].
   </dd>
   <dt><dfn>maxValue</dfn></dt>
   <dd>
@@ -2372,7 +2371,8 @@ the analysis shows that per-site guarantees cannot be achieved.
 
 Assumption 2 is necessary when we have shared limits that span multiple sites. An example of
 such shared limits are the global safety limits that aim to provide a global DP guarantee.
-If [=measure conversion=] requests from some sites cause a shared limit to be reached, reports to other sites may be
+If <a method for=Attribution>measureConversion()</a> requests from some sites cause a shared limit
+to be reached, reports to other sites may be
 filtered, creating dependencies across separate per-site privacy units and affecting the validity
 of the per-site guarantees. Thus, care must be taken when introducing any new shared limit, such
 as cross-site rate limiters on privacy loss. If only Assumption 2 is violated, it is unknown whether
@@ -2696,8 +2696,8 @@ is a particular concern with the Attribution API,
 because impressions are stored only on the device.
 It is not possible to apply server-side intelligence
 to identify fraudulent impressions and exclude them
-from attribution. Conversely, even though [=conversion
-reports=] are encrypted, because the reports are sent
+from attribution. Conversely, even though [=conversion reports=]
+are encrypted, because the reports are sent
 to a server, the server can make a determination that
 the conversion is likely fraudulent and exclude it from
 aggregation.
