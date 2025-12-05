@@ -8,9 +8,11 @@
     "pretty:check": "prettier . --check",
     "lint": "eslint src",
     "serve": "http-server -c-1 dist",
-    "serve-local": "http-server -c-1 -a 127.0.0.1 dist"
+    "serve-local": "http-server -c-1 -a 127.0.0.1 dist",
+    "validate-e2e": "ajv validate --strict -s e2e.schema.json ./e2e-tests/*.json"
   },
   "devDependencies": {
+    "@jirutka/ajv-cli": "^6.0.0",
     "@types/node": "^24.2.0",
     "@types/psl": "^1.1.3",
     "eslint": "^9.32.0",

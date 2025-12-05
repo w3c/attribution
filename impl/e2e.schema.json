@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "aggregationServices": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": ["dap-15-histogram"]
+          }
+        },
+        "maxConversionCallersPerImpression": {
+          "type": "integer"
+        },
+        "maxConversionSitesPerImpression": {
+          "type": "integer"
+        },
+        "maxCreditSize": {
+          "type": "integer"
+        },
+        "maxHistogramSize": {
+          "type": "integer"
+        },
+        "maxLookbackDays": {
+          "type": "integer"
+        },
+        "privacyBudgetEpochDays": {
+          "type": "integer"
+        },
+        "privacyBudgetMicroEpsilons": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "aggregationServices",
+        "maxConversionCallersPerImpression",
+        "maxConversionSitesPerImpression",
+        "maxCreditSize",
+        "maxHistogramSize",
+        "privacyBudgetEpochDays",
+        "privacyBudgetMicroEpsilons"
+      ]
+    },
+    {
+      "properties": {
+        "$comment": {
+          "type": "string"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "saveImpression"
+                  },
+                  "expectedError": {
+                    "$ref": "#/$defs/expectedError"
+                  },
+                  "intermediarySite": {
+                    "type": "string"
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "conversionCallers": {
+                        "$ref": "#/$defs/siteList"
+                      },
+                      "conversionSites": {
+                        "$ref": "#/$defs/siteList"
+                      },
+                      "histogramIndex": {
+                        "type": "integer"
+                      },
+                      "lifetimeDays": {
+                        "type": "integer"
+                      },
+                      "matchValue": {
+                        "type": "integer"
+                      },
+                      "priority": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": ["histogramIndex"],
+                    "unevaluatedProperties": false
+                  }
+                },
+                "required": ["options"],
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "measureConversion"
+                  },
+                  "expected": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "integer"
+                        }
+                      },
+                      {
+                        "$ref": "#/$defs/expectedError"
+                      }
+                    ]
+                  },
+                  "intermediarySite": {
+                    "type": "string"
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "aggregationService": {
+                        "type": "string"
+                      },
+                      "credit": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "epsilon": {
+                        "type": "number"
+                      },
+                      "histogramSize": {
+                        "type": "integer"
+                      },
+                      "impressionCallers": {
+                        "$ref": "#/$defs/siteList"
+                      },
+                      "impressionSites": {
+                        "$ref": "#/$defs/siteList"
+                      },
+                      "lookbackDays": {
+                        "type": "integer"
+                      },
+                      "matchValues": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer"
+                        }
+                      },
+                      "maxValue": {
+                        "type": "integer"
+                      },
+                      "value": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": ["histogramSize"],
+                    "unevaluatedProperties": false
+                  }
+                },
+                "required": ["expected", "options"],
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "clearImpressionsForSite"
+                  }
+                },
+                "unevaluatedProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": ["events"]
+    }
+  ],
+  "$defs": {
+    "commonEvent": {
+      "type": "object",
+      "properties": {
+        "$comment": {
+          "type": "string"
+        },
+        "seconds": {
+          "type": "integer"
+        },
+        "site": {
+          "type": "string"
+        }
+      },
+      "required": ["seconds", "site"]
+    },
+    "expectedError": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": ["error", "name"],
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "siteList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -49,3 +49,4 @@ check:
 	@ npm run --prefix ./impl pretty:check
 	@ npm run --prefix ./impl build
 	@ npm run --prefix ./impl test
+	@ npm run --prefix ./impl validate-e2e
