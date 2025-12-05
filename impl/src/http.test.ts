@@ -29,6 +29,9 @@ function runTests(cases: readonly TestCase[]): void {
 }
 
 runTests([
+  { name: "invalid-structured-header-syntax", input: "!" },
+  { name: "not-structured-header-dictionary", input: "histogram-index" },
+
   {
     name: "valid-minimal",
     input: "histogram-index=123",
