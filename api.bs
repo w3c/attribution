@@ -1132,32 +1132,7 @@ A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items
 
 </dl>
 
-<div algorithm>
-To <dfn>compute impression site deductions</dfn>,
-given a [=map=] |impressionsByImpSite| from [=impression sites=] to [=sets=] of [=impressions=],
-and an integer |totalDeduction|,
-returning a [=map=] from [=impression sites=] to integers:
 
-1.  Let |totalImpressions| be 0.
-
-1.  [=map/iterate|For each=] |impSite| → |impressions| in |impressionsByImpSite|:
-
-    1.  Increment |totalImpressions| by the [=set/size=] of |impressions|.
-
-1.  Let |impSiteDeductions| be a new [=map=].
-
-1.  [=map/iterate|For each=] |impSite| → |impressions| in |impressionsByImpSite|:
-
-    1.  Let |count| be the [=set/size=] of |impressions|.
-
-    1.  Let |siteDeduction| be (|count| / |totalImpressions|) * |totalDeduction|,
-        rounded towards positive Infinity.
-
-    1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |siteDeduction|.
-
-1.  Return |impSiteDeductions|.
-
-</div>
 
 <div algorithm>
 To <dfn>deduct privacy and safety budgets</dfn>
