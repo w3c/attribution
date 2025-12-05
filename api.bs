@@ -2356,14 +2356,14 @@ The analysis in [[PPA-DP-2]] shows that *per-site individual DP guarantees* hold
 model that makes two assumptions, which may not always be satisfied in practice:
 
 1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
-    and conversions) must be generated independently of past DP [=attribution result|attribution results] from other sites.
+    and conversions) must be generated independently of past DP [=attribution results=] from other sites.
 1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
     reports are emitted to others.
 
 Assumption 1 is necessary because the system involves multiple sites that could interact
 with the same user over time and change the ads they show to the user, or impact the
 conversions the user has, based on each other’s DP measurements. For example, if one advertiser
-learns, from [=attribution result|attribution results], to make an ad more effective, a user may convert on their site
+learns, from [=attribution results=], to make an ad more effective, a user may convert on their site
 rather than a competitor’s. In this case, the first site’s DP outputs -- counted only against
 its own per-site budget -- alter the data (or absence of data) visible to the competitor, yet
 this impact is not reflected in the competitor’s per-site budget. When Assumption 1 is violated,
