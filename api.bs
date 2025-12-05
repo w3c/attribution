@@ -384,7 +384,7 @@ Upon receiving a set of encrypted histograms from a site, the aggregation servic
 2.  adds the histograms, including sufficient [[#dp|noise]],
     to produce a differentially-private aggregate histogram, and
 
-3.  returns the aggregate to the site.
+3.  returns the aggregate to the site.  We refer to this final output as an <dfn>attribution result</dfn>.
 
 
 
@@ -2345,7 +2345,7 @@ for a number of reasons:
     sites could exhaust their budget forever.
 
 ### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
- The formal privacy analysis is based on two papers. The first [[PPA-DP]] establishes the theory
+ The formal privacy analysis in this specification is based on two papers. The first [[PPA-DP]] establishes the theory
 for on-device Individual DP accounting. The second [[PPA-DP-2]] provides formal analysis of
 the mathematical privacy guarantees afforded by *per-site budgets* and by *safety limits*
 (Section 3 is about per-site guarantees and Section 3.4 specifies the assumptions under
@@ -2353,19 +2353,18 @@ which they hold). Per-site budgets include [=site=] in the [=privacy unit=], whe
 limits exclude it thereby enforcing a global individual DP guarantee.  In Attribution Level 1
 it is conversion sites that have per-site budgets tracked.
 
-
-The analysis shows that *per-site individual DP guarantees* hold under a restricted system
+The analysis in [[PPA-DP-2]] shows that *per-site individual DP guarantees* hold under a restricted system
 model that makes two assumptions, which may not always be satisfied in practice:
 
 1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
-    and conversions) must be generated independently of past DP query results from other sites.
+    and conversions) must be generated independently of past DP [=attribution result|attribution results] from other sites.
 1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
     reports are emitted to others.
 
 Assumption 1 is necessary because the system involves multiple sites that could interact
 with the same user over time and change the ads they show to the user, or impact the
 conversions the user has, based on each other’s DP measurements. For example, if one advertiser
-learns, from DP measurements, to make an ad more effective, a user may convert on their site
+learns, from [=attribution result|attribution results], to make an ad more effective, a user may convert on their site
 rather than a competitor’s. In this case, the first site’s DP outputs -- counted only against
 its own per-site budget -- alter the data (or absence of data) visible to the competitor, yet
 this impact is not reflected in the competitor’s per-site budget. When Assumption 1 is violated,
@@ -2373,7 +2372,7 @@ the analysis shows that per-site guarantees cannot be achieved.
 
 Assumption 2 is necessary when we have shared limits that span multiple sites. An example of
 such shared limits are the global safety limits that aim to provide a global DP guarantee.
-If queries from some sites cause a shared limit to be reached, reports to other sites may be
+If [=measure conversion=] requests from some sites cause a shared limit to be reached, reports to other sites may be
 filtered, creating dependencies across separate per-site privacy units and affecting the validity
 of the per-site guarantees. Thus, care must be taken when introducing any new shared limit, such
 as cross-site rate limiters on privacy loss. If only Assumption 2 is violated, it is unknown whether
