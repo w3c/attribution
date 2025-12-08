@@ -66,29 +66,7 @@
                     "type": "string"
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "conversionCallers": {
-                        "$ref": "#/$defs/siteList"
-                      },
-                      "conversionSites": {
-                        "$ref": "#/$defs/siteList"
-                      },
-                      "histogramIndex": {
-                        "type": "integer"
-                      },
-                      "lifetimeDays": {
-                        "type": "integer"
-                      },
-                      "matchValue": {
-                        "type": "integer"
-                      },
-                      "priority": {
-                        "type": "integer"
-                      }
-                    },
-                    "required": ["histogramIndex"],
-                    "unevaluatedProperties": false
+                    "$ref": "#/$defs/AttributionImpressionOptions"
                   }
                 },
                 "required": ["options"],
@@ -117,47 +95,7 @@
                     "type": "string"
                   },
                   "options": {
-                    "type": "object",
-                    "properties": {
-                      "aggregationService": {
-                        "type": "string"
-                      },
-                      "credit": {
-                        "type": "array",
-                        "items": {
-                          "type": "number"
-                        }
-                      },
-                      "epsilon": {
-                        "type": "number"
-                      },
-                      "histogramSize": {
-                        "type": "integer"
-                      },
-                      "impressionCallers": {
-                        "$ref": "#/$defs/siteList"
-                      },
-                      "impressionSites": {
-                        "$ref": "#/$defs/siteList"
-                      },
-                      "lookbackDays": {
-                        "type": "integer"
-                      },
-                      "matchValues": {
-                        "type": "array",
-                        "items": {
-                          "type": "integer"
-                        }
-                      },
-                      "maxValue": {
-                        "type": "integer"
-                      },
-                      "value": {
-                        "type": "integer"
-                      }
-                    },
-                    "required": ["histogramSize"],
-                    "unevaluatedProperties": false
+                    "$ref": "#/$defs/AttributionConversionOptions"
                   }
                 },
                 "required": ["expected", "options"],
@@ -180,6 +118,74 @@
     }
   ],
   "$defs": {
+    "AttributionConversionOptions": {
+      "type": "object",
+      "properties": {
+        "aggregationService": {
+          "type": "string"
+        },
+        "credit": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "epsilon": {
+          "type": "number"
+        },
+        "histogramSize": {
+          "type": "integer"
+        },
+        "impressionCallers": {
+          "$ref": "#/$defs/siteList"
+        },
+        "impressionSites": {
+          "$ref": "#/$defs/siteList"
+        },
+        "lookbackDays": {
+          "type": "integer"
+        },
+        "matchValues": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "maxValue": {
+          "type": "integer"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": ["histogramSize"],
+      "unevaluatedProperties": false
+    },
+    "AttributionImpressionOptions": {
+      "type": "object",
+      "properties": {
+        "conversionCallers": {
+          "$ref": "#/$defs/siteList"
+        },
+        "conversionSites": {
+          "$ref": "#/$defs/siteList"
+        },
+        "histogramIndex": {
+          "type": "integer"
+        },
+        "lifetimeDays": {
+          "type": "integer"
+        },
+        "matchValue": {
+          "type": "integer"
+        },
+        "priority": {
+          "type": "integer"
+        }
+      },
+      "required": ["histogramIndex"],
+      "unevaluatedProperties": false
+    },
     "commonEvent": {
       "type": "object",
       "properties": {
