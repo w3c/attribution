@@ -158,7 +158,7 @@
           "type": "integer"
         }
       },
-      "required": ["histogramSize"],
+      "required": ["aggregationService", "histogramSize"],
       "unevaluatedProperties": false
     },
     "AttributionImpressionOptions": {
