@@ -14,9 +14,10 @@
       "seconds": 2,
       "site": "publisher.example",
       "event": "saveImpression",
+      "$comment": "first conversion site should be parsed as advertiser-2.example",
       "options": {
         "histogramIndex": 2,
-        "conversionSites": ["advertiser-2.example", "advertiser-3.example"]
+        "conversionSites": ["foo.advertiser-2.example", "advertiser-3.example"]
       }
     },
     {
