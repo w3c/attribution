@@ -48,4 +48,5 @@ impl/dist/index.html impl/dist/simulator.js: impl/index.html impl/package-lock.j
 check:
 	@ npm run --prefix ./impl pretty:check
 	@ npm run --prefix ./impl build
+	@ npm run --prefix ./impl validate-e2e
 	@ npm run --prefix ./impl test
