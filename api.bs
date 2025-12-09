@@ -1338,7 +1338,7 @@ returning an [=epoch index=]:
 <div algorithm="clear browsing history for attribution">
 To <dfn>clear browsing history for attribution</dfn>,
 given a [=set=] of [=sites=] |sites|,
-a [=boolean=] |forgetVisits|,
+a [=boolean=] <dfn for="clear browsing history for attribution"><var>forgetVisits</var></dfn>,
 and a [=moment=] |now|:
 
 1.  If |forgetVisits| is false:
@@ -2992,7 +2992,7 @@ When clearing site data at the request of a [=user=],
 but retaining browsing history,
 a [=user agent=] invokes [=clear browsing history for attribution=],
 given the [=set=] of affected [=sites=],
-false (for |forgetVisits|),
+false (for [=clear browsing history for attribution/forgetVisits=]),
 and the time that the action was taken.
 This sets the privacy budget for that site to zero,
 preventing any use of conversion measurement on that site.
@@ -3020,7 +3020,7 @@ when removing browsing history.
 A user agent that clears browsing history
 invokes [=clear browsing history for attribution=],
 given the [=set=] of affected [=sites=],
-true (for |forgetVisits|),
+true (for [=clear browsing history for attribution/forgetVisits=]),
 and the time that the operation was initiated.
 
 When clearing browsing history,
