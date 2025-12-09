@@ -23,9 +23,10 @@
       "seconds": 3,
       "site": "publisher.example",
       "event": "saveImpression",
+      "$comment": "first conversion caller should be parsed as advertiser-3.example",
       "options": {
         "histogramIndex": 3,
-        "conversionCallers": ["advertiser-3.example", "adtech-2.example"]
+        "conversionCallers": ["foo.advertiser-3.example", "adtech-2.example"]
       }
     },
     {
