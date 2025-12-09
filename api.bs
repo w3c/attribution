@@ -1916,7 +1916,7 @@ implementations [=must=] set this value to at least 30.
 An [=implementation-defined=] value is chosen for
 the <dfn>maximum number of credit values</dfn>,
 which is a limit on the number of values for {{AttributionConversionOptions/credit}};
-implementations [=must=] set this value to at least 5.
+implementations [=must=] set this value to at least 10.
 An [=implementation-defined=] value is chosen for
 the <dfn>maximum number of match values</dfn>,
 which is a limit on the number of values for {{AttributionConversionOptions/matchValues}};
@@ -1926,9 +1926,12 @@ The size of histograms
 produced by <a method for=Attribution>measureConversion()</a>
 is subject to both an [=implementation-define=] <dfn>maximum histogram size</dfn>
 and <dfn>maximum aggregation-service histogram size</dfn>.
-The [=maximum histogram size=] [=must=] be at least 1000.
-Note that the [=maximum aggregation-service histogram size=]
-will be a fixed value that is determined by the [=aggregation service=];
+No minimum value for the [=maximum histogram size=] is set
+as the expectation is that the choice of aggregation technology
+will set a limit.
+The [=maximum aggregation-service histogram size=]
+will be a fixed value that is determined
+by the choice of technology used by the [=aggregation service=];
 it is not [=implementation-defined=].
 
 Deciding on a value for differential privacy parameters
