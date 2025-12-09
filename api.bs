@@ -1892,11 +1892,7 @@ There is no point to having different maximum values for
 these values as the smaller of the two values
 will determine which saved [=impressions=] are available for conversions.
 
-Implementations [=must=] set a [=maximum lookback=] of at least 30 days.
-However, because some users of the API
-benefit from a longer lookback period,
-setting [=maximum lookback=] to 90 days
-is more likely to produce good results.
+Implementations [=must=] set a [=maximum lookback=] of at least 90 days.
 
 An [=implementation-defined=] value is chosen for the lists of sites
 passed to <a method for=Attribution>saveImpression()</a>
