@@ -9,6 +9,9 @@
           "type": "object",
           "additionalProperties": {
             "enum": ["dap-15-histogram"]
+          },
+          "propertyNames": {
+            "format": "uri"
           }
         },
         "maxConversionCallersPerImpression": {
