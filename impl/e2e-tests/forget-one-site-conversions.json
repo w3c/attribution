@@ -26,6 +26,13 @@
     },
     {
       "seconds": 4,
+      "site": "a.example",
+      "event": "saveImpression",
+      "$comment": "add an impression to be sure that budget is affected below, rather than impressions",
+      "options": { "histogramIndex": 0 }
+    },
+    {
+      "seconds": 5,
       "site": "advertiser-1.example",
       "event": "measureConversion",
       "$comment": "re-run query, expecting budget to have been zeroed",
@@ -37,7 +44,7 @@
       "expected": [0]
     },
     {
-      "seconds": 5,
+      "seconds": 6,
       "site": "advertiser-2.example",
       "$comment": "re-run query with different conversion site, expecting epoch to be off-limits",
       "event": "measureConversion",
