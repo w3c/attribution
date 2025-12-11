@@ -1,0 +1,59 @@
+{
+  "$comment": "TODO: Add coverage for other epochs",
+  "events": [
+    {
+      "seconds": 1,
+      "site": "a.example",
+      "event": "saveImpression",
+      "options": { "histogramIndex": 0 }
+    },
+    {
+      "seconds": 2,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.1,
+        "histogramSize": 1
+      },
+      "expected": [1]
+    },
+    {
+      "seconds": 3,
+      "event": "clearBrowsingHistoryForAttribution",
+      "sites": ["advertiser-1.example"],
+      "forgetVisits": true
+    },
+    {
+      "seconds": 4,
+      "site": "a.example",
+      "event": "saveImpression",
+      "$comment": "add an impression to be sure that budget is affected below, rather than impressions",
+      "options": { "histogramIndex": 0 }
+    },
+    {
+      "seconds": 5,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "$comment": "re-run query, expecting budget to have been zeroed",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.1,
+        "histogramSize": 1
+      },
+      "expected": [0]
+    },
+    {
+      "seconds": 6,
+      "site": "advertiser-2.example",
+      "$comment": "re-run query with different conversion site, expecting epoch to be off-limits",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 0.1,
+        "histogramSize": 1
+      },
+      "expected": [0]
+    }
+  ]
+}

@@ -64,7 +64,7 @@
             "type": "object",
             "oneOf": [
               {
-                "$ref": "#/$defs/commonEvent",
+                "$ref": "#/$defs/siteEvent",
                 "properties": {
                   "event": {
                     "const": "saveImpression"
@@ -83,7 +83,7 @@
                 "unevaluatedProperties": false
               },
               {
-                "$ref": "#/$defs/commonEvent",
+                "$ref": "#/$defs/siteEvent",
                 "properties": {
                   "event": {
                     "const": "measureConversion"
@@ -113,12 +113,28 @@
                 "unevaluatedProperties": false
               },
               {
-                "$ref": "#/$defs/commonEvent",
+                "$ref": "#/$defs/siteEvent",
                 "properties": {
                   "event": {
                     "const": "clearImpressionsForSite"
                   }
                 },
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "clearBrowsingHistoryForAttribution"
+                  },
+                  "forgetVisits": {
+                    "type": "boolean"
+                  },
+                  "sites": {
+                    "$ref": "#/$defs/siteList"
+                  }
+                },
+                "required": ["forgetVisits", "sites"],
                 "unevaluatedProperties": false
               }
             ]
@@ -205,12 +221,9 @@
         },
         "seconds": {
           "type": "integer"
-        },
-        "site": {
-          "type": "string"
         }
       },
-      "required": ["seconds", "site"]
+      "required": ["seconds"]
     },
     "expectedError": {
       "oneOf": [
@@ -231,6 +244,16 @@
           "unevaluatedProperties": false
         }
       ]
+    },
+    "siteEvent": {
+      "$ref": "#/$defs/commonEvent",
+      "type": "object",
+      "properties": {
+        "site": {
+          "type": "string"
+        }
+      },
+      "required": ["site"]
     },
     "siteList": {
       "type": "array",

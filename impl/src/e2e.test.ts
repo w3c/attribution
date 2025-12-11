@@ -19,7 +19,11 @@ interface TestCase {
   events: Event[];
 }
 
-type Event = SaveImpression | MeasureConversion | ClearImpressionsForSite;
+type Event =
+  | SaveImpression
+  | MeasureConversion
+  | ClearImpressionsForSite
+  | ClearBrowsingHistoryForAttribution;
 
 type ExpectedError =
   | "RangeError"
@@ -51,6 +55,13 @@ interface ClearImpressionsForSite {
   event: "clearImpressionsForSite";
   seconds: number;
   site: string;
+}
+
+interface ClearBrowsingHistoryForAttribution {
+  event: "clearBrowsingHistoryForAttribution";
+  seconds: number;
+  sites: string[];
+  forgetVisits: boolean;
 }
 
 function assertThrows(
@@ -147,6 +158,9 @@ function runTest(
       }
       case "clearImpressionsForSite":
         backend.clearImpressionsForSite(event.site);
+        break;
+      case "clearBrowsingHistoryForAttribution":
+        backend.clearState(event.sites, event.forgetVisits);
         break;
     }
   }

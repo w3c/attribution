@@ -127,7 +127,7 @@ void test("forget-one-site-conversions", async () => {
 
   backend.clearState(["conv-one.example"], true);
 
-  // Conversions are unaffected, and conversion state is gone.
+  // Impressions are unaffected, and conversion state is gone.
   assert.equal(backend.impressions.length, siteTable.length);
   assert.deepEqual(backend.privacyBudgetEntries, []);
   assert.deepEqual(backend.epochStarts, new Map());
