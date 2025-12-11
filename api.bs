@@ -384,7 +384,9 @@ Upon receiving a set of encrypted histograms from a site, the aggregation servic
 2.  adds the histograms, including sufficient [[#dp|noise]],
     to produce a differentially-private aggregate histogram, and
 
-3.  returns the aggregate to the site.  We refer to this final output as an <dfn>attribution result</dfn>.
+3.  returns the aggregate to the site.
+
+We refer to the final output as an <dfn>attribution result</dfn>.
 
 
 
