@@ -2344,7 +2344,9 @@ for a number of reasons:
     sites could exhaust their budget forever.
 
 ### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
- The formal privacy analysis in this specification is based on two papers. The first [[PPA-DP]] establishes the theory
+
+The formal privacy analysis in this specification is based on two papers.
+The first [[PPA-DP]] establishes the theory
 for on-device Individual DP accounting. The second [[PPA-DP-2]] provides formal analysis of
 the mathematical privacy guarantees afforded by *per-site budgets* and by *safety limits*
 (Section 3 is about per-site guarantees and Section 3.4 specifies the assumptions under
