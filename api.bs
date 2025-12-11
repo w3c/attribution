@@ -389,7 +389,6 @@ Upon receiving a set of encrypted histograms from a site, the aggregation servic
 We refer to the final output as an <dfn>attribution result</dfn>.
 
 
-
 # API Usage # {#api}
 
 A site using the Attribution API will typically register either
