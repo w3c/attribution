@@ -9,28 +9,38 @@
           "type": "object",
           "additionalProperties": {
             "enum": ["dap-15-histogram"]
+          },
+          "propertyNames": {
+            "format": "uri"
           }
         },
         "maxConversionCallersPerImpression": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "maxConversionSitesPerImpression": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "maxCreditSize": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "maxHistogramSize": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "maxLookbackDays": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "privacyBudgetEpochDays": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "privacyBudgetMicroEpsilons": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         }
       },
       "required": [
@@ -83,7 +93,8 @@
                       {
                         "type": "array",
                         "items": {
-                          "type": "integer"
+                          "type": "integer",
+                          "minimum": 0
                         }
                       },
                       {
