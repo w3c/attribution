@@ -2021,8 +2021,7 @@ To <dfn noexport>handle Attribution headers</dfn> given a [=request=] |request|
 and [=response=] |response|, run these steps:
 
 1.  If |request|'s [=request/destination=] is not one of the following,
-    return: `""`, `"audio"`, `"document"`, `"frame"`, `"iframe"`, `"image"`,
-    `"script"`, `"track"`, `"video"`.
+    return: `""`, `"audio"`, `"image"`, `"script"`, `"track"`, `"video"`.
 
 1.  If |request|'s [=request/client=] is not a [=secure context=], return.
 
