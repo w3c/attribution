@@ -109,7 +109,8 @@ export interface Delegate {
   readonly privacyBudgetEpoch: Temporal.Duration;
 
   now(): Temporal.Instant;
-  random(): number;
+  fairlyAllocateCreditFraction(): number;
+  epochStart(): number;
 }
 
 function allZeroHistogram(size: number): number[] {
@@ -581,7 +582,7 @@ export class Backend {
     credit = credit.slice(0, N);
 
     const normalizedCredit = fairlyAllocateCredit(credit, value, () =>
-      this.#delegate.random(),
+      this.#delegate.fairlyAllocateCreditFraction(),
     );
 
     const histogram = allZeroHistogram(histogramSize);
@@ -605,7 +606,7 @@ export class Backend {
     const period = this.#delegate.privacyBudgetEpoch.total("seconds");
     let start = this.#epochStartStore.get(site);
     if (start === undefined) {
-      const p = checkRandom(this.#delegate.random());
+      const p = checkRandom(this.#delegate.epochStart());
       const dur = Temporal.Duration.from({
         seconds: p * period,
       });
