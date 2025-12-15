@@ -2,6 +2,8 @@
   "aggregationServices": {
     "https://agg-service.example": "dap-15-histogram"
   },
+  "epochStart": 0.5,
+  "fairlyAllocateCreditFraction": 0.5,
   "maxConversionSitesPerImpression": 3,
   "maxConversionCallersPerImpression": 3,
   "maxCreditSize": 10,

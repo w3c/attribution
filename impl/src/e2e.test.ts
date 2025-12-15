@@ -107,7 +107,8 @@ function runTest(
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
 
     now: () => now,
-    random: () => 0.5,
+    fairlyAllocateCreditFraction: () => config.fairlyAllocateCreditFraction,
+    epochStart: () => config.epochStart,
   });
 
   for (const event of tc.events) {
