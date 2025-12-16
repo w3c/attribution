@@ -25,7 +25,8 @@ const backend = new Backend({
   privacyBudgetEpoch: days(7),
 
   now: () => now,
-  random: () => 0.5,
+  fairlyAllocateCreditFraction: () => 0.5,
+  epochStart: () => 0.5,
 });
 
 function numberOrUndefined(input: HTMLInputElement): number | undefined {
