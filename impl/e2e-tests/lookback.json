@@ -1,6 +1,8 @@
 {
-  "$comment": "use different advertiser sites to avoid depending on budgeting",
-  "$comment": "86400 seconds in a day",
+  "$comment": [
+    "use different advertiser sites to avoid depending on budgeting",
+    "86400 seconds in a day"
+  ],
   "events": [
     {
       "seconds": 1,

@@ -1,7 +1,9 @@
 {
-  "$comment": "verify that lifetimeDays and/or lookbackDays is clamped to maxLookbackDays",
-  "$comment": "test expectations cannot distinguish the two without inspecting the impression store",
-  "$comment": "use different advertiser sites to avoid depending on budgeting",
+  "$comment": [
+    "verify that lifetimeDays and/or lookbackDays is clamped to maxLookbackDays",
+    "test expectations cannot distinguish the two without inspecting the impression store",
+    "use different advertiser sites to avoid depending on budgeting"
+  ],
   "events": [
     {
       "seconds": 1,
