@@ -1,0 +1,40 @@
+{
+  "$comment": "verify that lifetimeDays and/or lookbackDays is clamped to maxLookbackDays",
+  "$comment": "test expectations cannot distinguish the two without inspecting the impression store",
+  "$comment": "use different advertiser sites to avoid depending on budgeting",
+  "events": [
+    {
+      "seconds": 1,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0,
+        "lifetimeDays": 31
+      }
+    },
+    {
+      "seconds": 2592001,
+      "$comment": "30 days",
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1,
+        "lookbackDays": 31
+      },
+      "expected": [1]
+    },
+    {
+      "seconds": 2592002,
+      "$comment": "30 days + 1 second",
+      "site": "advertiser-2.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1,
+        "lookbackDays": 31
+      },
+      "expected": [0]
+    }
+  ]
+}
