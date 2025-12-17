@@ -2211,11 +2211,11 @@ a [=URL=] |url|, and an [=environment settings object=] |settings|:
     ::  "`no-store`"
     :   [=request/keepalive=]
     ::  true
+    :   [=request/credentials mode=]
+    ::  "`omit`"
 1. [=Fetch=] |request|, optionally retrying in the event of an error.
 
 Issue: Should the request use a more specific content-type?
-
-Issue: What is the correct [=request/credentials mode=]?
 
 </div>
 
