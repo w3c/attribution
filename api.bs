@@ -2259,7 +2259,9 @@ and [=response=] |response|, run these steps:
 
         1.  Let |reportPromise| be the result of running [=measure a conversion=] with |conversionOptions| and |implicitInputs|.
 
-        1.  [=In parallel=], [=upon fulfillment=] of |reportPromise|, [=send a report=] with the fulfilled value, |reportUrl|, and
+        1.  [=In parallel=]:
+            1.  [=upon fulfillment=] of |reportPromise|, let |report| be the fulfilled value.
+            1.  [=send a report=] with [report|.{{AttributionConversionResult/report}}, |reportUrl|, and
             |request|'s [=request/client=].
 
 Issue: Confirm the desired semantics of [:Save-Impression:] and [:Measure-Conversion:] in the same response.
