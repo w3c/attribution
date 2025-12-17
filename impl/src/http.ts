@@ -172,13 +172,7 @@ export function parseMeasureConversionHeader(
     throw new TypeError("aggregation-service must be a string");
   }
 
-  const histogramSize = get32BitUnsignedInteger(dict, "histogram-size");
-  if (histogramSize === undefined) {
-    throw new TypeError("histogram-size is required");
-  }
-  if (histogramSize === 0) {
-    throw new RangeError("histogram-size must be positive");
-  }
+  const histogramSize = getPositive32BitUnsignedInteger(dict, "histogram-size");
 
   const reportUrlString = get(dict, "report-url");
   if (reportUrlString === undefined) {
