@@ -228,7 +228,6 @@ export function parseMeasureConversionHeader(
   });
 
   opts.value = getPositive32BitUnsignedInteger(dict, "value");
-
   opts.maxValue = getPositive32BitUnsignedInteger(dict, "max-value");
 
   return [opts, reportUrl];
