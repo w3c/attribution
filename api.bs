@@ -2218,6 +2218,24 @@ a [=URL=] |url|, and an [=environment settings object=] |settings|:
 
 Issue: Should the request use a more specific content-type?
 
+Issue: Should the request's [=request/service-workers mode=] be "`none`" instead
+of the default of "`all`"?
+
+Issue: Should the request's [=request/unsafe-request flag=] be set?
+
+Issue: Should the request's [=request/referrer=] be "`no-referrer`" instead of
+the default of "`client"`?
+
+Issue: Should the request's [=request/destination=] be something other than the
+default of the empty string, e.g. "`report`" or even a new value?
+
+Issue: Should the request's [=request/redirect mode=] be something other than the
+default of "`follow`"?
+
+Issue: Should the request use a `null` client instead, per
+<a href="https://fetch.spec.whatwg.org/#fetch-elsewhere-request">the `fetch`
+specification's guidance</a>?
+
 </div>
 
 ## Fetch monkey patches ## {#fetch-monkey-patches}
