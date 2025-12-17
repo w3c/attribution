@@ -173,6 +173,9 @@ export function parseMeasureConversionHeader(
   }
 
   const histogramSize = getPositive32BitUnsignedInteger(dict, "histogram-size");
+  if (histogramSize === undefined) {
+    throw new TypeError("histogram-size is required");
+  }
 
   const reportUrlString = get(dict, "report-url");
   if (reportUrlString === undefined) {
