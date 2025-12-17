@@ -2056,7 +2056,7 @@ optional keys are populated the same way as the corresponding
   <dt><dfn noexport><code>epsilon</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionConversionOptions>epsilon</a>,
-    a positive [=structured header/decimal=]. This key is optional.
+    a positive [=structured header/decimal=] or [=structured header/integer=]. This key is optional.
   </dd>
   <dt><dfn noexport><code>histogram-size</code></dfn></dt>
   <dd>
