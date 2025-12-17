@@ -196,7 +196,7 @@ export function parseMeasureConversionHeader(
 
   const epsilon = get(dict, "epsilon");
   if (epsilon !== undefined && typeof epsilon !== "number") {
-    throw new RangeError("epsilon must be a decimal or an integer");
+    throw new TypeError("epsilon must be a decimal or an integer");
   }
   opts.epsilon = epsilon;
 
