@@ -1943,8 +1943,8 @@ The following keys are defined, corresponding to the members of
 the {{AttributionImpressionOptions}} dictionary passed to
 <a method for=Attribution>saveImpression()</a>. Default values for omitted
 optional keys are treated the same way as the corresponding
-{{AttributionImpressionOptions}} field.
-
+{{AttributionImpressionOptions}} field. Unknown dictionary keys are ignored,
+as are unknown parameters.
 
 <dl dfn-for=save-impression>
   <dt><dfn noexport><code>conversion-sites</code></dfn></dt>
@@ -2044,8 +2044,9 @@ Measure-Conversion: aggregation-service="https://aggregator.example/tee", histog
 The following keys are defined, corresponding to the members of
 the {{AttributionConversionOptions}} dictionary passed to
 <a method for=Attribution>measureConversion()</a>. Default values for omitted
-optional keys are populated the same way as the corresponding
-{{AttributionConversionOptions}} field.
+optional keys are treated the same way as the corresponding
+{{AttributionConversionOptions}} field. Unknown dictionary keys are ignored, as
+are unknown parameters.
 
 <dl dfn-for=measure-conversion>
   <dt><dfn noexport><code>aggregation-service</code></dfn></dt>
