@@ -16,7 +16,7 @@
     },
     {
       "seconds": 2592001,
-      "$comment": "30 days",
+      "$comment": "30 days is the maxLookbackDays value for these tests",
       "site": "advertiser-1.example",
       "event": "measureConversion",
       "options": {
