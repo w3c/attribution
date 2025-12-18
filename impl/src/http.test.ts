@@ -49,6 +49,19 @@ const impressionTests: TestCase<AttributionImpressionOptions>[] = [
   },
 
   {
+    name: "valid-minimal-unknown-keys-and-params-ignored",
+    input: "histogram-index=123;foo=bar, foo=123;bar",
+    expected: {
+      histogramIndex: 123,
+      matchValue: undefined,
+      conversionSites: undefined,
+      conversionCallers: undefined,
+      lifetimeDays: undefined,
+      priority: undefined,
+    },
+  },
+
+  {
     name: "valid-maximal",
     input: `histogram-index=123;x, match-value=4, conversion-sites=("b" "a";y);z, conversion-callers=("c"), lifetime-days=5, priority=-6, octopus=?1`,
     expected: {
@@ -212,6 +225,27 @@ const conversionTests: TestCase<http.ParsedMeasureConversionHeader>[] = [
   {
     name: "valid-minimal",
     input: `aggregation-service="", histogram-size=1, report-url="https://r.example"`,
+    expected: [
+      {
+        aggregationService: "",
+        histogramSize: 1,
+
+        credit: undefined,
+        epsilon: undefined,
+        impressionCallers: undefined,
+        impressionSites: undefined,
+        lookbackDays: undefined,
+        matchValues: undefined,
+        maxValue: undefined,
+        value: undefined,
+      },
+      new URL("https://r.example"),
+    ],
+  },
+
+  {
+    name: "valid-minimal-unknown-keys-and-params-ignored",
+    input: `aggregation-service="";foo=bar, histogram-size=1, report-url="https://r.example", foo=bar`,
     expected: [
       {
         aggregationService: "",
