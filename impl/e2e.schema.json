@@ -103,8 +103,7 @@
                       {
                         "type": "array",
                         "items": {
-                          "type": "integer",
-                          "minimum": 0
+                          "$ref": "#/$defs/unsignedLong"
                         }
                       },
                       {
@@ -171,7 +170,7 @@
           "type": "number"
         },
         "histogramSize": {
-          "type": "integer"
+          "$ref": "#/$defs/unsignedLong"
         },
         "impressionCallers": {
           "$ref": "#/$defs/siteList"
@@ -180,19 +179,19 @@
           "$ref": "#/$defs/siteList"
         },
         "lookbackDays": {
-          "type": "integer"
+          "$ref": "#/$defs/unsignedLong"
         },
         "matchValues": {
           "type": "array",
           "items": {
-            "type": "integer"
+            "$ref": "#/$defs/unsignedLong"
           }
         },
         "maxValue": {
-          "type": "integer"
+          "$ref": "#/$defs/unsignedLong"
         },
         "value": {
-          "type": "integer"
+          "$ref": "#/$defs/unsignedLong"
         }
       },
       "required": ["aggregationService", "histogramSize"],
@@ -208,16 +207,16 @@
           "$ref": "#/$defs/siteList"
         },
         "histogramIndex": {
-          "type": "integer"
+          "$ref": "#/$defs/unsignedLong"
         },
         "lifetimeDays": {
-          "type": "integer"
+          "$ref": "#/$defs/unsignedLong"
         },
         "matchValue": {
-          "type": "integer"
+          "$ref": "#/$defs/unsignedLong"
         },
         "priority": {
-          "type": "integer"
+          "$ref": "#/$defs/long"
         }
       },
       "required": ["histogramIndex"],
@@ -283,6 +282,16 @@
       "items": {
         "type": "string"
       }
+    },
+    "long": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "unsignedLong": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
     }
   }
 }
