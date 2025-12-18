@@ -2184,7 +2184,7 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
 1.  Return (|opts|, |reportUrl|).
 
 Issue: Should we allow `http` for |reportUrl|'s [=url/scheme=]?
-Related to https://github.com/w3c/attribution/issues/146.
+Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
 
 </div>
 
@@ -2192,10 +2192,15 @@ Related to https://github.com/w3c/attribution/issues/146.
 To <dfn noexport>send a report</dfn> given a [=byte sequence=] |report|,
 a [=URL=] |url|, and an [=environment settings object=] |settings|:
 
-1. [=Assert=]: |url| is a [=potentially trustworthy URL=].
-1. [=Assert=]: |url|'s [=url/scheme=] is "`https`".
-1. Let |headers| be a new [=header list=] containing a [=header=] named `"Content-Type"` whose value is `"application/octet-stream"`.
-1. Let |request| be a new [=request=] with the following properties:
+1.  [=Assert=]: |url| is a [=potentially trustworthy URL=].
+1.  [=Assert=]: |url|'s [=url/scheme=] is "`https`".
+1.  Let |headers| be a new [=header list=] containing a [=header=] named
+    `"Content-Type"` whose value is
+    "<code>[[DAP#name-application-dap-report-medi|application/dap-report]]</code>".
+
+    Note: This will need to be updated if {{AttributionAggregationProtocol}}
+    ever gains a value other than {{AttributionAggregationProtocol/dap-15-histogram}}.
+1.  Let |request| be a new [=request=] with the following properties:
     :   [=request/method=]
     ::  "`POST`"
     :   [=request/URL=]
@@ -2214,27 +2219,9 @@ a [=URL=] |url|, and an [=environment settings object=] |settings|:
     ::  true
     :   [=request/credentials mode=]
     ::  "`omit`"
-1. [=Fetch=] |request|, optionally retrying in the event of an error.
-
-Issue: Should the request use a more specific content-type?
-
-Issue: Should the request's [=request/service-workers mode=] be "`none`" instead
-of the default of "`all`"?
-
-Issue: Should the request's [=request/unsafe-request flag=] be set?
-
-Issue: Should the request's [=request/referrer=] be "`no-referrer`" instead of
-the default of "`client"`?
-
-Issue: Should the request's [=request/destination=] be something other than the
-default of the empty string, e.g. "`report`" or even a new value?
-
-Issue: Should the request's [=request/redirect mode=] be something other than the
-default of "`follow`"?
-
-Issue: Should the request use a `null` client instead, per
-<a href="https://fetch.spec.whatwg.org/#fetch-elsewhere-request">the `fetch`
-specification's guidance</a>?
+    :   [=request/referrer=]
+    ::  |url|
+1.  [=Fetch=] |request|, optionally retrying in the event of an error.
 
 </div>
 
@@ -2286,7 +2273,7 @@ and [=response=] |response|, run these steps:
 Issue: Confirm the desired semantics of [:Save-Impression:] and [:Measure-Conversion:] in the same response.
 
 Issue: Should we allow `http` for |response|'s [=response/URL=]'s [=url/scheme=]?
-Related to https://github.com/w3c/attribution/issues/146.
+Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
 
 </div>
 
