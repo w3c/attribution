@@ -2357,7 +2357,7 @@ The first [[PPA-DP]] establishes the theory
 for on-device Individual DP accounting. The second [[PPA-DP-2]] expands the analysis to
 the mathematical privacy guarantees afforded by per-site budgets and by the global budget.
 
-The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee. However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees::
+The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee. However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees:
 
 1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
     and conversions) must be generated independently of past DP [=attribution results=] from other sites.
@@ -2387,7 +2387,7 @@ Leakage through shared limits motivates using those limits only as a means of li
 By contrast, the analysis shows that *the global budget* can be implemented to deliver *sound global individual
 DP guarantees* without these limitations. However, to support the usage of the API by many sites, the global budget needs to be configured to be a significant multiple of the per-site budget.  This means that the DP guarantee it provides, while independent of any assumptions, cannot provide a meaningful DP protection alone. Therefore, per-site budgets provide the primary DP guarantee. The global budget can be viewed as a fallback in case of coordinated attack by malicious sites.
 
-A global DP budget also safeguards against sites that are able to link user identity across many sites to combine per-site budgets. Per-site models do not account for this possibility, though it is common for some sites to have this capability. Notably, this includes identity providers, sites that receive user identifiers (such as email addresses or phone numbers), sites that successfully use navigation tracking [[NAV-TRACKING-MITIGATIONS]], and sites that are able to use cross-site cookies for any reason [[https://www.w3.org/2001/tag/doc/web-without-3p-cookies/]].  Using Attribution across multiple sites can present a coordination challenge for such sites, but the potential for sites to have the capability to link activity to a single person cannot be disregarded in any holistic analysis of the privacy of the system.
+A global DP budget also safeguards against sites that are able to link user identity across many sites to combine per-site budgets. Per-site models do not account for this possibility, though it is common for some sites to have this capability. Notably, this includes identity providers, sites that receive user identifiers (such as email addresses or phone numbers), sites that successfully use navigation tracking [[NAV-TRACKING-MITIGATIONS]], and sites that are able to use cross-site cookies for any reason [[WEB-WITHOUT-3P-COOKIES]].  Using Attribution across multiple sites can present a coordination challenge for such sites, but the potential for sites to have the capability to link activity to a single person cannot be disregarded in any holistic analysis of the privacy of the system.
 
 
 ### Browser Instances ### {#dp-instance}
@@ -3246,6 +3246,11 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     "title": "Verifiable Distributed Aggregation Functions",
     "date": "2025-06-17",
     "href": "https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-15"
+  },
+  "WEB-WITHOUT-3P-COOKIES": {
+    "title": "A Web Without Third-Party Cookies",
+    "href": "https://www.w3.org/2001/tag/doc/web-without-3p-cookies/",
+    "publisher": "W3C TAG"
   }
 }
 </pre>
