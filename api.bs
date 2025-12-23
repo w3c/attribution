@@ -2346,53 +2346,49 @@ for a number of reasons:
 
 ### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
 
+The privacy protections in Attribution are multi-layered:
+1.  Per-site budgets limit how much can be learned about a user by any one conversion site.
+1.  The global budget provides a backstop limit on how much can be learned about a user by all sites.
+1.  Impression-site quotas limit how much conversion sites can learn about a user’s activity on any one impression site.
+1.  A counter maintained after each user action limits how many sites can store data into or learn from API.
+
 The formal privacy analysis in this specification is based on two papers.
 The first [[PPA-DP]] establishes the theory
-for on-device Individual DP accounting. The second [[PPA-DP-2]] provides formal analysis of
-the mathematical privacy guarantees afforded by *per-site budgets* and by *safety limits*
-(Section 3 is about per-site guarantees and Section 3.4 specifies the assumptions under
-which they hold). Per-site budgets include [=site=] in the [=privacy unit=], whereas safety
-limits exclude it thereby enforcing a global individual DP guarantee.  In Attribution Level 1
-it is conversion sites that have per-site budgets tracked.
+for on-device Individual DP accounting. The second [[PPA-DP-2]] expands the analysis to
+the mathematical privacy guarantees afforded by per-site budgets and by the global budget.
 
-The analysis in [[PPA-DP-2]] shows that *per-site individual DP guarantees* hold under a restricted system
-model that makes two assumptions, which may not always be satisfied in practice:
+The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee. However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees::
 
 1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
     and conversions) must be generated independently of past DP [=attribution results=] from other sites.
 1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
     reports are emitted to others.
 
-Assumption 1 is necessary because the system involves multiple sites that could interact
-with the same user over time and change the ads they show to the user, or impact the
-conversions the user has, based on each other’s DP measurements. For example, if one advertiser
-learns, from [=attribution results=], to make an ad more effective, a user may convert on their site
-rather than a competitor’s. In this case, the first site’s DP outputs -- counted only against
-its own per-site budget -- alter the data (or absence of data) visible to the competitor, yet
-this impact is not reflected in the competitor’s per-site budget. When Assumption 1 is violated,
-the analysis shows that per-site guarantees cannot be achieved.
+In short, neither assumption can hold in practice.
 
-Assumption 2 is necessary when we have shared limits that span multiple sites. An example of
+An assumption of no cross-site adaptivity is necessary because the system involves multiple sites that could interact
+with the same user over time.
+Sites will change the ads they show to the user based on each other’s DP measurements. For example, if one advertiser
+learns, from [=attribution results=], how to make better ads, some users could convert on their site
+rather than a competitor’s. In this case, what one site learns -- counted only against
+its own per-site budget -- alters the data (or absence of data) visible to their competitors, yet
+this is not accounted for in the per-site budget of those competitors.
+
+Any system that provides continuous measurement has this property, so the only conclusion can be to accept this limitation. That limitation is part of what justifies having a global DP budget and shared quotas, which lead to the second assumption.
+
+An assumption of no cross-site leakage is necessary when we have shared limits that span multiple sites. An example of
 such shared limits are the global safety limits that aim to provide a global DP guarantee.
 If <a method for=Attribution>measureConversion()</a> requests from some sites cause a shared limit
 to be reached, reports to other sites may be
-filtered, creating dependencies across separate per-site privacy units and affecting the validity
-of the per-site guarantees. Thus, care must be taken when introducing any new shared limit, such
-as cross-site rate limiters on privacy loss. If only Assumption 2 is violated, it is unknown whether
-per-site guarantees can still be preserved, for example via special designs of the shared limits.
+filtered. For instance, a site that knows it has impressions learns something about whether the shared limit has been reached. Though this information is aggregated and noisy, it is information about the site that exhausted its budget, in excess of the per-site budget for that site.
 
-These results suggest that per-site protections should be regarded as theoretically grounded approximations
-of an ideal per-site individual DP guarantee that can be established only under certain assumptions.
-The extent to which privacy protection from per-site budgets may be impacted in practice remains unknown.
+Leakage through shared limits motivates using those limits only as a means of limiting abuse. Setting shared limits that are large multiples of the per-site budget makes it so that seeking to exploit shared limits requires coordination by at least that many sites. Larger multiples makes shared limits less useful as a privacy means of privacy protection and more suited as a means of protecting against denial of service or similar forms of abuse.
 
-By contrast, the analysis shows that *safety limits* -- which operate at global level,
-excluding [=site=] from the [=privacy unit=] -- can be implemented to deliver *sound global individual
-DP guarantees* regardless of whether either assumption is satisfied.
+By contrast, the analysis shows that *the global budget* can be implemented to deliver *sound global individual
+DP guarantees* without these limitations. However, to support the usage of the API by many sites, the global budget needs to be configured to be a significant multiple of the per-site budget.  This means that the DP guarantee it provides, while independent of any assumptions, cannot provide a meaningful DP protection alone. Therefore, per-site budgets provide the primary DP guarantee. The global budget can be viewed as a fallback in case of coordinated attack by malicious sites.
 
-In addition to facing safety limits discussed above, an attacker using multiple colluding sites to gain
-more DP budget about users also face the practical limitation of being able to link a user across sites.
-This is limitation does not itself provide a theoretical DP benefit but does impose a significant
-challenge in practice to the attacker when the user agent has made such cross-site linking difficult.
+A global DP budget also safeguards against sites that are able to link user identity across many sites to combine per-site budgets. Per-site models do not account for this possibility, though it is common for some sites to have this capability. Notably, this includes identity providers, sites that receive user identifiers (such as email addresses or phone numbers), sites that successfully use navigation tracking [[NAV-TRACKING-MITIGATIONS]], and sites that are able to use cross-site cookies for any reason [[https://www.w3.org/2001/tag/doc/web-without-3p-cookies/]].  Using Attribution across multiple sites can present a coordination challenge for such sites, but the potential for sites to have the capability to link activity to a single person cannot be disregarded in any holistic analysis of the privacy of the system.
+
 
 ### Browser Instances ### {#dp-instance}
 
