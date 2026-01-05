@@ -2498,7 +2498,7 @@ and a [=list=] of [=integers=] |histogram|:
         mapped to the [=isomorphic encode|encoded=] value of |topLevelSite|[1].
 
 1.  Let |reportMetadata| be encoded DAP [`ReportMetadata`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.2)
-    generated from |reportID|, |time|, and |extensions|.
+    generated from |reportID|, |topLevelSite|, |time|, and |extensions|.
 
 1.  Let |encryptedInputShares| be an [=list/is empty|empty=] [=list=].
 
