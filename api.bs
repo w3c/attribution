@@ -2560,7 +2560,7 @@ each [=conversion report=] includes associated data
 that is authenticated as part of the AEAD encryption.
 This associated data includes:
 
-*   The [=origin=] of the caller invoking the {{Attribution/measureConversion()}} API.
+*   The [=site=] of the caller invoking the {{Attribution/measureConversion()}} API.
 *   A timestamp, as determined by the device at the time of the API call.
 
 The [=aggregation service=] uses this associated data
