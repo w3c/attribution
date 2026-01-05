@@ -2555,6 +2555,20 @@ that was expended by the site that requested the report.
 An [=aggregation service=] MUST guarantee
 that it does not accept the same report more than once.
 
+To support anti-replay verification,
+each [=conversion report=] includes associated data
+that is authenticated as part of the AEAD encryption.
+This associated data includes:
+
+*   The [=origin=] of the caller invoking the {{Attribution/measureConversion()}} API.
+*   A timestamp, as determined by the device at the time of the API call.
+
+The [=aggregation service=] uses this associated data
+to shard its anti-replay mechanism.
+This sharding enables efficient verification
+that each report is processed only once,
+while allowing the service to scale.
+
 
 # Differential Privacy # {#dp}
 
