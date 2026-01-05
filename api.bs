@@ -8,6 +8,7 @@ Group: patwg
 TR: https://www.w3.org/TR/attribution/
 Editor: Andrew Paseltiner, w3cid 131329, Google https://www.google.com/, apaseltiner@chromium.org
 Editor: Andy Leiserson, w3cid 147715, Mozilla https://mozilla.org/, aleiserson@mozilla.com
+Editor: Benjamin Case, w3cid 128082, Meta https://www.meta.com/, bmcase@meta.com
 Editor: Benjamin Savage, w3cid 114877, Meta https://www.meta.com/, btsavage@meta.com
 Editor: Charlie Harrison, w3cid 110615, Google https://www.google.com/, csharrison@chromium.org
 Editor: Martin Thomson, w3cid 68503, Mozilla https://mozilla.org/, mt@mozilla.com
