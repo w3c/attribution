@@ -286,7 +286,7 @@ export class Backend {
     const maxMatchValues = this.#delegate.maxMatchValues;
     if (matchValues.length > maxMatchValues) {
       throw new RangeError(
-        `matchValues size must be in the range [0,${maxMatchValues}]`,
+        `number of values in matchValues exceeds limit of ${maxMatchValues}`,
       );
     }
     for (const value of matchValues) {
