@@ -74,7 +74,7 @@ function parseSites(
   limit: number,
 ): Set<string> {
   const parsed = new Set<string>();
-  if (limit !== null && input.length > limit) {
+  if (input.length > limit) {
     throw new RangeError(
       `number of values in ${label} exceeds limit of ${limit}`,
     );
