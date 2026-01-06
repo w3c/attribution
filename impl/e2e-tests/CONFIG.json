@@ -1,4 +1,8 @@
 {
+  "$comment": [
+    "Values here do not meet minimums in the spec.",
+    "Values are kept small so tests for limits can be small."
+  ],
   "aggregationServices": {
     "https://agg-service.example": "dap-15-histogram"
   },
