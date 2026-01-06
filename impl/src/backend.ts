@@ -89,9 +89,9 @@ export interface Delegate {
   readonly aggregationServices: AttributionAggregationServices;
   readonly includeUnencryptedHistogram?: boolean;
 
-  /// The maximum number of conversion callers per impression.
-  readonly maxConversionSitesPerImpression: number;
   /// The maximum number of conversion sites per impression.
+  readonly maxConversionSitesPerImpression: number;
+  /// The maximum number of conversion callers per impression.
   readonly maxConversionCallersPerImpression: number;
   /// The maximum number of impression sites for conversion.
   readonly maxImpressionSitesForConversion: number;
