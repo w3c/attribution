@@ -28,6 +28,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "assert": "^2.1.0",
     "psl": "^1.15.0",
     "structured-headers": "^2.0.2",
     "temporal-polyfill": "^0.3.0"
