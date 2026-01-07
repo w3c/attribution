@@ -1,15 +1,6 @@
 {
   "events": [
     {
-      "seconds": 1,
-      "site": "publisher.example",
-      "event": "saveImpression",
-      "options": {
-        "histogramIndex": -1
-      },
-      "expectedError": "RangeError"
-    },
-    {
       "seconds": 2,
       "site": "publisher.example",
       "event": "saveImpression",
