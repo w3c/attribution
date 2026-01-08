@@ -1,0 +1,77 @@
+{
+  "$comment": "The specification does not require that impressions saved before the API was disabled are retained once it is re-enabled, so we do not test that here",
+  "events": [
+    {
+      "seconds": 1,
+      "event": "disableAPI"
+    },
+    {
+      "seconds": 2,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0,
+        "lifetimeDays": 0
+      },
+      "$comment": "Impression options are still validated even when the API is disabled",
+      "expectedError": "RangeError"
+    },
+    {
+      "seconds": 3,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "seconds": 4,
+      "event": "enableAPI"
+    },
+    {
+      "seconds": 5,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1
+      },
+      "$comment": "The valid impression should not have been saved while the API was disabled",
+      "expected": [0]
+    },
+    {
+      "seconds": 6,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "seconds": 7,
+      "event": "disableAPI"
+    },
+    {
+      "seconds": 8,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 0
+      },
+      "$comment": "Conversion options are still validated even when the API is disabled...",
+      "expected": "RangeError"
+    },
+    {
+      "seconds": 9,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1
+      },
+      "$comment": "... But valid conversion options only result in all-zero reports, despite the would-be-matching impression",
+      "expected": [0]
+    }
+  ]
+}
