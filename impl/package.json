@@ -3,7 +3,7 @@
   "scripts": {
     "build": "tsc",
     "pack": "webpack --mode production",
-    "test": "node --test dist/**/*.test.js",
+    "test": "node --enable-source-maps --experimental-test-coverage --test dist/**/*.test.js",
     "pretty": "prettier . --write",
     "pretty:check": "prettier . --check",
     "lint": "eslint src",
@@ -28,6 +28,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "assert": "^2.1.0",
     "psl": "^1.15.0",
     "structured-headers": "^2.0.2",
     "temporal-polyfill": "^0.3.0"
