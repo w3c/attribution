@@ -1,4 +1,8 @@
 {
+  "$comment": [
+    "Values here do not meet minimums in the spec.",
+    "Values are kept small so tests for limits can be small."
+  ],
   "aggregationServices": {
     "https://agg-service.example": "dap-15-histogram"
   },
@@ -6,7 +10,10 @@
   "fairlyAllocateCreditFraction": 0.5,
   "maxConversionSitesPerImpression": 3,
   "maxConversionCallersPerImpression": 3,
+  "maxImpressionSitesForConversion": 3,
+  "maxImpressionCallersForConversion": 3,
   "maxCreditSize": 10,
+  "maxMatchValues": 10,
   "maxLookbackDays": 30,
   "maxHistogramSize": 5,
   "privacyBudgetMicroEpsilons": 1000000,

@@ -100,7 +100,10 @@ function runTest(
 
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
+    maxImpressionSitesForConversion: config.maxImpressionSitesForConversion,
+    maxImpressionCallersForConversion: config.maxImpressionCallersForConversion,
     maxCreditSize: config.maxCreditSize,
+    maxMatchValues: config.maxMatchValues,
     maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
@@ -144,7 +147,6 @@ function runTest(
             event.intermediarySite,
             event.options,
           );
-
         if (Array.isArray(event.expected)) {
           assert.deepEqual(
             call().unencryptedHistogram,

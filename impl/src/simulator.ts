@@ -18,7 +18,10 @@ const backend = new Backend({
   // TODO: Allow these values to be configured in the UI.
   maxConversionSitesPerImpression: 10,
   maxConversionCallersPerImpression: 10,
+  maxImpressionSitesForConversion: 10,
+  maxImpressionCallersForConversion: 10,
   maxCreditSize: Infinity,
+  maxMatchValues: Infinity,
   maxLookbackDays: 30,
   maxHistogramSize: 100,
   privacyBudgetMicroEpsilons: 1000000,

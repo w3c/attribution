@@ -5,6 +5,9 @@
   "oneOf": [
     {
       "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
         "aggregationServices": {
           "type": "object",
           "additionalProperties": {
@@ -40,9 +43,21 @@
           "type": "integer",
           "minimum": 1
         },
+        "maxImpressionSitesForConversion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxImpressionCallersForConversion": {
+          "type": "integer",
+          "minimum": 0
+        },
         "maxLookbackDays": {
           "type": "integer",
           "minimum": 1
+        },
+        "maxMatchValues": {
+          "type": "integer",
+          "minimum": 0
         },
         "privacyBudgetEpochDays": {
           "type": "integer",
@@ -59,6 +74,9 @@
         "maxConversionSitesPerImpression",
         "maxCreditSize",
         "maxHistogramSize",
+        "maxImpressionSitesForConversion",
+        "maxImpressionCallersForConversion",
+        "maxMatchValues",
         "privacyBudgetEpochDays",
         "privacyBudgetMicroEpsilons"
       ]
@@ -157,6 +175,9 @@
     "AttributionConversionOptions": {
       "type": "object",
       "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
         "aggregationService": {
           "type": "string"
         },
@@ -200,6 +221,9 @@
     "AttributionImpressionOptions": {
       "type": "object",
       "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
         "conversionCallers": {
           "$ref": "#/$defs/siteList"
         },

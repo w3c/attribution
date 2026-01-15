@@ -10,7 +10,10 @@ export interface TestConfig {
   aggregationServices: Record<string, AttributionProtocol>;
   maxConversionSitesPerImpression: number;
   maxConversionCallersPerImpression: number;
+  maxImpressionSitesForConversion: number;
+  maxImpressionCallersForConversion: number;
   maxCreditSize: number;
+  maxMatchValues: number;
   maxLookbackDays: number;
   maxHistogramSize: number;
   privacyBudgetMicroEpsilons: number;
@@ -35,7 +38,10 @@ export function makeBackend(
 
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
+    maxImpressionSitesForConversion: config.maxImpressionSitesForConversion,
+    maxImpressionCallersForConversion: config.maxImpressionCallersForConversion,
     maxCreditSize: config.maxCreditSize,
+    maxMatchValues: config.maxMatchValues,
     maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,

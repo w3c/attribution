@@ -94,6 +94,7 @@
       "options": {
         "aggregationService": "https://agg-service.example",
         "histogramSize": 1,
+        "$comment": "Zero credit",
         "credit": [0]
       },
       "expected": "RangeError"
@@ -102,10 +103,10 @@
       "seconds": 10,
       "site": "advertiser.example",
       "event": "measureConversion",
-      "$comment": "Greater than CONFIG.maxCreditSize",
       "options": {
         "aggregationService": "https://agg-service.example",
         "histogramSize": 1,
+        "$comment": "Greater than CONFIG.maxCreditSize",
         "credit": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
       },
       "expected": "RangeError"
@@ -117,7 +118,9 @@
       "options": {
         "aggregationService": "https://agg-service.example",
         "histogramSize": 1,
-        "lookbackDays": 0
+        "credit": [1],
+        "$comment": "Greater than CONFIG.maxMatchValues",
+        "matchValues": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
       },
       "expected": "RangeError"
     },
@@ -128,7 +131,19 @@
       "options": {
         "aggregationService": "https://agg-service.example",
         "histogramSize": 1,
-        "impressionSites": [":"]
+        "$comment": "lookback cannot be zero",
+        "lookbackDays": 0
+      },
+      "expected": "RangeError"
+    },
+    {
+      "seconds": 13,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1,
+        "impressionSites": ["a"]
       },
       "expected": {
         "error": "DOMException",
@@ -136,7 +151,7 @@
       }
     },
     {
-      "seconds": 13,
+      "seconds": 14,
       "site": "advertiser.example",
       "event": "measureConversion",
       "options": {
@@ -148,6 +163,30 @@
         "error": "DOMException",
         "name": "SyntaxError"
       }
+    },
+    {
+      "seconds": 15,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1,
+        "$comment": "Greater than CONFIG.maxImpressionSitesForConversion",
+        "impressionSites": ["a", "b", "c", "d"]
+      },
+      "expected": "RangeError"
+    },
+    {
+      "seconds": 16,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1,
+        "$comment": "Greater than CONFIG.maxImpressionCallersForConversion",
+        "impressionCallers": ["a", "b", "c", "d"]
+      },
+      "expected": "RangeError"
     }
   ]
 }
