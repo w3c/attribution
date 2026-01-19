@@ -386,6 +386,7 @@ Upon receiving a set of encrypted histograms from a site, the aggregation servic
 
 3.  returns the aggregate to the site.
 
+We refer to the final output as an <dfn>attribution result</dfn>.
 
 
 # API Usage # {#api}
@@ -813,8 +814,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dt><dfn>value</dfn></dt>
   <dd>
     The [=conversion value=]. If an attribution is made and [[#dp|privacy]]
-    restrictions are satisfied, this value will be encoded into the [=conversion
-    report=].
+    restrictions are satisfied, this value will be encoded into the [=conversion report=].
   </dd>
   <dt><dfn>maxValue</dfn></dt>
   <dd>
@@ -2702,6 +2702,51 @@ for a number of reasons:
     Without allocating [=privacy budget=] for new data,
     sites could exhaust their budget forever.
 
+### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
+
+The privacy protections in Attribution are multi-layered:
+1.  Per-site budgets limit how much can be learned about a user by any one conversion site.
+1.  The global budget provides a backstop limit on how much can be learned about a user by all sites.
+1.  Impression-site quotas limit how much conversion sites can learn about a user’s activity on any one impression site.
+1.  A counter maintained after each user action limits how many sites can store data into or learn from API.
+
+The formal privacy analysis in this specification is based on two papers.
+The first [[PPA-DP]] establishes the theory
+for on-device Individual DP accounting. The second [[PPA-DP-2]] expands the analysis to
+the mathematical privacy guarantees afforded by per-site budgets and by the global budget.
+
+The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee. However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees:
+
+1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
+    and conversions) must be generated independently of past DP [=attribution results=] from other sites.
+1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
+    reports are emitted to others.
+
+In short, neither assumption can hold in practice.
+
+An assumption of no cross-site adaptivity is necessary because the system involves multiple sites that could interact
+with the same user over time.
+Sites will change the ads they show to the user based on each other’s DP measurements. For example, if one advertiser
+learns, from [=attribution results=], how to make better ads, some users could convert on their site
+rather than a competitor’s. In this case, what one site learns -- counted only against
+its own per-site budget -- alters the data (or absence of data) visible to their competitors, yet
+this is not accounted for in the per-site budget of those competitors.
+
+Any system that provides continuous measurement has this property, so the only conclusion can be to accept this limitation. That limitation is part of what justifies having a global DP budget and shared quotas, which lead to the second assumption.
+
+An assumption of no cross-site leakage is necessary when we have shared limits that span multiple sites. An example of
+such shared limits are the global safety limits that aim to provide a global DP guarantee.
+If <a method for=Attribution>measureConversion()</a> requests from some sites cause a shared limit
+to be reached, reports to other sites may be
+filtered. For instance, a site that knows it has impressions learns something about whether the shared limit has been reached. Though this information is aggregated and noisy, it is information about the site that exhausted its budget, in excess of the per-site budget for that site.
+
+Leakage through shared limits motivates using those limits only as a means of limiting abuse. Setting shared limits that are large multiples of the per-site budget makes it so that seeking to exploit shared limits requires coordination by at least that many sites. Larger multiples makes shared limits less useful as a privacy means of privacy protection and more suited as a means of protecting against denial of service or similar forms of abuse.
+
+By contrast, the analysis shows that *the global budget* can be implemented to deliver *sound global individual
+DP guarantees* without these limitations. However, to support the usage of the API by many sites, the global budget needs to be configured to be a significant multiple of the per-site budget.  This means that the DP guarantee it provides, while independent of any assumptions, cannot provide a meaningful DP protection alone. Therefore, per-site budgets provide the primary DP guarantee. The global budget can be viewed as a fallback in case of coordinated attack by malicious sites.
+
+A global DP budget also safeguards against sites that are able to link user identity across many sites to combine per-site budgets. Per-site models do not account for this possibility, though it is common for some sites to have this capability. Notably, this includes identity providers, sites that receive user identifiers (such as email addresses or phone numbers), sites that successfully use navigation tracking [[NAV-TRACKING-MITIGATIONS]], and sites that are able to use cross-site cookies for any reason [[WEB-WITHOUT-3P-COOKIES]].  Using Attribution across multiple sites can present a coordination challenge for such sites, but the potential for sites to have the capability to link activity to a single person cannot be disregarded in any holistic analysis of the privacy of the system.
+
 
 ### Browser Instances ### {#dp-instance}
 
@@ -3008,8 +3053,8 @@ is a particular concern with the Attribution API,
 because impressions are stored only on the device.
 It is not possible to apply server-side intelligence
 to identify fraudulent impressions and exclude them
-from attribution. Conversely, even though [=conversion
-reports=] are encrypted, because the reports are sent
+from attribution. Conversely, even though [=conversion reports=]
+are encrypted, because the reports are sent
 to a server, the server can make a determination that
 the conversion is likely fraudulent and exclude it from
 aggregation.
@@ -3522,6 +3567,22 @@ spec:css-2025; type:dfn; text:user
     "title": "Cookie Monster: Efficient On-device Budgeting for Differentially-Private Ad-Measurement Systems",
     "publisher": "SOSP'24"
   },
+  "ppa-dp-2": {
+    "authors": [
+      "Pierre Tholoniat",
+      "Alison Caulfield",
+      "Giorgio Cavicchioli",
+      "Mark Chen",
+      "Nikos Goutzoulias",
+      "Benjamin Case",
+      "Asaf Cidon",
+      "Roxana Geambasu",
+      "Mathias Lécuyer",
+      "Martin Thomson"
+    ],
+    "href": "https://arxiv.org/abs/2506.05290",
+    "title": "Big Bird: Privacy Budget Management for W3C's Privacy-Preserving Attribution API"
+  },
   "prio": {
     "authors": [
       "Henry Corrigan-Gibbs",
@@ -3550,6 +3611,11 @@ spec:css-2025; type:dfn; text:user
     "title": "Verifiable Distributed Aggregation Functions",
     "date": "2025-06-17",
     "href": "https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-15"
+  },
+  "WEB-WITHOUT-3P-COOKIES": {
+    "title": "A Web Without Third-Party Cookies",
+    "href": "https://www.w3.org/2001/tag/doc/web-without-3p-cookies/",
+    "publisher": "W3C TAG"
   }
 }
 </pre>
