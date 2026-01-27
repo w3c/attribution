@@ -163,6 +163,24 @@
                 },
                 "required": ["forgetVisits", "sites"],
                 "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "enableAPI"
+                  }
+                },
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "disableAPI"
+                  }
+                },
+                "unevaluatedProperties": false
               }
             ]
           }

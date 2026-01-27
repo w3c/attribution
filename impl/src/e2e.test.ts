@@ -23,7 +23,9 @@ type Event =
   | SaveImpression
   | MeasureConversion
   | ClearImpressionsForSite
-  | ClearBrowsingHistoryForAttribution;
+  | ClearBrowsingHistoryForAttribution
+  | EnableAPI
+  | DisableAPI;
 
 type ExpectedError =
   | "RangeError"
@@ -62,6 +64,16 @@ interface ClearBrowsingHistoryForAttribution {
   seconds: number;
   sites: string[];
   forgetVisits: boolean;
+}
+
+interface EnableAPI {
+  event: "enableAPI";
+  seconds: number;
+}
+
+interface DisableAPI {
+  event: "disableAPI";
+  seconds: number;
 }
 
 function assertThrows(
@@ -164,6 +176,12 @@ function runTest(
         break;
       case "clearBrowsingHistoryForAttribution":
         backend.clearState(event.sites, event.forgetVisits);
+        break;
+      case "enableAPI":
+        backend.enabled = true;
+        break;
+      case "disableAPI":
+        backend.enabled = false;
         break;
     }
   }
