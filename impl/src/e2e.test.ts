@@ -19,11 +19,13 @@ interface TestCase {
   events: Event[];
 }
 
-type Event = {
-  seconds: number;
-  site: string;
-  intermediarySite?: string | undefined;
-} & (SaveImpression | MeasureConversion);
+type Event =
+  | SaveImpression
+  | MeasureConversion
+  | ClearImpressionsForSite
+  | ClearBrowsingHistoryForAttribution
+  | EnableAPI
+  | DisableAPI;
 
 type ExpectedError =
   | "RangeError"
@@ -35,14 +37,43 @@ type ExpectedError =
 
 interface SaveImpression {
   event: "saveImpression";
+  seconds: number;
+  site: string;
+  intermediarySite?: string | undefined;
   options: AttributionImpressionOptions;
   expectedError?: ExpectedError;
 }
 
 interface MeasureConversion {
   event: "measureConversion";
+  seconds: number;
+  site: string;
+  intermediarySite?: string | undefined;
   options: AttributionConversionOptions;
   expected: number[] | ExpectedError;
+}
+
+interface ClearImpressionsForSite {
+  event: "clearImpressionsForSite";
+  seconds: number;
+  site: string;
+}
+
+interface ClearBrowsingHistoryForAttribution {
+  event: "clearBrowsingHistoryForAttribution";
+  seconds: number;
+  sites: string[];
+  forgetVisits: boolean;
+}
+
+interface EnableAPI {
+  event: "enableAPI";
+  seconds: number;
+}
+
+interface DisableAPI {
+  event: "disableAPI";
+  seconds: number;
 }
 
 function assertThrows(
@@ -81,14 +112,18 @@ function runTest(
 
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
+    maxImpressionSitesForConversion: config.maxImpressionSitesForConversion,
+    maxImpressionCallersForConversion: config.maxImpressionCallersForConversion,
     maxCreditSize: config.maxCreditSize,
+    maxMatchValues: config.maxMatchValues,
     maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
 
     now: () => now,
-    random: () => 0.5,
+    fairlyAllocateCreditFraction: () => config.fairlyAllocateCreditFraction,
+    epochStart: () => config.epochStart,
   });
 
   for (const event of tc.events) {
@@ -124,7 +159,6 @@ function runTest(
             event.intermediarySite,
             event.options,
           );
-
         if (Array.isArray(event.expected)) {
           assert.deepEqual(
             call().unencryptedHistogram,
@@ -137,6 +171,18 @@ function runTest(
 
         break;
       }
+      case "clearImpressionsForSite":
+        backend.clearImpressionsForSite(event.site);
+        break;
+      case "clearBrowsingHistoryForAttribution":
+        backend.clearState(event.sites, event.forgetVisits);
+        break;
+      case "enableAPI":
+        backend.enabled = true;
+        break;
+      case "disableAPI":
+        backend.enabled = false;
+        break;
     }
   }
 }

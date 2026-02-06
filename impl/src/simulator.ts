@@ -18,14 +18,18 @@ const backend = new Backend({
   // TODO: Allow these values to be configured in the UI.
   maxConversionSitesPerImpression: 10,
   maxConversionCallersPerImpression: 10,
+  maxImpressionSitesForConversion: 10,
+  maxImpressionCallersForConversion: 10,
   maxCreditSize: Infinity,
+  maxMatchValues: Infinity,
   maxLookbackDays: 30,
   maxHistogramSize: 100,
   privacyBudgetMicroEpsilons: 1000000,
   privacyBudgetEpoch: days(7),
 
   now: () => now,
-  random: () => 0.5,
+  fairlyAllocateCreditFraction: () => 0.5,
+  epochStart: () => 0.5,
 });
 
 function numberOrUndefined(input: HTMLInputElement): number | undefined {
@@ -177,7 +181,7 @@ function updateBudgetAndEpochTables() {
       e.preventDefault();
 
       const site = this.elements.namedItem("site") as HTMLInputElement;
-      backend.clearImpressionsForConversionSite(site.value.trim());
+      backend.clearImpressionsForSite(site.value.trim());
       updateImpressionsTable();
     });
 }

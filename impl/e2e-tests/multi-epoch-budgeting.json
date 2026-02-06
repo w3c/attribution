@@ -1,0 +1,108 @@
+{
+  "events": [
+    {
+      "$comment": "Associated with epoch=-2 for the conversion sites",
+      "seconds": 1,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 123
+      }
+    },
+    {
+      "$comment": "Associated with epoch=-1 for the conversion sites",
+      "seconds": 604801,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 456
+      }
+    },
+    {
+      "$comment": "Associated with epoch=0 for the conversion sites",
+      "seconds": 1209601,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 2,
+        "matchValue": 789
+      }
+    },
+    {
+      "seconds": 1209602,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 3,
+        "lookbackDays": 30,
+        "value": 4,
+        "maxValue": 8,
+        "credit": [1],
+        "matchValues": [123, 789]
+      },
+      "$comment": [
+        "Consumes 1/2 of the budget from each of the 2 epochs with matching impressions: sensitivity=2*value=8; noiseScale=(2*maxValue)/epsilon=16; deductionFp=sensitivity/noiseScale=1/2",
+        "This is true even though the impression from epoch=-2 isn't the winner of the credit assignment; all that matters is that it matched"
+      ],
+      "expected": [0, 0, 4]
+    },
+    {
+      "seconds": 1209603,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 3,
+        "lookbackDays": 30,
+        "value": 4,
+        "maxValue": 8,
+        "credit": [1],
+        "matchValues": [123, 789]
+      },
+      "$comment": [
+        "Consumes the remaining 1/2 of the budget from each of the 2 epochs with matching impressions: sensitivity=2*value=8; noiseScale=(2*maxValue)/epsilon=16; deductionFp=sensitivity/noiseScale=1/2",
+        "This is true even though the impression from epoch=-2 isn't the winner of the credit assignment; all that matters is that it matched"
+      ],
+      "expected": [0, 0, 4]
+    },
+    {
+      "seconds": 1209604,
+      "site": "advertiser-1.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 3,
+        "lookbackDays": 30,
+        "value": 4,
+        "maxValue": 8,
+        "credit": [2, 1, 1],
+        "matchValues": [123, 456, 789]
+      },
+      "$comment": "All 3 impressions match, but only the one from epoch=-1 is considered for credit assignment, as the other epochs' budgets are exhausted",
+      "expected": [0, 4, 0]
+    },
+    {
+      "seconds": 1209605,
+      "site": "advertiser-2.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 3,
+        "lookbackDays": 30,
+        "value": 4,
+        "maxValue": 8,
+        "credit": [2, 1, 1],
+        "matchValues": [123, 456, 789]
+      },
+      "$comment": "Separate sites have separate budgets",
+      "expected": [1, 1, 2]
+    }
+  ]
+}

@@ -8,6 +8,7 @@ Group: patwg
 TR: https://www.w3.org/TR/attribution/
 Editor: Andrew Paseltiner, w3cid 131329, Google https://www.google.com/, apaseltiner@chromium.org
 Editor: Andy Leiserson, w3cid 147715, Mozilla https://mozilla.org/, aleiserson@mozilla.com
+Editor: Benjamin Case, w3cid 128082, Meta https://www.meta.com/, bmcase@meta.com
 Editor: Benjamin Savage, w3cid 114877, Meta https://www.meta.com/, btsavage@meta.com
 Editor: Charlie Harrison, w3cid 110615, Google https://www.google.com/, csharrison@chromium.org
 Editor: Martin Thomson, w3cid 68503, Mozilla https://mozilla.org/, mt@mozilla.com
@@ -147,7 +148,7 @@ that does not enable tracking.
 
 The measurement of advertising performance creates new cross-site flows of information.
 That information flow creates a privacy risk or cost--
-of [cross-context recognition=]--
+of [=cross-context recognition=]--
 that needs to be justified in terms of benefits to end users.
 
 Any benefits realized by end users through the use of [=attribution=] are indirect.
@@ -288,8 +289,7 @@ is called a <dfn>conversion value</dfn>.
 A higher conversion value might be used for larger purchases
 or any outcome that is more highly valued.
 A conversion value might also be split between multiple impressions
-to split credit,
-though this capability is not presently supported in the API.
+to split credit.
 
 <!-- TODO
 * Compatibility with privacy-preserving aggregation services
@@ -386,6 +386,7 @@ Upon receiving a set of encrypted histograms from a site, the aggregation servic
 
 3.  returns the aggregate to the site.
 
+We refer to the final output as an <dfn>attribution result</dfn>.
 
 
 # API Usage # {#api}
@@ -507,10 +508,10 @@ and impressions are not scoped to a single aggregation service.
 </div>
 
 <xmp class=idl>
-enum AttributionAggregationProtocol { "dap-15-histogram", "tee-00" };
+enum AttributionAggregationProtocol { "dap-15-histogram" };
 
 dictionary AttributionAggregationService {
-  required DOMString protocol;
+  required AttributionAggregationProtocol protocol;
 };
 
 [SecureContext, Exposed=Window]
@@ -549,8 +550,6 @@ used by different [=aggregation services=]. This document defines two protocols:
 <dl dfn-for=AttributionAggregationProtocol dfn-type=enum-value>
   <dt><dfn>dap-15-histogram</dfn></dt>
   <dd>A DAP-based protocol [[DAP]] that uses [=MPC=]; see [[#s-mpc]].</dd>
-  <dt><dfn>tee-00</dfn></dt>
-  <dd>A protocol for submission to a [=TEE=]; see [[#s-tee]].</dd>
 </dl>
 
 ## Saving Impressions ## {#save-impression-api}
@@ -815,8 +814,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dt><dfn>value</dfn></dt>
   <dd>
     The [=conversion value=]. If an attribution is made and [[#dp|privacy]]
-    restrictions are satisfied, this value will be encoded into the [=conversion
-    report=].
+    restrictions are satisfied, this value will be encoded into the [=conversion report=].
   </dd>
   <dt><dfn>maxValue</dfn></dt>
   <dd>
@@ -984,36 +982,45 @@ defined in [[CLEAR-SITE-DATA#header]].
 
 When the [[CLEAR-SITE-DATA#clear-response|clear site data for response]] algorithm is invoked,
 if the list of types [=set/contains=] \``"impressions"`\`,
-the [=clear impressions for a conversion site=] is invoked,
+the [=clear impressions for a site=] is invoked,
 passing the <var ignore=''>origin</var>.
 
 <div algorithm>
-To <dfn>clear impressions for a conversion site</dfn>,
+To <dfn>clear impressions for a site</dfn>,
 given an [=origin=] |origin|,
 run these steps:
 
-1.  If |origin| is not a [=tuple origin=] with a [=scheme=] of `https`,
-    return.
+1.  If |origin| is not a [=tuple origin=], return.
 
 1.  Let |site| be the value returned
     by invoking [=registrable domain|obtain a registrable domain=],
-    passing the [=host=] part of the [=tuple origin|origin tuple=].
+    passing |origin|'s [=host=] part.
 
 1.  [=set/iterate|For each=] [=impression=] |impression| of
     the [=impression store=]:
 
+    1.  If |impression|'s [=impression/Intermediary Site=] is `undefined` and
+        its [=impression/Impression Site=] is equal to |site|,
+        [=set/remove=] |impression| from the [=impression store=] and [=iteration/continue=].
+
     1.  If |impression| has an [=impression/Intermediary Site=] equal to |site|,
         [=set/remove=] |impression| from the [=impression store=] and [=iteration/continue=].
 
-    1.  If |impression| has a [=impression/Conversion Sites=] [=set=]
-        that does not [=set/contain=] the value |site|, [=iteration/continue=].
+    1.  If |impression|'s [=impression/Conversion Sites=] [=set/contains=] |site|:
 
-    1.  If the [=set/size=] of |impression|'s [=impression/Conversion Sites=]
-        is greater than one,
-        [=set/remove|remove=] |site| from |impression|'s [=impression/Conversion Sites=]
-        and [=iteration/continue=].
+        1.  [=set/Remove=] |site| from |impression|'s [=impression/Conversion Sites=].
 
-    1.  Otherwise, [=set/remove=] |impression| from the [=impression store=].
+        1.  If |impression|'s [=impression/Conversion Sites=] [=set/is empty=],
+            [=set/remove=] |impression| from the [=impression store=] and
+            [=iteration/continue=].
+
+    1.  If |impression|'s [=impression/Conversion Callers=] [=set/contains=] |site|:
+
+        1.  [=set/Remove=] |site| from |impression|'s [=impression/Conversion Callers=].
+
+        1.  If |impression|'s [=impression/Conversion Callers=] [=set/is empty=],
+            [=set/remove=] |impression| from the [=impression store=] and
+            [=iteration/continue=].
 
 <p class=note>This process does not remove impressions
 that are saved with an empty [=set=] of [=impression/Conversion Sites=].
@@ -1166,14 +1173,14 @@ nullable integer |l1Norm|:
 1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
 
 
-<p class=note>Single epoch attributions &mdash;
-the only case that |l1Norm| is non-null &mdash;
-do not cause any cascading effects across epochs.
-Attribution that involves multiple epochs consumes double the budget
-because of the potential for one change to affect attribution across epochs.
-Doubling the deduction assumes that Laplace noise
-proportional to |maxValue| / |epsilon|
-is added to the aggregated histogram.
+    <p class=note>Single epoch attributions &mdash;
+    the only case that |l1Norm| is non-null &mdash;
+    do not cause any cascading effects across epochs.
+    Attribution that involves multiple epochs consumes double the budget
+    because of the potential for one change to affect attribution across epochs.
+    Doubling the deduction assumes that Laplace noise
+    proportional to |maxValue| / |epsilon|
+    is added to the aggregated histogram.
 
 1.  If |deductionFp| is negative or greater than [=maximum epsilon=],
     [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
@@ -1623,7 +1630,7 @@ returning an [=epoch index=]:
 <div algorithm="clear browsing history for attribution">
 To <dfn>clear browsing history for attribution</dfn>,
 given a [=set=] of [=sites=] |sites|,
-a [=boolean=] |forgetVisits|,
+a [=boolean=] <dfn for="clear browsing history for attribution"><var>forgetVisits</var></dfn>,
 and a [=moment=] |now|:
 
 1.  If |forgetVisits| is false:
@@ -1690,9 +1697,19 @@ and a [=moment=] |now|:
 <div algorithm>
 The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are:
 
-1.  Let |realm| be [=this=]'s [=relevant realm=].
-1.  If [=this=]'s [=relevant global object=]'s [=associated Document=] is not
-    [=allowed to use=] the [=policy-controlled feature=] named
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
+1.  [=Assert=]: |implicitInputs| is not null.
+1.  Return the result of running [=save an impression=] with |options| and |implicitInputs|.
+
+</div>
+
+<div algorithm>
+To <dfn>save an impression</dfn> given {{AttributionImpressionOptions}} |options|
+and [=implicit API inputs=] |implicitInputs|:
+
+1.  Let |document| be |implicitInputs|'s [=implicit API inputs/associated document=].
+1.  Let |realm| be |document|'s [=relevant realm=].
+1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/save-impression}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
 1.  Let |settings| be [=this=]'s [=relevant settings object=].
@@ -1717,8 +1734,9 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
         the [=maximum lookback=].
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionSites}} is
-        greater than an [=implementation-defined=] maximum value, return
-        [=a promise rejected with=] a {{RangeError}} in |realm|.
+        greater than the [=implementation-defined=]
+        [=maximum number of conversion sites per impression=],
+        return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Let |conversionSites| be the [=set=] that is the result
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionSites}}.
@@ -1726,8 +1744,9 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
         [=a promise rejected with=] a {{"SyntaxError"}} {{DOMException}} in |realm|.
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionCallers}} is
-        greater than an [=implementation-defined=] maximum value, return
-        [=a promise rejected with=] a {{RangeError}} in |realm|.
+        greater than the [=implementation-defined=]
+        [=maximum number of conversion callers per impression=],
+        return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Let |conversionCallers| be the [=set=] that is the result
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionCallers}}.
@@ -1738,15 +1757,15 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
          :   [=impression/Match Value=]
          ::  |options|.{{AttributionImpressionOptions/matchValue}}
          :   [=impression/Impression Site=]
-         ::  |site|
+         ::  |implicitInputs|' [=implicit API inputs/top-level site=]
          :   [=impression/Intermediary Site=]
-         ::  |intermediarySite|
+         ::  |implicitInputs|' [=implicit API inputs/intermediary site=]
          :   [=impression/Conversion Sites=]
          ::  |conversionSites|
          :   [=impression/Conversion Callers=]
          ::  |conversionCallers|
          :   [=impression/Timestamp=]
-         ::  |timestamp|
+         ::  |implicitInputs|' [=implicit API inputs/timestamp=]
          :   [=impression/Lifetime=]
          ::  |options|.{{AttributionImpressionOptions/lifetimeDays}} [=days=]
          :   [=impression/Histogram Index=]
@@ -1764,10 +1783,50 @@ The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are
 <p class=advisement><a method for=Attribution>saveImpression()</a>
 does not return a status indicating whether the impression was recorded.
 This minimizes the ability to detect when the Attribution
-API is [[#opt-out|disabled]]. Similarly, resolution of the returned promise is
-not predicated on saving |impression| to the [=impression store=] in order to
-avoid timing [=side channels=] related to the number of existing impressions and
-whether the API is enabled.
+API is [[#opt-out|disabled]].
+
+<p class=advisement>Implementations MUST attempt to mitigate [=side channels=]
+that can reveal API state. For example, resolution of the returned promise is
+not predicated on saving |impression| to the [=impression store=] to ensure that
+the amount of time it takes to resolve is not dependent on the number of
+existing impressions or whether the API is enabled.
+
+</div>
+
+The <dfn>implicit API inputs</dfn> is a [=struct=] with the following fields:
+
+<div dfn-for="implicit API inputs">
+<pre class=simpledef>
+<dfn>Top-Level Site</dfn>: A [=site=].
+<dfn>Intermediary Site</dfn>: A [=site=] or `undefined`.
+<dfn>Timestamp</dfn>: A [=moment=].
+<dfn>Associated Document</dfn>: A {{Document}}.
+</pre>
+</div>
+
+<div algorithm>
+To <dfn>obtain the implicit API inputs</dfn> from [=realm=] |realm| with
+optional [=origin=] (default null):
+
+1.  Let |window| be |realm|'s [=realm/global object=].
+1.  If |window| is not a {{Window}}, return null.
+1.  Let |settings| be |realm|'s [=realm/settings object=].
+1.  Let |timestamp| be |settings|' [=environment settings object/current wall time=].
+1.  Let |topLevelOrigin| be |settings|' [=environment/top-level origin=].
+1.  If |origin| is null, set |origin| to |settings|' [=environment settings object/origin=].
+1.  Let |topLevelSite| be the result of [=obtain a site|obtaining a site=] from |topLevelOrigin|.
+1.  Let |intermediarySite| be:
+    1.   a value of `undefined` if |origin| is [=same site=] with |topLevelOrigin|,
+    1.   otherwise, the result of [=obtain a site|obtaining a site=] from |origin|.
+1.  Return an [=implicit API inputs=] with the following fields:
+    :   [=implicit API inputs/top-level site=]
+    ::  |topLevelSite|
+    :   [=implicit API inputs/intermediary site=]
+    ::  |intermediarySite|
+    :   [=implicit API inputs/timestamp=]
+    ::  |timestamp|
+    :   [=implicit API inputs/associated document=]:
+    ::  |window|'s [=associated document=]
 
 </div>
 
@@ -1779,9 +1838,19 @@ asynchronously, queuing work on the <dfn>Attribution [=task source=]</dfn>.
 <div algorithm>
 The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps are:
 
-1.  Let |realm| be [=this=]'s [=relevant realm=].
-1.  If [=this=]'s [=relevant global object=]'s [=associated Document=] is not
-    [=allowed to use=] the [=policy-controlled feature=] named
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
+1.  [=Assert=]: |implicitInputs| is not null.
+1.  Return the result of running [=measure a conversion=] with |options| and |implicitInputs|.
+
+</div>
+
+<div algorithm>
+To <dfn>measure a conversion</dfn> given {{AttributionConversionOptions}} |options|
+and [=implicit API inputs=] |implicitInputs|:
+
+1.  Let |document| be |implicitInputs|'s [=implicit API inputs/associated document=].
+1.  Let |realm| be |document|'s [=relevant realm=].
+1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
 1.  Let |settings| be [=this=]'s [=relevant settings object=].
@@ -1808,18 +1877,18 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
          |validatedOptions|' [=validated conversion options/histogram size=].
      1.  If the Attribution API is [[#opt-out|enabled]], set |report| to the
          result of [=do attribution and fill a histogram=] with |validatedOptions|,
-         |topLevelSite|, |intermediarySite|, |uaContext|, and |now|.
+         |implicitInputs|' [=implicit API inputs/top-level site=],
+         |implicitInputs|' [=implicit API inputs/intermediary site=], and
+         |implicitInputs|' [=implicit API inputs/timestamp=].
      1.  Let |aggregationService| be |validatedOptions|'s [=validated conversion options/aggregation service=].
      1.  Switch on the value of |aggregationService|.{{AttributionAggregationService/protocol}}:
          <dl class="switch">
             :   <a enum-value for=AttributionAggregationProtocol>`dap-15-histogram`</a>
             ::  Perform the following steps:
                 1.  Let |encryptedReport| be the result of invoking <a>construct a DAP report</a>,
-                    given |validatedOptions|, |topLevelSite|, |now|, and |report|.
-
-            :   <a enum-value for=AttributionAggregationProtocol>`tee-00`</a>
-            ::  Perform the following steps:
-                1.  TODO: see [#130](https://github.com/w3c/attribution/issues/130)
+                    given |validatedOptions|,
+                    |implicitInputs|' [=implicit API inputs/top-level site=],
+                    |implicitInputs|' [=implicit API inputs/timestamp=], and |report|.
          </dl>
      1.  Let |result| be a {{AttributionConversionResult}} with the following items:
           : {{AttributionConversionResult/report}}
@@ -1827,6 +1896,11 @@ The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps 
      1.  [=Queue a task=] on the [=Attribution task source=] to
          [=resolve=] |promise| with |result|.
 1. Return |promise|.
+
+<p class=advisement>Implementations MUST attempt to mitigate [=side channels=]
+that can reveal API state. For example, ideally the amount of time it takes to
+resolve the returned promise would not depend on the number of stored or matched
+impressions or whether the API is enabled.
 
 </div>
 
@@ -1860,8 +1934,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     is less than or equal to 0 or is greater than [=maximum epsilon=],
     throw a {{RangeError}}.
 1.  If |options|.{{AttributionConversionOptions/histogramSize}}
-    is 0 or greater than the [=implementation-defined=] <dfn>maximum histogram size</dfn>,
-    or is greater than the <dfn ignore>maximum aggregation-service histogram size</dfn>,
+    is 0 or greater than the [=implementation-defined=] [=maximum histogram size=],
+    or is greater than the [=maximum aggregation-service histogram size=],
     if any, for |options|.{{AttributionConversionOptions/aggregationService}},
     throw a {{RangeError}}.
 1.  If |options|.{{AttributionConversionOptions/value}} is 0,
@@ -1872,7 +1946,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  Let |credit| be |options|.{{AttributionConversionOptions/credit}} if it [=map/exists=], «1» otherwise.
 1.  If |credit| [=list/is empty=], throw a {{RangeError}}.
 1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
-1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
+1.  If the [=list/size=] of |credit| exceeds the [=implementation-defined=]
+    [=maximum number of credit values=], throw a {{RangeError}}.
 1.  Let |lookback| be |options|.{{AttributionConversionOptions/lookbackDays}} [=days=]
     if it [=map/exists=], the [=maximum lookback=] [=days=] otherwise.
 1.  Set |lookback| to the [=maximum lookback=] [=days=]
@@ -1880,19 +1955,22 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  If |lookback| is 0 [=days=], throw a {{RangeError}}.
 1.  If the [=list/size=] of
     |options|.{{AttributionConversionOptions/matchValues}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    greater than the [=implementation-defined=] [=maximum number of match values=],
+    throw a {{RangeError}}.
 1.  Let |matchValues| be the result of running [=set/create|creating a set=] with
     |options|.{{AttributionConversionOptions/matchValues}}.
 1.  If the [=list/size=] of
-    |options|.{{AttributionConversionOptions/impressionSites}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    |options|.{{AttributionConversionOptions/impressionSites}} is greater than
+    the [=implementation-defined=] [=maximum number of impression sites for conversion=],
+    throw a {{RangeError}}.
 1.  Let |impressionSites| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionSites}}.
 1.  If any result in |impressionSites| is failure, throw a {{"SyntaxError"}} {{DOMException}}.
 1.  If the [=list/size=] of
-    |options|.{{AttributionConversionOptions/impressionCallers}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    |options|.{{AttributionConversionOptions/impressionCallers}} is greater than
+    the [=implementation-defined=] [=maximum number of impression callers for conversion=],
+    throw a {{RangeError}}.
 1.  Let |impressionCallers| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionCallers}}.
@@ -2173,10 +2251,49 @@ regarding how to best set those values.
 
 An implementation sets an [=implementation-defined=] <dfn>maximum lookback</dfn>
 for {{AttributionImpressionOptions/lifetimeDays}} and
-{{AttributionConversionOptions/lookbackDays}}. It is a positive integer number of [=days=].
+{{AttributionConversionOptions/lookbackDays}}.
+[=Maximum lookback=] is a positive integer number of [=days=].
 There is no point to having different maximum values for
 these values as the smaller of the two values
 will determine which saved [=impressions=] are available for conversions.
+
+Implementations [=must=] set a [=maximum lookback=] of at least 90 days.
+
+An [=implementation-defined=] value is chosen for the lists of sites
+passed to <a method for=Attribution>saveImpression()</a>
+and <a method for=Attribution>measureConversion()</a>.
+The <dfn>maximum number of conversion sites per impression</dfn>
+is a limit on the number of values for {{AttributionImpressionOptions/conversionSites}};
+implementations [=must=] set this value to at least 5.
+The <dfn>maximum number of conversion callers per impression</dfn>
+and <dfn>maximum number of impression callers for conversion</dfn>
+are limits on the number of values for {{AttributionImpressionOptions/conversionCallers}}
+and {{AttributionConversionOptions/impressionCallers}} respectively;
+implementations [=must=] set each of these values to at least 10.
+The <dfn>maximum number of impression sites for conversion</dfn>
+is a limit on the number of values for {{AttributionConversionOptions/impressionSites}};
+implementations [=must=] set this value to at least 30.
+
+An [=implementation-defined=] value is chosen for
+the <dfn>maximum number of credit values</dfn>,
+which is a limit on the number of values for {{AttributionConversionOptions/credit}};
+implementations [=must=] set this value to at least 10.
+An [=implementation-defined=] value is chosen for
+the <dfn>maximum number of match values</dfn>,
+which is a limit on the number of values for {{AttributionConversionOptions/matchValues}};
+implementations [=must=] set this value to at least 30.
+
+The size of histograms
+produced by <a method for=Attribution>measureConversion()</a>
+is subject to both an [=implementation-define=] <dfn>maximum histogram size</dfn>
+and <dfn>maximum aggregation-service histogram size</dfn>.
+No minimum value for the [=maximum histogram size=] is set
+as the expectation is that the choice of aggregation technology
+will set a limit.
+The [=maximum aggregation-service histogram size=]
+will be a fixed value that is determined
+by the choice of technology used by the [=aggregation service=];
+it is not [=implementation-defined=].
 
 Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
@@ -2210,18 +2327,26 @@ if the user has opted out of collection of diagnostic data.
 
 # HTTP API # {#http-api}
 
+## Saving impressions ## {#http-api-impressions}
+
 \`<dfn http-header><code>Save-Impression</code></dfn>\` is a
 [=structured header/dictionary|Dictionary Structured Header=]
 set on a response requesting that the user agent invoke the
 <a method for=Attribution>saveImpression()</a> API.
 
-<pre class=example id=ex-save-impression-header>
-Save-Impression: conversion-sites=("advertiser.example"), conversion-callers=("intermediary.example"), histogram-index=2, match-value=12, lifetime-days=7
-</pre>
+<div class=example id=ex-save-impression-header>
+This is the HTTP equivalent of <a href=#ex-save-impression>the JavaScript `saveImpression` example</a>:
+<xmp highlight=http>
+Save-Impression: histogram-index=3, match-value=2, conversion-sites=("advertiser.example"), lifetime-days=7
+</xmp>
+</div>
 
 The following keys are defined, corresponding to the members of
 the {{AttributionImpressionOptions}} dictionary passed to
-<a method for=Attribution>saveImpression()</a>.
+<a method for=Attribution>saveImpression()</a>. Default values for omitted
+optional keys are treated the same way as the corresponding
+{{AttributionImpressionOptions}} field. Unknown dictionary keys are ignored,
+as are unknown parameters.
 
 <dl dfn-for=save-impression>
   <dt><dfn noexport><code>conversion-sites</code></dfn></dt>
@@ -2230,7 +2355,7 @@ the {{AttributionImpressionOptions}} dictionary passed to
     an [=structured header/inner list=] containing [=structured header/string|strings=].
     Each string value includes a domain name using A-labels only;
     [[RFC5890|Internationalized Domain Names]] therefore need to use [[RFC3492|punycode]].
-    This key is optional. If not supplied, an empty set is saved for [=impression/Conversion Sites=].
+    This key is optional.
   </dd>
   <dt><dfn noexport><code>conversion-callers</code></dfn></dt>
   <dd>
@@ -2238,29 +2363,27 @@ the {{AttributionImpressionOptions}} dictionary passed to
     an [=structured header/inner list=] containing [=structured header/string|strings=].
     Each string value includes a domain name using A-labels only;
     [[RFC5890|Internationalized Domain Names]] therefore need to use [[RFC3492|punycode]].
-    This key is optional. If not supplied, an empty set is saved for [=impression/Conversion Callers=].
+    This key is optional.
   </dd>
   <dt><dfn noexport><code>histogram-index</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionImpressionOptions>histogramIndex</a>,
-    a non-negative [=structured header/integer=]. This key is required.
+    an [=structured header/integer=] in the [=32-bit unsigned integer=] range. This key is required.
   </dd>
   <dt><dfn noexport><code>priority</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionImpressionOptions>priority</a>,
-    an [=structured header/integer=]. This key is optional.
+    an [=structured header/integer=] in the [=32-bit signed integer=] range. This key is optional.
   </dd>
   <dt><dfn noexport><code>match-value</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionImpressionOptions>matchValue</a>,
-    a non-negative [=structured header/integer=]. This key is optional.
-    If not supplied, a value of 0 is saved for [=impression/Match Value=].
+    an [=structured header/integer=] in the [=32-bit unsigned integer=] range. This key is optional.
   </dd>
   <dt><dfn noexport><code>lifetime-days</code></dfn></dt>
   <dd>
     Value of <a dict-member for=AttributionImpressionOptions>lifetimeDays</a>,
     a positive [=structured header/integer=]. This key is optional.
-    If not supplied, 30 days is saved for [=impression/Lifetime=].
   </dd>
 </dl>
 
@@ -2272,34 +2395,300 @@ To <dfn noexport>parse a `Save-Impression` header</dfn> given a [=header value=]
     with <var ignore>input_bytes</var> set to |input| and
     <var ignore>field_type</var> set to "`dictionary`".
 1.  If parsing failed, return an error.
-1.  If |dict|["<code>[=save-impression/histogram-index=]</code>"] does not [=map/exist=] or
-    is not an [=structured header/integer=] or is less than 0, return an error.
-1.  Let |histogramIndex| be |dict|["<code>[=save-impression/histogram-index=]</code>"].
-1.  Let |conversionSites| be |dict|["<code>[=save-impression/conversion-sites=]</code>"]
-    [=map/with default=] an empty [=structured header/inner list=].
-1.  If |conversionSites| is not an [=structured header/inner list=], or if any of |conversionSites|' [=list/items=] is not a [=structured header/string=], return an error.
-1.  Let |conversionCallers| be |dict|["<code>[=save-impression/conversion-callers=]</code>"]
-    [=map/with default=] an empty [=structured header/inner list=].
-1.  If |conversionCallers| is not an [=structured header/inner list=], or if any of |conversionCallers|' [=list/items=] is not a [=structured header/string=], return an error.
-1.  Let |matchValue| be |dict|["<code>[=save-impression/match-value=]</code>"] [=map/with default=] 0.
-1.  If |matchValue| is not an [=structured header/integer=] or is less than 0, return an error.
-1.  Let |lifetimeDays| be |dict|["<code>[=save-impression/lifetime-days=]</code>"] [=map/with default=] 30.
-1.  If |lifetimeDays| is not an [=structured header/integer=] or is less than or equal to 0, return an error.
-1.  Let |priority| be |dict|["<code>[=save-impression/priority=]</code>"] [=map/with default=] 0.
-1.  If |priority| is not an [=structured header/integer=], return an error.
-1.  Return a new {{AttributionImpressionOptions}} with the following items:
+1.  Let |histogramIndex| be |dict|["<code>[=save-impression/histogram-index=]</code>"] [=map/with default=] `undefined`.
+1.  If |histogramIndex| is not an [=structured header/integer=] in the [=32-bit unsigned integer=] range, return an error.
+1.  Let |opts| be a new {{AttributionImpressionOptions}} with the following items:
      : {{AttributionImpressionOptions/histogramIndex}}
      :: |histogramIndex|
-     : {{AttributionImpressionOptions/matchValue}}
-     :: |matchValue|
-     : {{AttributionImpressionOptions/conversionSites}}
-     :: |conversionSites|
-     : {{AttributionImpressionOptions/conversionCallers}}
-     :: |conversionCallers|
-     : {{AttributionImpressionOptions/lifetimeDays}}
-     :: |lifetimeDays|
-     : {{AttributionImpressionOptions/priority}}
-     :: |priority|
+1.  If |dict|["<code>[=save-impression/conversion-sites=]</code>"] [=map/exists=]:
+     1.  Let |conversionSites| be its [=map/value=].
+     1.  If |conversionSites| is not an [=structured header/inner list=], or if any of
+         |conversionSites|' [=list/items=] is not a [=structured header/string=],
+         return an error.
+     1.  Set |opts|.{{AttributionImpressionOptions/conversionSites}} to |conversionSites|.
+1.  If |dict|["<code>[=save-impression/conversion-callers=]</code>"] [=map/exists=]:
+     1.  Let |conversionCallers| be its [=map/value=].
+     1.  If |conversionCallers| is not an [=structured header/inner list=], or if any of
+         |conversionCallers|' [=list/items=] is not a [=structured header/string=],
+         return an error.
+     1.  Set |opts|.{{AttributionImpressionOptions/conversionCallers}} to |conversionCallers|.
+1.  If |dict|["<code>[=save-impression/match-value=]</code>"] [=map/exists=]:
+     1.  Let |matchValue| be its [=map/value=].
+     1.  If |matchValue| is not an [=structured header/integer=] in the [=32-bit unsigned integer=] range, return an error.
+     1.  Set |opts|.{{AttributionImpressionOptions/matchValue}} to |matchValue|.
+1.  If |dict|["<code>[=save-impression/lifetime-days=]</code>"] [=map/exists=]:
+     1.  Let |lifetimeDays| be its [=map/value=].
+     1.  If |lifetimeDays| is not a positive [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionImpressionOptions/lifetimeDays}} to |lifetimeDays|.
+1.  If |dict|["<code>[=save-impression/priority=]</code>"] [=map/exists=]:
+     1.  Let |priority| be its [=map/value=].
+     1.  If |priority| is not an [=structured header/integer=] in the [=32-bit signed integer=] range, return an error.
+     1.  Set |opts|.{{AttributionImpressionOptions/priority}} to |priority|.
+1.  Return |opts|.
+
+</div>
+
+## Measuring Conversions ## {#http-api-conversions}
+
+\`<dfn http-header><code>Measure-Conversion</code></dfn>\` is a
+[=structured header/dictionary|Dictionary Structured Header=]
+set on a response requesting that the user agent invoke the
+<a method for=Attribution>measureConversion()</a> API.
+
+<div class=example id=ex-measure-conversion-header>
+This is the HTTP equivalent of <a href=#ex-measure-conversion>the JavaScript `measureConversion` example</a>,
+with the addition of a `report-url` to which the resulting report will be `POST`ed:
+<xmp highlight=http>
+Measure-Conversion: aggregation-service="https://aggregator.example/tee", histogram-size=20, epsilon=1.0, lookback-days=14, impression-sites=("publisher.example" "other.example"), impression-callers=("ad-tech.example"), match-values=(2), credit=(0.25 0.25 0.5), value=3, max-value=7, report-url="https://report-handler.example/foo"
+</xmp>
+</div>
+
+The following keys are defined, corresponding to the members of
+the {{AttributionConversionOptions}} dictionary passed to
+<a method for=Attribution>measureConversion()</a>. Default values for omitted
+optional keys are treated the same way as the corresponding
+{{AttributionConversionOptions}} field. Unknown dictionary keys are ignored, as
+are unknown parameters.
+
+<dl dfn-for=measure-conversion>
+  <dt><dfn noexport><code>aggregation-service</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>aggregationService</a>,
+    a [=structured header/string=]. This key is required.
+  </dd>
+  <dt><dfn noexport><code>epsilon</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>epsilon</a>,
+    a positive [=structured header/decimal=] or [=structured header/integer=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>histogram-size</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>histogramSize</a>,
+    a positive [=structured header/integer=]. This key is required.
+  </dd>
+  <dt><dfn noexport><code>lookback-days</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>lookbackDays</a>,
+    a positive [=structured header/integer=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>match-values</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>matchValues</a>,
+    an [=structured header/inner list=] containing non-negative [=structured header/integer|integers=].
+    This key is optional.
+  </dd>
+  <dt><dfn noexport><code>impression-sites</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>impressionSites</a>,
+    an [=structured header/inner list=] containing [=structured header/string|strings=].
+    Each string value includes a domain name using A-labels only;
+    [[RFC5890|Internationalized Domain Names]] therefore need to use [[RFC3492|punycode]].
+    This key is optional.
+  </dd>
+  <dt><dfn noexport><code>impression-callers</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>impressionCallers</a>,
+    an [=structured header/inner list=] containing [=structured header/string|strings=].
+    Each string value includes a domain name using A-labels only;
+    [[RFC5890|Internationalized Domain Names]] therefore need to use [[RFC3492|punycode]].
+    This key is optional.
+  </dd>
+  <dt><dfn noexport><code>credit</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>credit</a>,
+    an [=structured header/inner list=] containing positive [=structured header/decimal|decimals=]
+    or positive [=structured header/integer|integers=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>value</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>value</a>,
+    a positive [=structured header/integer=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>max-value</code></dfn></dt>
+  <dd>
+    Value of <a dict-member for=AttributionConversionOptions>maxValue</a>,
+    a positive [=structured header/integer=]. This key is optional.
+  </dd>
+  <dt><dfn noexport><code>report-url</code></dfn></dt>
+  <dd>
+    A [=structured header/string=] containing the [=potentially trustworthy URL=]
+    to which the resulting report, if any, will be `POST`ed. The URL may be
+    relative to the response URL. Its [=url/scheme=] must be "`https`".
+    This key is required.
+  </dd>
+</dl>
+
+<div algorithm>
+To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header value=]
+|input| and [=URL=] |baseUrl|, run these steps:
+
+1.  Let |dict| be the result of [=structured header/parsing structured fields=]
+    with <var ignore>input_bytes</var> set to |input| and
+    <var ignore>field_type</var> set to "`dictionary`".
+1.  If parsing failed, return an error.
+1.  Let |aggregationService| be |dict|["<code>[=measure-conversion/aggregation-service=]</code>"] [=map/with default=] `undefined`.
+1.  If |aggregationService| is not a [=structured header/string=], return an error.
+1.  Let |histogramSize| be |dict|["<code>[=measure-conversion/histogram-size=]</code>"] [=map/with default=] `undefined`.
+1.  If |histogramSize| is not a positive [=structured header/integer=] in the [=32-bit unsigned integer=] range, return an error.
+1.  Let |reportUrlString| be |dict|["<code>[=measure-conversion/report-url=]</code>"] [=map/with default=] `undefined`.
+1.  If |reportUrlString| is not a [=structured header/string=], return an error.
+1.  Let |reportUrl| be the result of applying the [=URL parser=] to |reportUrlString|, with |baseUrl|.
+1.  If |reportUrl| is failure, return an error.
+1.  If |reportUrl| is not a [=potentially trustworthy URL=], return an error.
+1.  If |reportUrl|'s [=url/scheme=] is not "`https`", return an error.
+1.  Let |opts| be a new {{AttributionConversionOptions}} with the following items:
+     : {{AttributionConversionOptions/aggregationService}}
+     :: |aggregationService|
+     : {{AttributionConversionOptions/histogramSize}}
+     :: |histogramSize|
+1.  If |dict|["<code>[=measure-conversion/epsilon=]</code>"] [=map/exists=]:
+     1.  Let |epsilon| be its [=map/value=].
+     1.  If |epsilon| is not a [=structured header/decimal=] or [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/epsilon}} to |epsilon|.
+1.  If |dict|["<code>[=measure-conversion/lookback-days=]</code>"] [=map/exists=]:
+     1.  Let |lookbackDays| be its [=map/value=].
+     1.  If |lookbackDays| is not a positive [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/lookbackDays}} to |lookbackDays|.
+1.  If |dict|["<code>[=measure-conversion/match-values=]</code>"] [=map/exists=]:
+     1.  Let |matchValues| be its [=map/value=].
+     1.  If |matchValues| is not an [=structured header/inner list=], or if any of
+         |matchValues|' [=list/items=] is not an [=structured header/integer=] in
+         the [=32-bit unsigned integer=] range, return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/matchValues}} to |matchValues|.
+1.  If |dict|["<code>[=measure-conversion/impression-sites=]</code>"] [=map/exists=]:
+     1.  Let |impressionSites| be its [=map/value=].
+     1.  If |impressionSites| is not an [=structured header/inner list=], or if any of
+         |impressionSites|' [=list/items=] is not a [=structured header/string=],
+         return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/impressionSites}} to |impressionSites|.
+1.  If |dict|["<code>[=measure-conversion/impression-callers=]</code>"] [=map/exists=]:
+     1.  Let |impressionCallers| be its [=map/value=].
+     1.  If |impressionCallers| is not an [=structured header/inner list=], or if any of
+         |impressionCallers|' [=list/items=] is not a [=structured header/string=],
+         return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/impressionCallers}} to |impressionCallers|.
+1.  If |dict|["<code>[=measure-conversion/credit=]</code>"] [=map/exists=]:
+     1.  Let |credit| be its [=map/value=].
+     1.  If |credit| is not an [=structured header/inner list=], or if any of
+         |credit|'s [=list/items=] is not a [=structured header/decimal=] or
+         [=structured header/integer=], return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/credit}} to |credit|.
+1.  If |dict|["<code>[=measure-conversion/value=]</code>"] [=map/exists=]:
+     1.  Let |value| be its [=map/value=].
+     1.  If |value| is not a positive [=structured header/integer=] in the
+         [=32-bit unsigned integer=] range, return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/value}} to |value|.
+1.  If |dict|["<code>[=measure-conversion/max-value=]</code>"] [=map/exists=]:
+     1.  Let |maxValue| be its [=map/value=].
+     1.  If |maxValue| is not a positive [=structured header/integer=] in the
+         [=32-bit unsigned integer=] range, return an error.
+     1.  Set |opts|.{{AttributionConversionOptions/maxValue}} to |maxValue|.
+1.  Return (|opts|, |reportUrl|).
+
+Issue: Should we allow `http` for |reportUrl|'s [=url/scheme=]?
+Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
+
+</div>
+
+<div algorithm>
+To <dfn noexport>send a report</dfn> given a [=byte sequence=] |report|,
+a [=URL=] |url|, and an [=environment settings object=] |settings|:
+
+1.  [=Assert=]: |url| is a [=potentially trustworthy URL=].
+1.  [=Assert=]: |url|'s [=url/scheme=] is "`https`".
+1.  Let |headers| be a new [=header list=] containing a [=header=] named
+    `"Content-Type"` whose value is
+    "<code>[[DAP#name-application-dap-report-medi|application/dap-report]]</code>".
+
+    Note: This will need to be updated if {{AttributionAggregationProtocol}}
+    ever gains a value other than {{AttributionAggregationProtocol/dap-15-histogram}}.
+1.  Let |request| be a new [=request=] with the following properties:
+    :   [=request/method=]
+    ::  "`POST`"
+    :   [=request/URL=]
+    ::  |url|
+    :   [=request/header list=]
+    ::  |headers|
+    :   [=request/body=]
+    ::  |report|
+    :   [=request/client=]
+    ::  |settings|
+    :   [=request/mode=]
+    ::  "`cors`"
+    :   [=request/cache mode=]
+    ::  "`no-store`"
+    :   [=request/keepalive=]
+    ::  true
+    :   [=request/credentials mode=]
+    ::  "`omit`"
+    :   [=request/referrer=]
+    ::  |url|
+1.  [=Fetch=] |request|, optionally retrying in the event of an error.
+
+</div>
+
+## Fetch monkey patches ## {#fetch-monkey-patches}
+
+<div algorithm>
+To <dfn noexport>handle Attribution headers</dfn> given a [=request=] |request|
+and [=response=] |response|, run these steps:
+
+1.  If |request|'s [=request/destination=] is not one of the following,
+    return: `""`, `"audio"`, `"image"`, `"script"`, `"track"`, `"video"`.
+
+1.  If |request|'s [=request/client=] is not a [=secure context=], return.
+
+1.  If |response|'s [=response/URL=] is not a [=potentially trustworthy URL=], return.
+
+1.  If |response|'s [=response/URL=]'s [=url/scheme=] is not "`https`", return.
+
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from |request|'s [=request/client=]
+    with |response|'s [=response/URL=]'s [=url/origin=].
+
+1.  If |implicitInputs| is null, return.
+
+1.  Let |saveImpressionHeader| be the result of [=header list/get|getting=] <code>[:Save-Impression:]</code> from |response|'s [=response/header list=].
+
+1.  If |saveImpressionHeader| is not null:
+
+    1.  Let |impressionOptions| be the result of [=parse a Save-Impression header|parsing=] |saveImpressionHeader|.
+
+    1.  If |impressionOptions| is not an error, [=save an impression|Save=] |impressionOptions| with |implicitInputs|.
+
+1.  Let |measureConversionHeader| be the result of [=header list/get|getting=] <code>[:Measure-Conversion:]</code> from |response|'s [=response/header list=].
+
+1.  If |measureConversionHeader| is not null:
+
+    1.  Let |parseConversionResult| be the result of [=parse a Measure-Conversion header|parsing=] |measureConversionHeader|.
+
+    1.  If |parseConversionResult| is not an error:
+
+        1.  Let (|conversionOptions|, |reportUrl|) be |parseConversionResult|.
+
+        1.  Let |reportPromise| be the result of running [=measure a conversion=] with |conversionOptions| and |implicitInputs|.
+
+        1.  [=In parallel=]:
+            1.  [=Upon fulfillment=] of |reportPromise|, let |result| be the fulfilled value.
+            1.  [=Send a report=] with |result|.{{AttributionConversionResult/report}}, |reportUrl|, and
+                |request|'s [=request/client=].
+
+Issue: Confirm the desired semantics of [:Save-Impression:] and [:Measure-Conversion:] in the same response.
+
+Issue: Should we allow `http` for |response|'s [=response/URL=]'s [=url/scheme=]?
+Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
+
+</div>
+
+Modify [=HTTP-network fetch=] as follows:
+
+<div algorithm=fetch-monkey-patch>
+After the step
+
+> If <var ignore>includeCredentials</var> is true, then the user agent should parse and store response `Set-Cookie` headers given |request| and |response|.
+
+add the step
+
+1. [=Handle Attribution headers=] with |request| and |response|.
 
 </div>
 
@@ -2559,15 +2948,6 @@ and a [=list=] of [=integers=] |histogram|:
 </div>
 
 
-## Trusted Execution Environments ## {#s-tee}
-
-A <dfn lt=TEE>Trusted Execution Environment (TEE)</dfn> uses specialized hardware
-to ensure that computation is isolated
-from other programs that run on the same hardware.
-
-TODO
-
-
 ## Anti-Replay Requirements ## {#anti-replay}
 
 [=Conversion reports=] generated by browsers are bound
@@ -2677,6 +3057,51 @@ for a number of reasons:
 *   Advertising is an ongoing activity.
     Without allocating [=privacy budget=] for new data,
     sites could exhaust their budget forever.
+
+### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
+
+The privacy protections in Attribution are multi-layered:
+1.  Per-site budgets limit how much can be learned about a user by any one conversion site.
+1.  The global budget provides a backstop limit on how much can be learned about a user by all sites.
+1.  Impression-site quotas limit how much conversion sites can learn about a user’s activity on any one impression site.
+1.  A counter maintained after each user action limits how many sites can store data into or learn from API.
+
+The formal privacy analysis in this specification is based on two papers.
+The first [[PPA-DP]] establishes the theory
+for on-device Individual DP accounting. The second [[PPA-DP-2]] expands the analysis to
+the mathematical privacy guarantees afforded by per-site budgets and by the global budget.
+
+The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee. However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees:
+
+1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
+    and conversions) must be generated independently of past DP [=attribution results=] from other sites.
+1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
+    reports are emitted to others.
+
+In short, neither assumption can hold in practice.
+
+An assumption of no cross-site adaptivity is necessary because the system involves multiple sites that could interact
+with the same user over time.
+Sites will change the ads they show to the user based on each other’s DP measurements. For example, if one advertiser
+learns, from [=attribution results=], how to make better ads, some users could convert on their site
+rather than a competitor’s. In this case, what one site learns -- counted only against
+its own per-site budget -- alters the data (or absence of data) visible to their competitors, yet
+this is not accounted for in the per-site budget of those competitors.
+
+Any system that provides continuous measurement has this property, so the only conclusion can be to accept this limitation. That limitation is part of what justifies having a global DP budget and shared quotas, which lead to the second assumption.
+
+An assumption of no cross-site leakage is necessary when we have shared limits that span multiple sites. An example of
+such shared limits are the global safety limits that aim to provide a global DP guarantee.
+If <a method for=Attribution>measureConversion()</a> requests from some sites cause a shared limit
+to be reached, reports to other sites may be
+filtered. For instance, a site that knows it has impressions learns something about whether the shared limit has been reached. Though this information is aggregated and noisy, it is information about the site that exhausted its budget, in excess of the per-site budget for that site.
+
+Leakage through shared limits motivates using those limits only as a means of limiting abuse. Setting shared limits that are large multiples of the per-site budget makes it so that seeking to exploit shared limits requires coordination by at least that many sites. Larger multiples makes shared limits less useful as a privacy means of privacy protection and more suited as a means of protecting against denial of service or similar forms of abuse.
+
+By contrast, the analysis shows that *the global budget* can be implemented to deliver *sound global individual
+DP guarantees* without these limitations. However, to support the usage of the API by many sites, the global budget needs to be configured to be a significant multiple of the per-site budget.  This means that the DP guarantee it provides, while independent of any assumptions, cannot provide a meaningful DP protection alone. Therefore, per-site budgets provide the primary DP guarantee. The global budget can be viewed as a fallback in case of coordinated attack by malicious sites.
+
+A global DP budget also safeguards against sites that are able to link user identity across many sites to combine per-site budgets. Per-site models do not account for this possibility, though it is common for some sites to have this capability. Notably, this includes identity providers, sites that receive user identifiers (such as email addresses or phone numbers), sites that successfully use navigation tracking [[NAV-TRACKING-MITIGATIONS]], and sites that are able to use cross-site cookies for any reason [[WEB-WITHOUT-3P-COOKIES]].  Using Attribution across multiple sites can present a coordination challenge for such sites, but the potential for sites to have the capability to link activity to a single person cannot be disregarded in any holistic analysis of the privacy of the system.
 
 
 ### Browser Instances ### {#dp-instance}
@@ -2984,8 +3409,8 @@ is a particular concern with the Attribution API,
 because impressions are stored only on the device.
 It is not possible to apply server-side intelligence
 to identify fraudulent impressions and exclude them
-from attribution. Conversely, even though [=conversion
-reports=] are encrypted, because the reports are sent
+from attribution. Conversely, even though [=conversion reports=]
+are encrypted, because the reports are sent
 to a server, the server can make a determination that
 the conversion is likely fraudulent and exclude it from
 aggregation.
@@ -3197,7 +3622,7 @@ When clearing site data at the request of a [=user=],
 but retaining browsing history,
 a [=user agent=] invokes [=clear browsing history for attribution=],
 given the [=set=] of affected [=sites=],
-false (for |forgetVisits|),
+false (for [=clear browsing history for attribution/forgetVisits=]),
 and the time that the action was taken.
 This sets the privacy budget for that site to zero,
 preventing any use of conversion measurement on that site.
@@ -3207,7 +3632,7 @@ at the time they are saved.
 
 When clearing site data at the request of a [=site=],
 through the use of the [:Clear-Site-Data:] header,
-a [=user agent=] only [=clear impressions for a conversion site|removes impressions=],
+a [=user agent=] only [=clear impressions for a site|removes impressions=],
 without altering either the [=privacy budget store=]
 or the [=epoch start store=] for affected [=sites=].
 
@@ -3225,7 +3650,7 @@ when removing browsing history.
 A user agent that clears browsing history
 invokes [=clear browsing history for attribution=],
 given the [=set=] of affected [=sites=],
-true (for |forgetVisits|),
+true (for [=clear browsing history for attribution/forgetVisits=]),
 and the time that the operation was initiated.
 
 When clearing browsing history,
@@ -3349,6 +3774,7 @@ The privacy architecture is courtesy of the authors of [[PPA-DP]].
 <pre class=anchors>
 urlPrefix: https://fetch.spec.whatwg.org/; spec: html; type: dfn
     text: request origin; url: #concept-request-origin
+    text: HTTP-network fetch; url: #concept-http-network-fetch
 urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
     text: host; url: #concept-origin-host
     text: obtain a site
@@ -3378,17 +3804,23 @@ urlPrefix: https://w3ctag.github.io/privacy-principles/; type: dfn;
 urlPrefix: https://www.w3.org/TR/fingerprinting-guidance/; type: dfn;
     text: fingerprint; url: #dfn-browser-fingerprinting
     text: fingerprinting; url: #dfn-browser-fingerprinting
+urlPrefix:https://tc39.es/ecma262/#;type:dfn;spec:ecma-262
+    url:realm;text:realm
 </pre>
 <pre class=anchors>
 spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     text: structured header; url: #name-introduction
     for: structured header
+        text: decimal; url: #decimal
         text: dictionary; url: #dictionary
         text: parse structured fields; url: #text-parse
         text: string; url: #string
         text: integer; url: #integer
         text: item; url: #item
         text: inner list; url: #inner-list
+</pre>
+<pre class=link-defaults>
+spec:css-2025; type:dfn; text:user
 </pre>
 <pre class=biblio>
 {
@@ -3491,6 +3923,22 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     "title": "Cookie Monster: Efficient On-device Budgeting for Differentially-Private Ad-Measurement Systems",
     "publisher": "SOSP'24"
   },
+  "ppa-dp-2": {
+    "authors": [
+      "Pierre Tholoniat",
+      "Alison Caulfield",
+      "Giorgio Cavicchioli",
+      "Mark Chen",
+      "Nikos Goutzoulias",
+      "Benjamin Case",
+      "Asaf Cidon",
+      "Roxana Geambasu",
+      "Mathias Lécuyer",
+      "Martin Thomson"
+    ],
+    "href": "https://arxiv.org/abs/2506.05290",
+    "title": "Big Bird: Privacy Budget Management for W3C's Privacy-Preserving Attribution API"
+  },
   "prio": {
     "authors": [
       "Henry Corrigan-Gibbs",
@@ -3519,6 +3967,11 @@ spec:structured header; type:dfn; urlPrefix: https://httpwg.org/specs/rfc9651;
     "title": "Verifiable Distributed Aggregation Functions",
     "date": "2025-06-17",
     "href": "https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-15"
+  },
+  "WEB-WITHOUT-3P-COOKIES": {
+    "title": "A Web Without Third-Party Cookies",
+    "href": "https://www.w3.org/2001/tag/doc/web-without-3p-cookies/",
+    "publisher": "W3C TAG"
   }
 }
 </pre>

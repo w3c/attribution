@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
+        "aggregationServices": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": ["dap-15-histogram"]
+          },
+          "propertyNames": {
+            "format": "uri"
+          }
+        },
+        "epochStart": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "fairlyAllocateCreditFraction": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "maxConversionCallersPerImpression": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxConversionSitesPerImpression": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxCreditSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxHistogramSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxImpressionSitesForConversion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxImpressionCallersForConversion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxLookbackDays": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxMatchValues": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "privacyBudgetEpochDays": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "privacyBudgetMicroEpsilons": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "aggregationServices",
+        "maxConversionCallersPerImpression",
+        "maxConversionSitesPerImpression",
+        "maxCreditSize",
+        "maxHistogramSize",
+        "maxImpressionSitesForConversion",
+        "maxImpressionCallersForConversion",
+        "maxMatchValues",
+        "privacyBudgetEpochDays",
+        "privacyBudgetMicroEpsilons"
+      ]
+    },
+    {
+      "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/$defs/siteEvent",
+                "properties": {
+                  "event": {
+                    "const": "saveImpression"
+                  },
+                  "expectedError": {
+                    "$ref": "#/$defs/expectedError"
+                  },
+                  "intermediarySite": {
+                    "type": "string"
+                  },
+                  "options": {
+                    "$ref": "#/$defs/AttributionImpressionOptions"
+                  }
+                },
+                "required": ["options"],
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/siteEvent",
+                "properties": {
+                  "event": {
+                    "const": "measureConversion"
+                  },
+                  "expected": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/$defs/unsignedLong"
+                        }
+                      },
+                      {
+                        "$ref": "#/$defs/expectedError"
+                      }
+                    ]
+                  },
+                  "intermediarySite": {
+                    "type": "string"
+                  },
+                  "options": {
+                    "$ref": "#/$defs/AttributionConversionOptions"
+                  }
+                },
+                "required": ["expected", "options"],
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/siteEvent",
+                "properties": {
+                  "event": {
+                    "const": "clearImpressionsForSite"
+                  }
+                },
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "clearBrowsingHistoryForAttribution"
+                  },
+                  "forgetVisits": {
+                    "type": "boolean"
+                  },
+                  "sites": {
+                    "$ref": "#/$defs/siteList"
+                  }
+                },
+                "required": ["forgetVisits", "sites"],
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "enableAPI"
+                  }
+                },
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "disableAPI"
+                  }
+                },
+                "unevaluatedProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": ["events"]
+    }
+  ],
+  "$defs": {
+    "AttributionConversionOptions": {
+      "type": "object",
+      "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
+        "aggregationService": {
+          "type": "string"
+        },
+        "credit": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "epsilon": {
+          "type": "number"
+        },
+        "histogramSize": {
+          "$ref": "#/$defs/unsignedLong"
+        },
+        "impressionCallers": {
+          "$ref": "#/$defs/siteList"
+        },
+        "impressionSites": {
+          "$ref": "#/$defs/siteList"
+        },
+        "lookbackDays": {
+          "$ref": "#/$defs/unsignedLong"
+        },
+        "matchValues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/unsignedLong"
+          }
+        },
+        "maxValue": {
+          "$ref": "#/$defs/unsignedLong"
+        },
+        "value": {
+          "$ref": "#/$defs/unsignedLong"
+        }
+      },
+      "required": ["aggregationService", "histogramSize"],
+      "unevaluatedProperties": false
+    },
+    "AttributionImpressionOptions": {
+      "type": "object",
+      "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
+        "conversionCallers": {
+          "$ref": "#/$defs/siteList"
+        },
+        "conversionSites": {
+          "$ref": "#/$defs/siteList"
+        },
+        "histogramIndex": {
+          "$ref": "#/$defs/unsignedLong"
+        },
+        "lifetimeDays": {
+          "$ref": "#/$defs/unsignedLong"
+        },
+        "matchValue": {
+          "$ref": "#/$defs/unsignedLong"
+        },
+        "priority": {
+          "$ref": "#/$defs/long"
+        }
+      },
+      "required": ["histogramIndex"],
+      "unevaluatedProperties": false
+    },
+    "comment": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "commonEvent": {
+      "type": "object",
+      "properties": {
+        "$comment": {
+          "$ref": "#/$defs/comment"
+        },
+        "seconds": {
+          "type": "integer"
+        }
+      },
+      "required": ["seconds"]
+    },
+    "expectedError": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": ["error", "name"],
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "siteEvent": {
+      "$ref": "#/$defs/commonEvent",
+      "type": "object",
+      "properties": {
+        "site": {
+          "type": "string"
+        }
+      },
+      "required": ["site"]
+    },
+    "siteList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "long": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "unsignedLong": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    }
+  }
+}

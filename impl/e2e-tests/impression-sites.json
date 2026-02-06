@@ -48,10 +48,11 @@
       "seconds": 5,
       "site": "advertiser-3.example",
       "event": "measureConversion",
+      "$comment": "first impression site should be parsed as publisher-1.example",
       "options": {
         "aggregationService": "https://agg-service.example",
         "histogramSize": 3,
-        "impressionSites": ["publisher-1.example", "publisher-2.example"],
+        "impressionSites": ["foo.publisher-1.example", "publisher-2.example"],
         "value": 2,
         "maxValue": 2,
         "credit": [0.5, 0.5]

@@ -1,18 +1,13 @@
 {
   "events": [
     {
-      "seconds": 1,
-      "site": "publisher.example",
-      "event": "saveImpression",
-      "options": { "histogramIndex": -1 },
-      "expectedError": "RangeError"
-    },
-    {
       "seconds": 2,
       "site": "publisher.example",
       "event": "saveImpression",
       "$comment": "Equal to CONFIG.maxHistogramSize",
-      "options": { "histogramIndex": 5 },
+      "options": {
+        "histogramIndex": 5
+      },
       "expectedError": "RangeError"
     },
     {
@@ -31,7 +26,7 @@
       "event": "saveImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionSites": ["a"]
+        "conversionSites": [":"]
       },
       "expectedError": {
         "error": "DOMException",
@@ -45,7 +40,7 @@
       "$comment": "Greater than CONFIG.maxConversionSitesPerImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionSites": ["a", "a", "a", "a"]
+        "conversionSites": ["a.example", "a.example", "a.example", "a.example"]
       },
       "expectedError": "RangeError"
     },
@@ -55,7 +50,7 @@
       "event": "saveImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionCallers": ["a"]
+        "conversionCallers": [":"]
       },
       "expectedError": {
         "error": "DOMException",
@@ -69,7 +64,12 @@
       "$comment": "Greater than CONFIG.maxConversionCallersPerImpression",
       "options": {
         "histogramIndex": 0,
-        "conversionCallers": ["a", "a", "a", "a"]
+        "conversionCallers": [
+          "a.example",
+          "a.example",
+          "a.example",
+          "a.example"
+        ]
       },
       "expectedError": "RangeError"
     },
