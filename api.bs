@@ -1412,23 +1412,6 @@ returning an [=epoch index=]:
 
 </div>
 
-### Safety Limits Configuration ### {#safety-limits-configuration}
-
-[=User agents=] configure [=safety limits=] by defining the following values:
-
-*   <dfn>Global budget per epoch</dfn> (&epsilon;<sub>global</sub>):
-    The maximum privacy budget available across all [=sites=] per [=epoch=],
-    specified in [=microepsilons=].
-
-*   <dfn>Impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>):
-    The maximum privacy budget that a single [=impression site=]
-    can enable to be consumed from the [=global privacy budget=] per [=epoch=],
-    specified in [=microepsilons=].
-
-<p class=note>Typical values might be:
-TODO
-
-
 ### Last Browsing History Clear Time ### {#last-clear}
 
 The <dfn>last browsing history clear</dfn> is a [=moment=]
@@ -2177,6 +2160,29 @@ it is not [=implementation-defined=].
 
 Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
+
+### Safety Limits Configuration ### {#safety-limits-configuration}
+
+[=User agents=] configure [=safety limits=] by defining values
+as multiples of the per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>):
+
+*   <dfn>Global budget per epoch</dfn> (&epsilon;<sub>global</sub>):
+    The maximum privacy budget available across all [=sites=] per [=epoch=],
+    specified in [=microepsilons=].
+    Implementations [=must=] set this value to at least 100 times
+    the per-[=site=] [=privacy budget=] per [=epoch=].
+
+*   <dfn>Impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>):
+    The maximum privacy budget that a single [=impression site=]
+    can enable to be consumed from the [=global privacy budget=] per [=epoch=],
+    specified in [=microepsilons=].
+    Implementations [=must=] set this value to at least 10 times
+    the per-[=site=] [=privacy budget=] per [=epoch=].
+
+<p class=note>Setting [=safety limits=] as multiples of the per-[=site=] budget
+ensures that exploiting shared limits requires coordination by many sites,
+making them primarily useful as a means of protecting against abuse
+rather than as a primary privacy mechanism.
 
 
 ## User Control and Visibility ## {#user-control}
