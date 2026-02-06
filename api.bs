@@ -1097,12 +1097,6 @@ that are used to manage the expenditure of [=privacy budgets=]:
 *   The [=impression site quota store=] records the state
     of per-[=impression site=] and per-[=epoch=] quota [=privacy budgets=].
 
-*   The [=conversion site quota store=] records the state
-    of per-[=conversion site=] and per-[=epoch=] quota [=privacy budgets=].
-
-*   The [=user action context store=] records which [=sites=]
-    have accessed quota [=privacy budgets=] within the current [=user action context=].
-
 <p class=note>
 Like the [=impression store=],
 the [=privacy budget store=] and related stores do not use a [=storage key=].
@@ -1205,15 +1199,6 @@ nullable integer |l1Norm|:
     1.  If |deduction| is greater than [=global privacy budget store=]\[|epoch|],
         return false.
 
-    1.  Let |convQuotaKey| be a [=conversion site quota key=]
-        whose items are |epoch| and |conversionSite|.
-
-    1.  If the [=conversion site quota store=] does not [=map/contain=] |convQuotaKey|,
-        [=map/set=] its value to the [=conversion site quota per epoch=].
-
-    1.  If |deduction| is greater than [=conversion site quota store=]\[|convQuotaKey|],
-        return false.
-
     1.  [=map/iterate|For each=] |impSite| → |siteDeduction| in |impSiteDeductions|:
 
         1.  Let |impQuotaKey| be an [=impression site quota key=]
@@ -1231,8 +1216,6 @@ nullable integer |l1Norm|:
         to |currentValue| − |deduction|.
 
     1.  Decrement [=global privacy budget store=]\[|epoch|] by |deduction|.
-
-    1.  Decrement [=conversion site quota store=]\[|convQuotaKey|] by |deduction|.
 
     1.  [=map/iterate|For each=] |impSite| → |siteDeduction| in |impSiteDeductions|:
 
@@ -1288,158 +1271,42 @@ from enabling excessive budget
 that could be maliciously triggered.
 
 
-### Conversion Site Quota Store ### {#s-conversion-site-quota-store}
+### Attribution API Activation ### {#s-api-activation}
 
-The <dfn>conversion site quota store</dfn> is a [=map=] whose keys are
-[=conversion site quota keys=] and whose values are [=32-bit unsigned integers=]
-in units of [=microepsilons=].
+The Attribution API requires user activation to prevent abuse.
+A <dfn>global attribution API flag</dfn> is associated with each {{Window}} object.
+This flag is initially false.
 
-A <dfn>conversion site quota key</dfn> is a [=tuple=] consisting of the following items:
+The API can be invoked if either:
+1.  The [=global attribution API flag=] for the current {{Window}} is true, or
+2.  The current {{Window}} has [=transient activation=] that can be [=consume user activation|consumed=].
 
-<dl dfn-for="conversion site quota key">
-: <dfn ignore>epoch index</dfn>
-:: An [=epoch index=]
-: <dfn ignore>conversion site</dfn>
-:: A [=conversion site=]
+When the API is successfully invoked:
+1.  If [=transient activation=] was consumed, set the [=global attribution API flag=] to true.
 
-</dl>
+<p class=note>This approach allows a single user action to enable multiple
+API invocations within the same page session, while still requiring
+an initial user gesture to activate the API.
 
-The [=conversion site quota store=] limits the amount of "flow"
-(privacy budget consumed by reports)
-that any single [=conversion site=] can trigger in an [=epoch=].
-This constrains the budget that can be drawn by a [=conversion site=],
-limiting its ability to rapidly deplete the [=global privacy budget=].
-
-
-### User Action Context Store ### {#s-user-action-context-store}
-
-The <dfn>user action context store</dfn> is a [=map=] keyed by [=user action contexts=]
-and containing values that are [=user action context entries=].
-
-A <dfn>user action context</dfn> is an identifier
-for a sequence of API invocations
-that are associated with a single intentional user action,
-such as a navigation or click.
-
-A <dfn>user action context entry</dfn> is a [=struct=] with the following fields:
-
-<dl dfn-for="user action context entry">
-: <dfn>Allowed Impression Sites</dfn>
-:: A [=set=] of [=impression sites=] that have been permitted
-   to save [=impressions=] within this [=user action context=].
-: <dfn>Impression Site Counter</dfn>
-:: A non-negative integer representing the remaining number of
-   new [=impression sites=] that may save [=impressions=]
-   within this [=user action context=].
-   Initialized to an [=implementation-defined=] <dfn>impression site count cap</dfn>.
-: <dfn>Allowed Conversion Sites</dfn>
-:: A [=map=] keyed by [=epoch index=] and containing values that are [=sets=]
-   of [=conversion sites=] that have been permitted to measure [=conversions=]
-   within this [=user action context=] for that [=epoch=].
-: <dfn>Conversion Site Counters</dfn>
-:: A [=map=] keyed by [=epoch index=] and containing values that are
-   non-negative integers representing the remaining number of
-   new [=conversion sites=] that may measure [=conversions=]
-   within this [=user action context=] for that [=epoch=].
-   Each counter is initialized to an [=implementation-defined=] <dfn>conversion site count cap</dfn>.
-</dl>
-
-The [=user action context store=] tracks which [=sites=]
-have accessed quota [=privacy budgets=]
-(either [=impression site quota store|impression site quotas=]
-or [=conversion site quota store|conversion site quotas=])
-within the current [=user action context=].
-This enables enforcement of site count caps,
-limiting the number of distinct sites that can participate
-in attribution within a single user action.
-
-<p class=note>A [=user action context=] typically corresponds to
-a top-level navigation or other substantial user interaction.
-[=User agents=] determine when a new [=user action context=] begins
-based on their understanding of intentional user actions.
+<p class=issue>TODO: Define how long the [=global attribution API flag=] remains true
+and under what conditions it should be reset (e.g., navigation, page lifecycle events).
 
 <div algorithm>
-To get the <dfn>current user action context</dfn>,
-returning a [=user action context=]:
-
-1.  If the [=user agent=] has an active [=user action context=]
-    associated with the current execution context, return it.
-
-1.  Otherwise, create a new [=user action context=] identifier,
-    create a new [=user action context entry=] with:
-    *   [=user action context entry/Allowed Impression Sites=] set to an empty [=set=],
-    *   [=user action context entry/Impression Site Counter=] set to the [=impression site count cap=],
-    *   [=user action context entry/Allowed Conversion Sites=] set to an empty [=map=],
-    *   [=user action context entry/Conversion Site Counters=] set to an empty [=map=],
-
-    add the identifier and entry to the [=user action context store=],
-    and return the identifier.
-
-<p class=note>The [=user agent=] determines when [=user action contexts=] expire
-and are removed from the [=user action context store=].
-Contexts typically expire after some period of inactivity
-or when a new top-level navigation occurs.
-
-</div>
-
-<div algorithm>
-To <dfn>check impression site allowance</dfn>,
-given an [=impression site=] |impSite|
-and a [=user action context=] |uaContext|,
+To <dfn>check attribution API activation</dfn>,
+given a {{Window}} |window|,
 returning a [=boolean=]:
 
-1.  Let |entry| be the result of [=map/get|getting=] |uaContext|
-    from the [=user action context store=].
+1.  If |window|'s [=global attribution API flag=] is true, return true.
 
-1.  If |entry|'s [=user action context entry/Allowed Impression Sites=]
-    [=set/contains=] |impSite|, return true.
+1.  If |window| has [=transient activation=]:
 
-1.  If |entry|'s [=user action context entry/Impression Site Counter=] is 0,
-    return false.
+    1.  [=Consume user activation=] given |window|.
 
-1.  [=set/Append=] |impSite| to |entry|'s
-    [=user action context entry/Allowed Impression Sites=].
+    1.  Set |window|'s [=global attribution API flag=] to true.
 
-1.  Decrement |entry|'s [=user action context entry/Impression Site Counter=] by 1.
+    1.  Return true.
 
-1.  Return true.
-
-</div>
-
-<div algorithm>
-To <dfn>check conversion site allowance</dfn>,
-given a [=conversion site=] |convSite|,
-an [=epoch index=] |epoch|,
-and a [=user action context=] |uaContext|,
-returning a [=boolean=]:
-
-1.  Let |entry| be the result of [=map/get|getting=] |uaContext|
-    from the [=user action context store=].
-
-1.  If |entry|'s [=user action context entry/Conversion Site Counters=]
-    does not [=map/contain=] |epoch|:
-
-    1.  [=map/Set=] |entry|'s [=user action context entry/Conversion Site Counters=]\[|epoch|]
-        to the [=conversion site count cap=].
-
-    1.  [=map/Set=] |entry|'s [=user action context entry/Allowed Conversion Sites=]\[|epoch|]
-        to an empty [=set=].
-
-1.  Let |allowedSites| be the result of [=map/get|getting=] |epoch|
-    from |entry|'s [=user action context entry/Allowed Conversion Sites=].
-
-1.  If |allowedSites| [=set/contains=] |convSite|, return true.
-
-1.  Let |counter| be the result of [=map/get|getting=] |epoch|
-    from |entry|'s [=user action context entry/Conversion Site Counters=].
-
-1.  If |counter| is 0, return false.
-
-1.  [=set/Append=] |convSite| to |allowedSites|.
-
-1.  Decrement |entry|'s [=user action context entry/Conversion Site Counters=]\[|epoch|] by 1.
-
-1.  Return true.
+1.  Return false.
 
 </div>
 
@@ -1531,16 +1398,6 @@ returning an [=epoch index=]:
     The maximum privacy budget that a single [=impression site=]
     can enable to be consumed from the [=global privacy budget=] per [=epoch=],
     specified in [=microepsilons=].
-
-*   <dfn>Conversion site quota per epoch</dfn> (&epsilon;<sub>conv-quota</sub>):
-    The maximum privacy budget that a single [=conversion site=]
-    can consume from the [=global privacy budget=] per [=epoch=],
-    specified in [=microepsilons=].
-
-*   <dfn>Quota count cap</dfn> (<var>k</var><sub>quota-count</sub>):
-    The maximum number of distinct [=sites=]
-    that can create new quota budgets
-    within a single [=user action context=].
 
 <p class=note>Typical values might be:
 TODO
@@ -1666,8 +1523,7 @@ and a [=moment=] |now|:
     1.  [=map/clear|Clear=] the [=epoch start store=].
 
     <p class=issue>TODO: Define how to clear [=safety limits=] stores:
-    [=global privacy budget store=], [=impression site quota store=],
-    [=conversion site quota store=], and [=user action context store=].
+    [=global privacy budget store=] and [=impression site quota store=].
 
 1.  If |sites| [=set/is empty|is not empty=]:
 
@@ -1723,7 +1579,9 @@ and [=implicit API inputs=] |implicitInputs|:
         1.   otherwise, the result of
              [=obtain a site|obtaining a site=]
              from |settings|' [=environment settings object/origin=].
-    1.  Let |uaContext| be the [=current user action context=].
+1.  Let |window| be |document|'s [=relevant global object=].
+1.  Let |activationOk| be the result of [=check attribution API activation|checking attribution API activation=]
+    given |window|.
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -1772,10 +1630,8 @@ and [=implicit API inputs=] |implicitInputs|:
          ::  |options|.{{AttributionImpressionOptions/histogramIndex}}
          :   [=impression/Priority=]
          ::  |options|.{{AttributionImpressionOptions/priority}}
-     1.  If the Attribution API is [[#opt-out|enabled]]:
-         1.  Let |allowed| be the result of [=check impression site allowance|checking impression site allowance=]
-             given |site| and |uaContext|.
-         1.  If |allowed| is true, save |impression| to the [=impression store=].
+     1.  If the Attribution API is [[#opt-out|enabled]] and |activationOk| is true:
+         1.  Save |impression| to the [=impression store=].
 
 1.  Let |result| be a new {{AttributionImpressionResult}}.
 1.  Return [=a promise resolved with=] |result| in |realm|.
@@ -1864,10 +1720,9 @@ and [=implicit API inputs=] |implicitInputs|:
         1.   otherwise, the result of
              [=obtain a site|obtaining a site=]
              from |settings|' [=environment settings object/origin=].
-    1.  Let |uaContext| be the [=current user action context=].
-
-        <p class=note>The [=user agent=] determines when a new [=user action context=] begins,
-        typically corresponding to a top-level navigation or other substantial user interaction.
+1.  Let |window| be |document|'s [=relevant global object=].
+1.  Let |activationOk| be the result of [=check attribution API activation|checking attribution API activation=]
+    given |window|.
 1.  Let |validatedOptions| be the result of
     [=validate AttributionConversionOptions|validating=] |options|,
     returning [=a promise rejected with=] any thrown reason.
@@ -1875,11 +1730,13 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  Run the following steps [=in parallel=]:
      1.  Let |report| be the result of invoking [=create an all-zero histogram=] with
          |validatedOptions|' [=validated conversion options/histogram size=].
-     1.  If the Attribution API is [[#opt-out|enabled]], set |report| to the
-         result of [=do attribution and fill a histogram=] with |validatedOptions|,
+     1.  If the Attribution API is [[#opt-out|enabled]] and |activationOk| is true,
+         set |report| to the result of [=do attribution and fill a histogram=] with
+         |validatedOptions|,
          |implicitInputs|' [=implicit API inputs/top-level site=],
-         |implicitInputs|' [=implicit API inputs/intermediary site=], and
-         |implicitInputs|' [=implicit API inputs/timestamp=].
+         |implicitInputs|' [=implicit API inputs/intermediary site=],
+         |implicitInputs|' [=implicit API inputs/timestamp=], and
+         |activationOk|.
      1.  Let |aggregationService| be |validatedOptions|'s [=validated conversion options/aggregation service=].
      1.  Switch on the value of |aggregationService|.{{AttributionAggregationService/protocol}}:
          <dl class="switch">
@@ -2009,8 +1866,8 @@ To <dfn>do attribution and fill a histogram</dfn>, given
   [=validated conversion options=] |options|,
   [=site=] |topLevelSite|,
   [=site=] or `undefined` |intermediarySite|,
-  [=user action context=] |uaContext|,
-  and [=moment=] |now|:
+  [=moment=] |now|, and
+  [=boolean=] |activationOk|:
 
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
@@ -2037,9 +1894,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
         1.  If |impressions| [=set/is empty|is not empty=]:
 
-            1.  Let |quotaCountOk| be the result of invoking [=check conversion site allowance=]
-                with |topLevelSite|, |epoch|, and |uaContext|.
-
             1.  Let |impressionsByImpSite| be a new [=map=].
 
             1.  [=set/iterate|For each=] |impression| in |impressions|:
@@ -2060,7 +1914,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
                 |options|'s [=validated conversion options/max value=],
                 and null.
 
-            1.  If |quotaCountOk| is true and |budgetAndSafetyOk| is true,
+            1.  If |activationOk| is true and |budgetAndSafetyOk| is true,
                 [=set/extend=] |matchedImpressions| with |impressions|.
 
 
