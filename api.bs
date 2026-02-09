@@ -1151,8 +1151,6 @@ nullable integer |l1Norm|:
 
 1.  Let |epoch| be the [=epoch index=] component of |key|.
 
-1.  Let |conversionSite| be the [=site=] component of |key|.
-
 1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
     its value of |key| to be a [=user agent=]-defined value,
     plus 1000.
@@ -1246,7 +1244,7 @@ nullable integer |l1Norm|:
 
 1.  Let |singleEpoch| be true if |l1Norm| is non-null, false otherwise.
 
-1.  [=map/iterate|For each=] |impSite| → |impressions| in |impressionsByImpSite|:
+1.  [=map/iterate|For each=] |impSite| in |impressionsByImpSite|:
 
     1.  If |singleEpoch| is true and |numberImpressionSites| is 1:
         1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |deduction|.
