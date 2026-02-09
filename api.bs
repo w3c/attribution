@@ -1150,9 +1150,6 @@ nullable integer |l1Norm|:
 
 1.  Let |conversionSite| be the [=site=] component of |key|.
 
-1.  If there are no impressions in the current epoch, no privacy loss is deducted from budgets or quotas.
-    1.  Return true.
-
 1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
     its value of |key| to be a [=user agent=]-defined value,
     plus 1000.
@@ -1236,19 +1233,27 @@ To <dfn>compute impression site deductions</dfn>
 given a [=map=] |impressionsByImpSite| from [=impression sites=] to [=sets=] of [=impressions=],
 and integer |deduction|:
 
-<p class=note>This function currently includes only a basic optimization
-that assigns zero deduction to impression sites with no impressions.
-Additional optimizations are possible and may be added to this function in the future.
-
-1.  Let |impSiteDeductions| be a new [=map=].
+1. Let |impSiteDeductions| be a new [=map=].
+1. Let |numberImpressionSites| be the number of impression sites in |impressionsByImpSite|.
 
 1.  [=map/iterate|For each=] |impSite| → |impressions| in |impressionsByImpSite|:
 
     1.  If |impressions| [=set/is empty=]:
         1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to 0.
 
-    1.  Otherwise:
+    1.  else if |singleEpoch| is true and |numImpressionSites| is 1:
         1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |deduction|.
+    1. else
+        <p class=note> In this case we need to use the global sensitivity which is the value of |deduction| only in the multi-epoch case;
+        so we need to recompute it case we are in the single epoch but multiple impression sites case.
+        1.  Let |sensitivity| be 2 * |value| otherwise.
+
+        1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
+
+        1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
+        1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
+
+        1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |deduction|
 
 1.  Return |impSiteDeductions|.
 
