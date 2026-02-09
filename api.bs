@@ -1734,17 +1734,6 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
-1.  Let |settings| be [=this=]'s [=relevant settings object=].
-1.  Collect the implicit API inputs from |settings|:
-    1.  Let |now| be |settings|' [=environment settings object/current wall time=].
-    1.  Let |topLevelSite| (the [=conversion site=]) be the result of
-        [=obtain a site|obtaining a site=] from the [=top-level origin=].
-    1.  Let |intermediarySite| be:
-        1.   a value of `undefined` if the [=origin=] is [=same site=]
-             with the [=top-level origin=],
-        1.   otherwise, the result of
-             [=obtain a site|obtaining a site=]
-             from |settings|' [=environment settings object/origin=].
 1.  Let |window| be |document|'s [=relevant global object=].
 1.  Let |activationOk| be the result of [=check attribution API activation|checking attribution API activation=]
     given |window|.
@@ -1979,7 +1968,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
         |options|'s [=validated conversion options/max value=],
         and |l1Norm|.
 
-    1.  If |budgetAndSafetyOk| is false, set |histogram| to the result of invoking
+    1.  If |budgetAndSafetyOk| is false or |activationOk| is false, set |histogram| to the result of invoking
         [=create an all-zero histogram=] with |options|' [=validated conversion options/histogram size=].
 
 1.  Return |histogram|.
