@@ -1080,7 +1080,6 @@ that are used to manage the expenditure of [=privacy budgets=]:
 
 *   The [=privacy budget store=] records the state
     of the per-[=site=] and per-[=epoch=] [=privacy budgets=].
-    It is updated by [=deduct privacy budget=].
 
 *   The [=epoch start store=] records when each [=epoch=] starts
     for [=conversion sites=].
@@ -1096,6 +1095,10 @@ that are used to manage the expenditure of [=privacy budgets=]:
 
 *   The [=impression site quota store=] records the state
     of per-[=impression site=] and per-[=epoch=] quota [=privacy budgets=].
+
+*   The [=privacy budget store=], [=global privacy budget store=],
+    and [=impression site quota store=] are updated by [=deduct privacy and safety budgets=].
+
 
 <p class=note>
 Like the [=impression store=],
@@ -2187,7 +2190,7 @@ as multiples of the per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>):
 
 *   <dfn>Impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>):
     The maximum privacy budget that a single [=impression site=]
-    can enable to be consumed from the [=global privacy budget=] per [=epoch=],
+    can enable to be consumed from the [=global privacy budget store|global privacy budget=] per [=epoch=],
     specified in [=microepsilons=].
     Implementations [=must=] set this value to at least 10 times
     the per-[=site=] [=privacy budget=] per [=epoch=].
@@ -3114,7 +3117,7 @@ If the [=privacy budget=] for that [=epoch=] is not sufficient,
 the impressions from that [=epoch=] are not used.
 
 Each time a [=conversion site=] invokes <a method for=Attribution>measureConversion()</a>
-the [=deduct privacy budget|privacy budget is deducted=]
+the [=deduct privacy and safety budgets|privacy budget is deducted=]
 for [=epochs=] from which the [=attribution logic=] selected [=impressions=].
 
 <div class=example id=ex-budget>
