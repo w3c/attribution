@@ -1185,7 +1185,7 @@ nullable integer |l1Norm|:
 1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
 1.  Let |impSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
-    with |impressionsByImpSite| and |deduction|.
+    with |impressionsByImpSite|, |deduction|, |value|, |l1Norm|
 
 1.  Check that sufficient budget exists in all relevant stores
     before deducting from any of them.
@@ -1234,14 +1234,13 @@ given a [=map=] |impressionsByImpSite| from [=impression sites=] to [=sets=] of 
 and integer |deduction|:
 
 1. Let |impSiteDeductions| be a new [=map=].
+
 1. Let |numberImpressionSites| be the number of impression sites in |impressionsByImpSite|.
 
+1. Let |singleEpoch| be true if |l1Norm| is non-null, false otherwise.
+
 1.  [=map/iterate|For each=] |impSite| → |impressions| in |impressionsByImpSite|:
-
-    1.  If |impressions| [=set/is empty=]:
-        1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to 0.
-
-    1.  else if |singleEpoch| is true and |numImpressionSites| is 1:
+    1.  If |singleEpoch| is true and |numImpressionSites| is 1:
         1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |deduction|.
     1. else
         <p class=note> In this case we need to use the global sensitivity which is the value of |deduction| only in the multi-epoch case;
@@ -1251,6 +1250,7 @@ and integer |deduction|:
         1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
 
         1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
+
         1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
         1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |deduction|
