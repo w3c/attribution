@@ -3137,7 +3137,7 @@ for [=epochs=] from which the [=attribution logic=] selected [=impressions=].
     corresponding to impressions from Sites B, C, and E.
 
     As a result, [=privacy budget=] for the [=conversion site=]
-    is [=deduct privacy budget|deducted=]
+    is [=deduct privacy and safety budgets|deducted=]
     from [=epochs=] 1, 3, 4, and 5.
     No impressions were recorded for [=epoch=] 2,
     so no [=privacy budget|budget=] is deducted from that [=epoch=].
