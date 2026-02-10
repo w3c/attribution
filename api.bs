@@ -1172,6 +1172,17 @@ nullable integer |l1Norm|:
 
 1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
+1.  Let |impressionsBySite| be a new [=map=].
+
+1.  [=set/iterate|For each=] |impression| in |impressions|:
+
+    1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
+
+    1.  If |impressionsBySite| does not [=map/contain=] |impressionSite|,
+        [=map/set=] |impressionsBySite|\[|impressionSite|] to an empty [=set=].
+
+    1.  [=set/Append=] |impression| to |impressionsBySite|\[|impressionSite|].
+
 1.  Let |impressionSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
     with |impressionsBySite|, |deduction|, |value|, |maxValue|, |epsilon|, and |l1Norm|.
 
@@ -1336,14 +1347,12 @@ that could be maliciously triggered.
 
 The Attribution API requires user activation to prevent abuse.
 A <dfn>global attribution API flag</dfn> is associated with each {{Window}} object.
+The [=global attribution API flag=] is enabled whenever the API is successfully invoked.
 This flag is initially false.
 
 The API can be invoked if either:
 1.  The [=global attribution API flag=] for the current {{Window}} is true, or
 2.  The current {{Window}} has [=transient activation=] that can be [=consume user activation|consumed=].
-
-When the API is successfully invoked:
-1.  If [=transient activation=] was consumed, set the [=global attribution API flag=] to true.
 
 <p class=note>This approach allows a single user action to enable multiple
 API invocations within the same page session, while still requiring
@@ -1566,7 +1575,7 @@ and a [=moment=] |now|:
 
     1.  [=map/clear|Clear=] the [=epoch start store=].
 
-    <p class=issue>TODO: Define how to clear [=safety limits=] stores:
+    <p class=issue>TODO (issue https://github.com/w3c/attribution/issues/367): Define how to clear [=safety limits=] stores:
     [=global privacy budget store=] and [=impression site quota store=].
 
 1.  If |sites| [=set/is empty|is not empty=]:
@@ -1916,21 +1925,10 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
         1.  If |impressions| [=set/is empty|is not empty=]:
 
-            1.  Let |impressionsBySite| be a new [=map=].
-
-            1.  [=set/iterate|For each=] |impression| in |impressions|:
-
-                1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
-
-                1.  If |impressionsBySite| does not [=map/contain=] |impressionSite|,
-                    [=map/set=] |impressionsBySite|\[|impressionSite|] to an empty [=set=].
-
-                1.  [=set/Append=] |impression| to |impressionsBySite|\[|impressionSite|].
-
             1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
 
             1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-                with |key|, |epoch|, |impressionsBySite|,
+                with |key|, |epoch|, |impressions|,
                 |options|' [=validated conversion options/epsilon=],
                 |options|' [=validated conversion options/value=],
                 |options|'s [=validated conversion options/max value=],
@@ -2171,25 +2169,27 @@ will be a fixed value that is determined
 by the choice of technology used by the [=aggregation service=];
 it is not [=implementation-defined=].
 
-Deciding on a value for differential privacy parameters
+### Privacy and Safety Limit Parameter Configuration ### {#safety-limits-configuration}
+
+<p class=issue> Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
 
-### Safety Limits Configuration ### {#safety-limits-configuration}
+[=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
+for the following:  per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>):
 
-[=User agents=] configure [=safety limits=] by defining values
-as multiples of the per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>):
+*   The per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>) within the range of: TBD
 
-*   <dfn>Global budget per epoch</dfn> (&epsilon;<sub>global</sub>):
-    The maximum privacy budget available across all [=sites=] per [=epoch=],
+*   The <dfn>global budget per epoch</dfn> (&epsilon;<sub>global</sub>) which is
+    the maximum privacy budget available across all [=sites=] per [=epoch=],
     specified in [=microepsilons=].
-    Implementations [=must=] set this value to at least 100 times
+    Implementations [=must=] set this value as a multiple of
     the per-[=site=] [=privacy budget=] per [=epoch=].
 
-*   <dfn>Impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>):
-    The maximum privacy budget that a single [=impression site=]
+*   The <dfn>impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>) which is
+    the maximum privacy budget that a single [=impression site=]
     can enable to be consumed from the [=global privacy budget store|global privacy budget=] per [=epoch=],
     specified in [=microepsilons=].
-    Implementations [=must=] set this value to at least 10 times
+    Implementations [=must=] set this value as a multiple of
     the per-[=site=] [=privacy budget=] per [=epoch=].
 
 <p class=note>Setting [=safety limits=] as multiples of the per-[=site=] budget
