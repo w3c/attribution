@@ -1142,7 +1142,7 @@ A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items
 To <dfn>deduct privacy and safety budgets</dfn>
 given a [=privacy budget key=] |key|,
 [=epoch index=] |epoch|,
-a [=map=] |impressionsBySite| from [=impression sites=] to [=sets=] of [=impressions=],
+|impressions| as a set of [=impressions=],
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|, and
