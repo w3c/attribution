@@ -1141,8 +1141,7 @@ A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items
 <div algorithm>
 To <dfn>deduct privacy and safety budgets</dfn>
 given a [=privacy budget key=] |key|,
-[=epoch index=] |epoch|,
-|impressions| as a set of [=impressions=],
+[=set=] of [=impressions=] |impressions|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|, and
@@ -1183,8 +1182,10 @@ nullable integer |l1Norm|:
 
     1.  [=set/Append=] |impression| to |impressionsBySite|\[|impressionSite|].
 
+1. Let |isSingleEpoch| be true if |l1Norm| is non-null, false otherwise.
+
 1.  Let |impressionSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
-    with |impressionsBySite|, |deduction|, |value|, |maxValue|, |epsilon|, and |l1Norm|.
+    with |impressionsBySite|, |deduction|, |value|, |maxValue|, |epsilon|, and |isSingleEpoch|.
 
 <p class=issue>TODO: Additional work to specify
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
@@ -1218,7 +1219,6 @@ how locking is performed to ensure atomicity across checks and deductions, but l
 <div algorithm>
 To <dfn>check for available privacy budget</dfn>
 given a [=privacy budget key=] |key|,
-[=epoch index=] |epoch|,
 integer |deduction|, and
 a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
 
@@ -1265,17 +1265,23 @@ integer |deduction|,
 integer |value|,
 integer |maxValue|,
 [[WEBIDL#idl-double|double]] |epsilon|, and
-nullable integer |l1Norm|:
+boolean |isSingleEpoch|:
 
 1.  Let |impressionSiteDeductions| be a new [=map=].
 
 1.  Let |numberImpressionSites| be the [=map/size|number of impression sites=] in |impressionsBySite|.
 
-1.  Let |singleEpoch| be true if |l1Norm| is non-null, false otherwise.
+1.  Let |sensitivity| be 2 * |value|.
+
+1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
+
+1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
+
+1.  Let |globalDeduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
 1.  [=map/iterate|For each=] |impressionSite| in |impressionsBySite|:
 
-    1.  If |singleEpoch| is true and |numberImpressionSites| is 1:
+    1.  If |isSingleEpoch| is true and |numberImpressionSites| is 1:
 
         1.  [=map/Set=] |impressionSiteDeductions|\[|impressionSite|] to |deduction|.
 
@@ -1286,15 +1292,7 @@ nullable integer |l1Norm|:
         <p class=note>In this case we need to use the global sensitivity which is the value of |deduction| only in the multi-epoch case;
         so we need to recompute it in case we are in the single epoch but multiple impression sites case.
 
-        1.  Let |sensitivity| be 2 * |value|.
-
-        1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
-
-        1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
-
-        1.  Let |siteDeduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
-
-        1.  [=map/Set=] |impressionSiteDeductions|\[|impressionSite|] to |siteDeduction|.
+        1.  [=map/Set=] |impressionSiteDeductions|\[|impressionSite|] to |globalDeduction|.
 
 1.  Return |impressionSiteDeductions|.
 
@@ -1954,21 +1952,10 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
-    1.  Let |impressionsBySite| be a new [=map=].
-
-    1.  [=set/iterate|For each=] |impression| in |matchedImpressions|:
-
-        1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
-
-        1.  If |impressionsBySite| does not [=map/contain=] |impressionSite|,
-            [=map/set=] |impressionsBySite|\[|impressionSite|] to an empty [=set=].
-
-        1.  [=set/Append=] |impression| to |impressionsBySite|\[|impressionSite|].
-
     1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
 
-    1.  Let |budgetAndSafetyOk| be the result of [=deduct privacy and safety budgets=]
-        with |key|, |currentEpoch|, |impressionsBySite|,
+    1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
+        with |key|, |currentEpoch|, |impressions|,
         |options|' [=validated conversion options/epsilon=],
         |options|' [=validated conversion options/value=]
         |options|'s [=validated conversion options/max value=],
