@@ -1142,26 +1142,13 @@ A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items
 To <dfn>deduct privacy and safety budgets</dfn>
 given a [=privacy budget key=] |key|,
 [=epoch index=] |epoch|,
-a [=map=] |impressionsByImpSite| from [=impression sites=] to [=sets=] of [=impressions=],
+a [=map=] |impressionsBySite| from [=impression sites=] to [=sets=] of [=impressions=],
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|, and
 nullable integer |l1Norm|:
 
-
 1.  Let |epoch| be the [=epoch index=] component of |key|.
-
-1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
-    its value of |key| to be a [=user agent=]-defined value,
-    plus 1000.
-
-    <p class=note>The addition of 1000 to this value
-    ensures that the rounding errors added by this algorithm do not cause
-    the budget to be exceeded unnecessarily after multiple invocations.
-    The privacy loss from the additional one-thousandth of an epsilon is trivial.
-
-1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
-    in the [=privacy budget store=].
 
 1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, 2 * |value| otherwise.
 
@@ -1185,12 +1172,18 @@ nullable integer |l1Norm|:
 
 1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  Let |impSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
-    with |impressionsByImpSite|, |deduction|, |value|, |maxValue|, |epsilon|, and |l1Norm|.
+1.  Let |impressionSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
+    with |impressionsBySite|, |deduction|, |value|, |maxValue|, |epsilon|, and |l1Norm|.
 
 1.  Check that sufficient budget exists in all relevant stores
     before deducting from any of them.
     This ensures atomicity: either all deductions succeed, or none occur.
+
+    <p class=issue>TODO: This section needs additional work to specify
+    how locking is performed to ensure atomicity across multiple stores.
+
+    1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
+        in the [=privacy budget store=].
 
     1.  If |deduction| is greater than |currentValue|, return false.
 
@@ -1200,28 +1193,37 @@ nullable integer |l1Norm|:
     1.  If |deduction| is greater than [=global privacy budget store=]\[|epoch|],
         return false.
 
-    1.  [=map/iterate|For each=] |impSite| → |siteDeduction| in |impSiteDeductions|:
+    1.  [=map/iterate|For each=] |impressionSite| → |siteDeduction| in |impressionSiteDeductions|:
 
         1.  Let |impQuotaKey| be an [=impression site quota key=]
-            whose items are |epoch| and |impSite|.
+            whose items are |epoch| and |impressionSite|.
 
-        1.  If the [=impression site quota store=] does not [=map/contain=] |impQuotaKey|,
-            [=map/set=] its value to the [=impression site quota per epoch=].
+        1.  If the [=impression site quota store=] does not [=map/contain=] |impQuotaKey|, compare |siteDeduction| to the value of
+            [=impression site quota per epoch=] and if it is greater, return false.
 
         1.  If |siteDeduction| is greater than [=impression site quota store=]\[|impQuotaKey|],
             return false.
 
-1.  All budget checks passed; perform the deductions atomically.
+1.  All budget checks passed, so perform the deductions atomically:
+
+    1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
+        its value of |key| to be a [=user agent=]-defined value,
+        plus 1000.
+
+    <p class=note>The addition of 1000 to this value
+    ensures that the rounding errors added by this algorithm do not cause
+    the budget to be exceeded unnecessarily after multiple invocations.
+    The privacy loss from the additional one-thousandth of an epsilon is trivial.
 
     1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
         to |currentValue| − |deduction|.
 
     1.  Decrement [=global privacy budget store=]\[|epoch|] by |deduction|.
 
-    1.  [=map/iterate|For each=] |impSite| → |siteDeduction| in |impSiteDeductions|:
+    1.  [=map/iterate|For each=] |impressionSite| → |siteDeduction| in |impressionSiteDeductions|:
 
         1.  Let |impQuotaKey| be an [=impression site quota key=]
-            whose items are |epoch| and |impSite|.
+            whose items are |epoch| and |impressionSite|.
 
         1.  Decrement [=impression site quota store=]\[|impQuotaKey|] by |siteDeduction|.
 
@@ -1231,23 +1233,26 @@ nullable integer |l1Norm|:
 
 <div algorithm>
 To <dfn>compute impression site deductions</dfn>
-given a [=map=] |impressionsByImpSite| from [=impression sites=] to [=sets=] of [=impressions=],
+given a [=map=] |impressionsBySite| from [=impression sites=] to [=sets=] of [=impressions=],
 integer |deduction|,
 integer |value|,
 integer |maxValue|,
 [[WEBIDL#idl-double|double]] |epsilon|, and
 nullable integer |l1Norm|:
 
-1.  Let |impSiteDeductions| be a new [=map=].
+1.  Let |impressionSiteDeductions| be a new [=map=].
 
-1.  Let |numberImpressionSites| be the number of impression sites in |impressionsByImpSite|.
+1.  Let |numberImpressionSites| be the [=map/size|number of impression sites=] in |impressionsBySite|.
 
 1.  Let |singleEpoch| be true if |l1Norm| is non-null, false otherwise.
 
-1.  [=map/iterate|For each=] |impSite| in |impressionsByImpSite|:
+1.  [=map/iterate|For each=] |impressionSite| in |impressionsBySite|:
 
     1.  If |singleEpoch| is true and |numberImpressionSites| is 1:
-        1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |deduction|.
+
+        1.  [=map/Set=] |impressionSiteDeductions|\[|impressionSite|] to |deduction|.
+
+        1.  Return |impressionSiteDeductions|.
 
     1.  Otherwise:
 
@@ -1262,9 +1267,9 @@ nullable integer |l1Norm|:
 
         1.  Let |siteDeduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
-        1.  [=map/Set=] |impSiteDeductions|\[|impSite|] to |siteDeduction|.
+        1.  [=map/Set=] |impressionSiteDeductions|\[|impressionSite|] to |siteDeduction|.
 
-1.  Return |impSiteDeductions|.
+1.  Return |impressionSiteDeductions|.
 
 </div>
 
@@ -1895,21 +1900,21 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
         1.  If |impressions| [=set/is empty|is not empty=]:
 
-            1.  Let |impressionsByImpSite| be a new [=map=].
+            1.  Let |impressionsBySite| be a new [=map=].
 
             1.  [=set/iterate|For each=] |impression| in |impressions|:
 
-                1.  Let |impSite| be |impression|'s [=impression/impression site=].
+                1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-                1.  If |impressionsByImpSite| does not [=map/contain=] |impSite|,
-                    [=map/set=] |impressionsByImpSite|\[|impSite|] to an empty [=set=].
+                1.  If |impressionsBySite| does not [=map/contain=] |impressionSite|,
+                    [=map/set=] |impressionsBySite|\[|impressionSite|] to an empty [=set=].
 
-                1.  [=set/Append=] |impression| to |impressionsByImpSite|\[|impSite|].
+                1.  [=set/Append=] |impression| to |impressionsBySite|\[|impressionSite|].
 
             1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
 
             1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-                with |key|, |epoch|, |impressionsByImpSite|,
+                with |key|, |epoch|, |impressionsBySite|,
                 |options|' [=validated conversion options/epsilon=],
                 |options|' [=validated conversion options/value=],
                 |options|'s [=validated conversion options/max value=],
@@ -1935,21 +1940,21 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
-    1.  Let |impressionsByImpSite| be a new [=map=].
+    1.  Let |impressionsBySite| be a new [=map=].
 
     1.  [=set/iterate|For each=] |impression| in |matchedImpressions|:
 
-        1.  Let |impSite| be |impression|'s [=impression/impression site=].
+        1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-        1.  If |impressionsByImpSite| does not [=map/contain=] |impSite|,
-            [=map/set=] |impressionsByImpSite|\[|impSite|] to an empty [=set=].
+        1.  If |impressionsBySite| does not [=map/contain=] |impressionSite|,
+            [=map/set=] |impressionsBySite|\[|impressionSite|] to an empty [=set=].
 
-        1.  [=set/Append=] |impression| to |impressionsByImpSite|\[|impSite|].
+        1.  [=set/Append=] |impression| to |impressionsBySite|\[|impressionSite|].
 
     1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
 
     1.  Let |budgetAndSafetyOk| be the result of [=deduct privacy and safety budgets=]
-        with |key|, |currentEpoch|, |impressionsByImpSite|,
+        with |key|, |currentEpoch|, |impressionsBySite|,
         |options|' [=validated conversion options/epsilon=],
         |options|' [=validated conversion options/value=]
         |options|'s [=validated conversion options/max value=],
