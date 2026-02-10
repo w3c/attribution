@@ -1175,45 +1175,18 @@ nullable integer |l1Norm|:
 1.  Let |impressionSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
     with |impressionsBySite|, |deduction|, |value|, |maxValue|, |epsilon|, and |l1Norm|.
 
-1.  Check that sufficient budget exists in all relevant stores
-    before deducting from any of them.
-    This ensures atomicity: either all deductions succeed, or none occur.
+<p class=issue>TODO: Additional work to specify
+how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
 
-    <p class=issue>TODO: This section needs additional work to specify
-    how locking is performed to ensure atomicity across multiple stores.
+1.  Let |budgetAvailable| be the result of [=check for available privacy budget|checking for available privacy budget=]
+    with |key|, |epoch|, |deduction|, and |impressionSiteDeductions|.
 
-    1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
-        in the [=privacy budget store=].
-
-    1.  If |deduction| is greater than |currentValue|, return false.
-
-    1.  If the [=global privacy budget store=] does not [=map/contain=] |epoch|,
-        [=map/set=] its value to the [=global budget per epoch=].
-
-    1.  If |deduction| is greater than [=global privacy budget store=]\[|epoch|],
-        return false.
-
-    1.  [=map/iterate|For each=] |impressionSite| → |siteDeduction| in |impressionSiteDeductions|:
-
-        1.  Let |impQuotaKey| be an [=impression site quota key=]
-            whose items are |epoch| and |impressionSite|.
-
-        1.  If the [=impression site quota store=] does not [=map/contain=] |impQuotaKey|, compare |siteDeduction| to the value of
-            [=impression site quota per epoch=] and if it is greater, return false.
-
-        1.  If |siteDeduction| is greater than [=impression site quota store=]\[|impQuotaKey|],
-            return false.
+1.  If |budgetAvailable| is false, return false.
 
 1.  All budget checks passed, so perform the deductions atomically:
 
-    1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
-        its value of |key| to be a [=user agent=]-defined value,
-        plus 1000.
-
-    <p class=note>The addition of 1000 to this value
-    ensures that the rounding errors added by this algorithm do not cause
-    the budget to be exceeded unnecessarily after multiple invocations.
-    The privacy loss from the additional one-thousandth of an epsilon is trivial.
+    1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
+        in the [=privacy budget store=].
 
     1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
         to |currentValue| − |deduction|.
@@ -1222,10 +1195,53 @@ nullable integer |l1Norm|:
 
     1.  [=map/iterate|For each=] |impressionSite| → |siteDeduction| in |impressionSiteDeductions|:
 
-        1.  Let |impQuotaKey| be an [=impression site quota key=]
+        1.  Let |impressionQuotaKey| be an [=impression site quota key=]
             whose items are |epoch| and |impressionSite|.
 
-        1.  Decrement [=impression site quota store=]\[|impQuotaKey|] by |siteDeduction|.
+        1.  Decrement [=impression site quota store=]\[|impressionQuotaKey|] by |siteDeduction|.
+
+1.  Return true.
+
+</div>
+
+<div algorithm>
+To <dfn>check for available privacy budget</dfn>
+given a [=privacy budget key=] |key|,
+[=epoch index=] |epoch|,
+integer |deduction|, and
+a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
+
+1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
+    its value of |key| to be a [=user agent=]-defined value,
+    plus 1000.
+
+    <p class=note>The addition of 1000 to this value
+    ensures that the rounding errors added by this algorithm do not cause
+    the budget to be exceeded unnecessarily after multiple invocations.
+    The privacy loss from the additional one-thousandth of an epsilon is trivial.
+
+1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
+    in the [=privacy budget store=].
+
+1.  If |deduction| is greater than |currentValue|, return false.
+
+1.  If the [=global privacy budget store=] does not [=map/contain=] |epoch|,
+    [=map/set=] its value to the [=global budget per epoch=].
+
+1.  If |deduction| is greater than [=global privacy budget store=]\[|epoch|],
+    return false.
+
+1.  [=map/iterate|For each=] |impressionSite| → |siteDeduction| in |impressionSiteDeductions|:
+
+    1.  Let |impressionQuotaKey| be an [=impression site quota key=]
+        whose items are |epoch| and |impressionSite|.
+
+    1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
+        compare |siteDeduction| to the value of [=impression site quota per epoch=]
+        and if it is greater, return false.
+
+    1.  If |siteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
+        return false.
 
 1.  Return true.
 
