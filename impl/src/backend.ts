@@ -534,7 +534,7 @@ export class Backend {
 
   #deductPrivacyAndSafetyBudgets(
     key: PrivacyBudgetKey,
-    impressions: Set<Impression>,
+    impressions: ReadonlySet<Readonly<Impression>>,
     epsilon: number,
     value: number,
     maxValue: number,
@@ -560,14 +560,9 @@ export class Backend {
       return false;
     }
     const deduction = Math.ceil(deductionFp * 1000000);
-    const impressionsBySite = new Map<string, Set<Impression>>();
+    const impressionsBySite = new Set<string>();
     for (const impression of impressions) {
-      let set = impressionsBySite.get(impression.impressionSite);
-      if (set === undefined) {
-        set = new Set();
-        impressionsBySite.set(impression.impressionSite, set);
-      }
-      set.add(impression);
+      impressionsBySite.add(impression.impressionSite);
     }
     const isSingleEpoch = l1Norm !== null;
     const impressionSiteDeductions = this.#computeImpressionSiteDeductions(
@@ -610,7 +605,7 @@ export class Backend {
   }
 
   #computeImpressionSiteDeductions(
-    impressionsBySite: Map<string, Set<Impression>>,
+    impressionsBySite: ReadonlySet<string>,
     deduction: number,
     value: number,
     maxValue: number,
