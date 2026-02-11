@@ -36,6 +36,16 @@ interface PrivacyBudgetStoreEntry extends Readonly<PrivacyBudgetKey> {
   value: number;
 }
 
+interface ImpressionSiteQuotaKey {
+  epoch: number;
+  site: string;
+}
+
+interface ImpressionSiteQuotaStoreEntry
+  extends Readonly<ImpressionSiteQuotaKey> {
+  value: number;
+}
+
 interface ValidatedConversionOptions {
   aggregationService: Readonly<AttributionAggregationService>;
   epsilon: number;
@@ -107,6 +117,8 @@ export interface Delegate {
   readonly maxHistogramSize: number;
   readonly privacyBudgetMicroEpsilons: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
+  readonly globalBudgetPerEpochMicroEpsilons: number;
+  readonly impressionSiteQuotaPerEpochMicroEpsilons: number;
 
   now(): Temporal.Instant;
   fairlyAllocateCreditFraction(): number;
@@ -136,6 +148,8 @@ export class Backend {
   #impressions: Readonly<Impression>[] = [];
   readonly #epochStartStore: Map<string, Temporal.Instant> = new Map();
   #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
+  #impressionSiteQuotaStore: ImpressionSiteQuotaStoreEntry[] = [];
+  #globalPrivacyBudgetStore: Map<number, number> = new Map();
 
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
 
@@ -327,6 +341,9 @@ export class Backend {
     topLevelSite: string,
     intermediarySite: string | undefined,
     options: AttributionConversionOptions,
+    // Most uses of the simulator are not concerned with activation, so we
+    // default it here; e2e tests should cover it nonetheless.
+    activationOk: boolean = true,
   ): AttributionConversionResult {
     assert(isValidSite(topLevelSite));
     assert(intermediarySite === undefined || isValidSite(intermediarySite));
@@ -340,6 +357,7 @@ export class Backend {
           topLevelSite,
           intermediarySite,
           now,
+          activationOk,
           validatedOptions,
         )
       : allZeroHistogram(validatedOptions.histogramSize);
@@ -428,6 +446,7 @@ export class Backend {
     topLevelSite: string,
     intermediarySite: string | undefined,
     now: Temporal.Instant,
+    activationOk: boolean,
     options: ValidatedConversionOptions,
   ): number[] {
     let matchedImpressions;
@@ -459,14 +478,15 @@ export class Backend {
         );
         if (impressions.size > 0) {
           const key = { epoch, site: topLevelSite };
-          const budgetOk = this.#deductPrivacyBudget(
+          const budgetAndSafetyOk = this.#deductPrivacyAndSafetyBudgets(
             key,
+            impressions,
             options.epsilon,
             options.value,
             options.maxValue,
             /*l1Norm=*/ null,
           );
-          if (budgetOk) {
+          if (budgetAndSafetyOk && activationOk) {
             for (const i of impressions) {
               matchedImpressions.add(i);
             }
@@ -495,15 +515,16 @@ export class Backend {
         epoch: currentEpoch,
       };
 
-      const budgetOk = this.#deductPrivacyBudget(
+      const budgetAndSafetyOk = this.#deductPrivacyAndSafetyBudgets(
         key,
+        matchedImpressions,
         options.epsilon,
         options.value,
         options.maxValue,
         l1Norm,
       );
 
-      if (!budgetOk) {
+      if (!budgetAndSafetyOk || !activationOk) {
         histogram = allZeroHistogram(options.histogramSize);
       }
     }
@@ -511,12 +532,112 @@ export class Backend {
     return histogram;
   }
 
-  #deductPrivacyBudget(
+  #deductPrivacyAndSafetyBudgets(
     key: PrivacyBudgetKey,
+    impressions: Set<Impression>,
     epsilon: number,
     value: number,
     maxValue: number,
     l1Norm: number | null,
+  ): boolean {
+    const epoch = key.epoch;
+    const sensitivity = l1Norm ?? 2 * value;
+    const noiseScale = (2 * maxValue) / epsilon;
+    const deductionFp = sensitivity / noiseScale;
+    if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
+      let entry = this.#privacyBudgetStore.find(
+        (e) => e.epoch === key.epoch && e.site === key.site,
+      );
+      if (entry === undefined) {
+        entry = {
+          value: 0,
+          ...key,
+        };
+        this.#privacyBudgetStore.push(entry);
+      } else {
+        entry.value = 0;
+      }
+      return false;
+    }
+    const deduction = Math.ceil(deductionFp * 1000000);
+    const impressionsBySite = new Map<string, Set<Impression>>();
+    for (const impression of impressions) {
+      let set = impressionsBySite.get(impression.impressionSite);
+      if (set === undefined) {
+        set = new Set();
+        impressionsBySite.set(impression.impressionSite, set);
+      }
+      set.add(impression);
+    }
+    const isSingleEpoch = l1Norm !== null;
+    const impressionSiteDeductions = this.#computeImpressionSiteDeductions(
+      impressionsBySite,
+      deduction,
+      value,
+      maxValue,
+      epsilon,
+      isSingleEpoch,
+    );
+    const budgetAvailable = this.#checkForAvailablePrivacyBudget(
+      key,
+      deduction,
+      impressionSiteDeductions,
+    );
+    if (!budgetAvailable) {
+      return false;
+    }
+    {
+      const entry = this.#privacyBudgetStore.find(
+        (e) => e.epoch === key.epoch && e.site === key.site,
+      )!;
+      const currentValue = entry.value;
+      entry.value = currentValue - deduction;
+    }
+    {
+      const currentValue = this.#globalPrivacyBudgetStore.get(epoch)!;
+      this.#globalPrivacyBudgetStore.set(epoch, currentValue - deduction);
+    }
+    for (const [impressionSite, siteDeduction] of impressionSiteDeductions) {
+      const entry = this.#impressionSiteQuotaStore.find(
+        (e) => e.epoch === epoch && e.site === impressionSite,
+      )!;
+      // FIXME: `entry` is always undefined here because we never insert into
+      // #impressionSiteQuotaStore:
+      // https://github.com/w3c/attribution/pull/309/changes#r2794099410.
+      entry.value -= siteDeduction;
+    }
+    return true;
+  }
+
+  #computeImpressionSiteDeductions(
+    impressionsBySite: Map<string, Set<Impression>>,
+    deduction: number,
+    value: number,
+    maxValue: number,
+    epsilon: number,
+    isSingleEpoch: boolean,
+  ): Map<string, number> {
+    const impressionSiteDeductions = new Map<string, number>();
+    const numberImpressionSites = impressionsBySite.size;
+    const sensitivity = 2 * value;
+    const noiseScale = (2 * maxValue) / epsilon;
+    const deductionFp = sensitivity / noiseScale;
+    const globalDeduction = Math.ceil(deductionFp * 1000000);
+    for (const impressionSite of impressionsBySite.keys()) {
+      if (isSingleEpoch && numberImpressionSites === 1) {
+        impressionSiteDeductions.set(impressionSite, deduction);
+        return impressionSiteDeductions;
+      } else {
+        impressionSiteDeductions.set(impressionSite, globalDeduction);
+      }
+    }
+    return impressionSiteDeductions;
+  }
+
+  #checkForAvailablePrivacyBudget(
+    key: PrivacyBudgetKey,
+    deduction: number,
+    impressionSiteDeductions: ReadonlyMap<string, number>,
   ): boolean {
     let entry = this.#privacyBudgetStore.find(
       (e) => e.epoch === key.epoch && e.site === key.site,
@@ -528,19 +649,27 @@ export class Backend {
       };
       this.#privacyBudgetStore.push(entry);
     }
-    const sensitivity = l1Norm ?? 2 * value;
-    const noiseScale = (2 * maxValue) / epsilon;
-    const deductionFp = sensitivity / noiseScale;
-    if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
-      entry.value = 0;
+    const currentValue = entry.value;
+    if (deduction > currentValue) {
       return false;
     }
-    const deduction = Math.ceil(deductionFp * 1000000);
-    if (deduction > entry.value) {
-      entry.value = 0;
+    let globalEntry = this.#globalPrivacyBudgetStore.get(key.epoch);
+    if (globalEntry === undefined) {
+      globalEntry = this.#delegate.globalBudgetPerEpochMicroEpsilons;
+      this.#globalPrivacyBudgetStore.set(key.epoch, globalEntry);
+    }
+    if (deduction > globalEntry) {
       return false;
     }
-    entry.value -= deduction;
+    for (const [impressionSite, siteDeduction] of impressionSiteDeductions) {
+      const value =
+        this.#impressionSiteQuotaStore.find(
+          (e) => e.epoch === key.epoch && e.site === impressionSite,
+        )?.value ?? this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons;
+      if (siteDeduction > value) {
+        return false;
+      }
+    }
     return true;
   }
 
