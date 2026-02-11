@@ -120,6 +120,9 @@ function runTest(
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
+    globalBudgetPerEpochMicroEpsilons: config.globalBudgetPerEpochMicroEpsilons,
+    impressionSiteQuotaPerEpochMicroEpsilons:
+      config.impressionSiteQuotaPerEpochMicroEpsilons,
 
     now: () => now,
     fairlyAllocateCreditFraction: () => config.fairlyAllocateCreditFraction,
