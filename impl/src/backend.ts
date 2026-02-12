@@ -27,23 +27,33 @@ interface Impression {
   priority: number;
 }
 
-interface PrivacyBudgetKey {
-  epoch: number;
-  site: string;
+interface BudgetKey {
+  readonly epoch: number;
+  readonly site: string;
 }
 
-interface PrivacyBudgetStoreEntry extends Readonly<PrivacyBudgetKey> {
+interface BudgetEntry extends BudgetKey {
   value: number;
 }
 
-interface ImpressionSiteQuotaKey {
-  epoch: number;
-  site: string;
+function lookup(
+  entries: readonly BudgetEntry[],
+  key: BudgetKey,
+): BudgetEntry | undefined {
+  return entries.find((e) => e.epoch === key.epoch && e.site === key.site);
 }
 
-interface ImpressionSiteQuotaStoreEntry
-  extends Readonly<ImpressionSiteQuotaKey> {
-  value: number;
+function lookupOrInsert(
+  entries: BudgetEntry[],
+  key: BudgetKey,
+  valueIfNew: number,
+): BudgetEntry {
+  let entry = lookup(entries, key);
+  if (entry === undefined) {
+    entry = { ...key, value: valueIfNew };
+    entries.push(entry);
+  }
+  return entry;
 }
 
 interface ValidatedConversionOptions {
@@ -147,8 +157,8 @@ export class Backend {
   readonly #delegate: Delegate;
   #impressions: Readonly<Impression>[] = [];
   readonly #epochStartStore: Map<string, Temporal.Instant> = new Map();
-  #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
-  #impressionSiteQuotaStore: ImpressionSiteQuotaStoreEntry[] = [];
+  #privacyBudgetStore: BudgetEntry[] = [];
+  #impressionSiteQuotaStore: BudgetEntry[] = [];
   #globalPrivacyBudgetStore: Map<number, number> = new Map();
 
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
@@ -161,7 +171,7 @@ export class Backend {
     return this.#epochStartStore;
   }
 
-  get privacyBudgetEntries(): ReadonlyArray<Readonly<PrivacyBudgetStoreEntry>> {
+  get privacyBudgetEntries(): ReadonlyArray<Readonly<BudgetEntry>> {
     return this.#privacyBudgetStore;
   }
 
@@ -532,7 +542,7 @@ export class Backend {
   }
 
   #deductPrivacyAndSafetyBudgets(
-    key: PrivacyBudgetKey,
+    key: BudgetKey,
     impressions: ReadonlySet<Readonly<Impression>>,
     epsilon: number,
     value: number,
@@ -544,18 +554,8 @@ export class Backend {
     const noiseScale = (2 * maxValue) / epsilon;
     const deductionFp = sensitivity / noiseScale;
     if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
-      let entry = this.#privacyBudgetStore.find(
-        (e) => e.epoch === key.epoch && e.site === key.site,
-      );
-      if (entry === undefined) {
-        entry = {
-          value: 0,
-          ...key,
-        };
-        this.#privacyBudgetStore.push(entry);
-      } else {
-        entry.value = 0;
-      }
+      const entry = lookupOrInsert(this.#privacyBudgetStore, key, 0);
+      entry.value = 0;
       return false;
     }
     const deduction = Math.ceil(deductionFp * 1000000);
@@ -580,29 +580,17 @@ export class Backend {
     if (!budgetAvailable) {
       return false;
     }
-    {
-      const entry = this.#privacyBudgetStore.find(
-        (e) => e.epoch === key.epoch && e.site === key.site,
-      )!;
-      const currentValue = entry.value;
-      entry.value = currentValue - deduction;
-    }
+    lookup(this.#privacyBudgetStore, key)!.value -= deduction;
     {
       const currentValue = this.#globalPrivacyBudgetStore.get(epoch)!;
       this.#globalPrivacyBudgetStore.set(epoch, currentValue - deduction);
     }
-    for (const [impressionSite, siteDeduction] of impressionSiteDeductions) {
-      let entry = this.#impressionSiteQuotaStore.find(
-        (e) => e.epoch === epoch && e.site === impressionSite,
+    for (const [site, siteDeduction] of impressionSiteDeductions) {
+      const entry = lookupOrInsert(
+        this.#impressionSiteQuotaStore,
+        { epoch, site },
+        this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons,
       );
-      if (entry === undefined) {
-        entry = {
-          epoch,
-          site: impressionSite,
-          value: this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons,
-        };
-        this.#impressionSiteQuotaStore.push(entry);
-      }
       entry.value -= siteDeduction;
     }
     return true;
@@ -634,37 +622,31 @@ export class Backend {
   }
 
   #checkForAvailablePrivacyBudget(
-    key: PrivacyBudgetKey,
+    key: BudgetKey,
     deduction: number,
     impressionSiteDeductions: ReadonlyMap<string, number>,
   ): boolean {
-    let entry = this.#privacyBudgetStore.find(
-      (e) => e.epoch === key.epoch && e.site === key.site,
+    const entry = lookupOrInsert(
+      this.#privacyBudgetStore,
+      key,
+      this.#delegate.privacyBudgetMicroEpsilons + 1000,
     );
-    if (entry === undefined) {
-      entry = {
-        value: this.#delegate.privacyBudgetMicroEpsilons + 1000,
-        ...key,
-      };
-      this.#privacyBudgetStore.push(entry);
-    }
-    const currentValue = entry.value;
-    if (deduction > currentValue) {
+    if (deduction > entry.value) {
       return false;
     }
-    let globalEntry = this.#globalPrivacyBudgetStore.get(key.epoch);
+    const epoch = key.epoch;
+    let globalEntry = this.#globalPrivacyBudgetStore.get(epoch);
     if (globalEntry === undefined) {
       globalEntry = this.#delegate.globalBudgetPerEpochMicroEpsilons;
-      this.#globalPrivacyBudgetStore.set(key.epoch, globalEntry);
+      this.#globalPrivacyBudgetStore.set(epoch, globalEntry);
     }
     if (deduction > globalEntry) {
       return false;
     }
-    for (const [impressionSite, siteDeduction] of impressionSiteDeductions) {
+    for (const [site, siteDeduction] of impressionSiteDeductions) {
       const value =
-        this.#impressionSiteQuotaStore.find(
-          (e) => e.epoch === key.epoch && e.site === impressionSite,
-        )?.value ?? this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons;
+        lookup(this.#impressionSiteQuotaStore, { epoch, site })?.value ??
+        this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons;
       if (siteDeduction > value) {
         return false;
       }
@@ -790,18 +772,12 @@ export class Backend {
       const startEpoch = this.#getStartEpoch(site, now);
       const currentEpoch = this.#getCurrentEpoch(site, now);
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
-        const entry = this.#privacyBudgetStore.find(
-          (e) => e.epoch === epoch && e.site === site,
+        const entry = lookupOrInsert(
+          this.#privacyBudgetStore,
+          { epoch, site },
+          0,
         );
-        if (entry === undefined) {
-          this.#privacyBudgetStore.push({
-            site,
-            epoch,
-            value: 0,
-          });
-        } else {
-          entry.value = 0;
-        }
+        entry.value = 0;
       }
     }
   }
