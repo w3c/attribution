@@ -177,6 +177,8 @@ export class Backend {
     return this.#lastBrowsingHistoryClear;
   }
 
+  // This does not check permission policy or activation, as those are outside
+  // the scope of the simulator.
   saveImpression(
     impressionSite: string,
     intermediarySite: string | undefined,
@@ -337,13 +339,12 @@ export class Backend {
     };
   }
 
+  // This does not check permission policy or activation, as those are outside
+  // the scope of the simulator.
   measureConversion(
     topLevelSite: string,
     intermediarySite: string | undefined,
     options: AttributionConversionOptions,
-    // Most uses of the simulator are not concerned with activation, so we
-    // default it here; e2e tests should cover it nonetheless.
-    activationOk: boolean = true,
   ): AttributionConversionResult {
     assert(isValidSite(topLevelSite));
     assert(intermediarySite === undefined || isValidSite(intermediarySite));
@@ -357,7 +358,6 @@ export class Backend {
           topLevelSite,
           intermediarySite,
           now,
-          activationOk,
           validatedOptions,
         )
       : allZeroHistogram(validatedOptions.histogramSize);
@@ -446,7 +446,6 @@ export class Backend {
     topLevelSite: string,
     intermediarySite: string | undefined,
     now: Temporal.Instant,
-    activationOk: boolean,
     options: ValidatedConversionOptions,
   ): number[] {
     let matchedImpressions;
@@ -486,7 +485,7 @@ export class Backend {
             options.maxValue,
             /*l1Norm=*/ null,
           );
-          if (budgetAndSafetyOk && activationOk) {
+          if (budgetAndSafetyOk) {
             for (const i of impressions) {
               matchedImpressions.add(i);
             }
@@ -524,7 +523,7 @@ export class Backend {
         l1Norm,
       );
 
-      if (!budgetAndSafetyOk || !activationOk) {
+      if (!budgetAndSafetyOk) {
         histogram = allZeroHistogram(options.histogramSize);
       }
     }
