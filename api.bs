@@ -1362,9 +1362,9 @@ and under what conditions it should be reset (e.g., navigation, page lifecycle e
 <div algorithm>
 To <dfn>check attribution API activation</dfn>,
 given a {{Window}} |window|,
-returning a [=boolean=]:
+throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 
-1.  If |window|'s [=global attribution API flag=] is true, return true.
+1.  If |window|'s [=global attribution API flag=] is true, return.
 
 1.  If |window| has [=transient activation=]:
 
@@ -1372,9 +1372,9 @@ returning a [=boolean=]:
 
     1.  Set |window|'s [=global attribution API flag=] to true.
 
-    1.  Return true.
+    1.  Return.
 
-1.  Return false.
+1.  [=Throw=] a {{"NotAllowedError"}} {{DOMException}}.
 
 </div>
 
@@ -1620,8 +1620,8 @@ and [=implicit API inputs=] |implicitInputs|:
     "{{PermissionPolicy/save-impression}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
 1.  Let |window| be |document|'s [=relevant global object=].
-1.  Let |activationOk| be the result of [=check attribution API activation|checking attribution API activation=]
-    given |window|.
+1.  [=check attribution API activation|Check attribution API activation=]
+    given |window|, returning [=a promise rejected with=] any thrown reason.
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -1670,7 +1670,7 @@ and [=implicit API inputs=] |implicitInputs|:
          ::  |options|.{{AttributionImpressionOptions/histogramIndex}}
          :   [=impression/Priority=]
          ::  |options|.{{AttributionImpressionOptions/priority}}
-     1.  If the Attribution API is [[#opt-out|enabled]] and |activationOk| is true:
+     1.  If the Attribution API is [[#opt-out|enabled]]:
          1.  Save |impression| to the [=impression store=].
 
 1.  Let |result| be a new {{AttributionImpressionResult}}.
@@ -1750,8 +1750,8 @@ and [=implicit API inputs=] |implicitInputs|:
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
 1.  Let |window| be |document|'s [=relevant global object=].
-1.  Let |activationOk| be the result of [=check attribution API activation|checking attribution API activation=]
-    given |window|.
+1.  [=check attribution API activation|Check attribution API activation=]
+    given |window|, returning [=a promise rejected with=] any thrown reason.
 1.  Let |validatedOptions| be the result of
     [=validate AttributionConversionOptions|validating=] |options|,
     returning [=a promise rejected with=] any thrown reason.
@@ -1759,13 +1759,12 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  Run the following steps [=in parallel=]:
      1.  Let |report| be the result of invoking [=create an all-zero histogram=] with
          |validatedOptions|' [=validated conversion options/histogram size=].
-     1.  If the Attribution API is [[#opt-out|enabled]] and |activationOk| is true,
+     1.  If the Attribution API is [[#opt-out|enabled]],
          set |report| to the result of [=do attribution and fill a histogram=] with
          |validatedOptions|,
          |implicitInputs|' [=implicit API inputs/top-level site=],
-         |implicitInputs|' [=implicit API inputs/intermediary site=],
-         |implicitInputs|' [=implicit API inputs/timestamp=], and
-         |activationOk|.
+         |implicitInputs|' [=implicit API inputs/intermediary site=], and
+         |implicitInputs|' [=implicit API inputs/timestamp=].
      1.  Let |aggregationService| be |validatedOptions|'s [=validated conversion options/aggregation service=].
      1.  Switch on the value of |aggregationService|.{{AttributionAggregationService/protocol}}:
          <dl class="switch">
@@ -1894,9 +1893,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 To <dfn>do attribution and fill a histogram</dfn>, given
   [=validated conversion options=] |options|,
   [=site=] |topLevelSite|,
-  [=site=] or `undefined` |intermediarySite|,
-  [=moment=] |now|, and
-  [=boolean=] |activationOk|:
+  [=site=] or `undefined` |intermediarySite|, and
+  [=moment=] |now|:
 
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
@@ -1932,7 +1930,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
                 |options|'s [=validated conversion options/max value=],
                 and null.
 
-            1.  If |activationOk| is true and |budgetAndSafetyOk| is true,
+            1.  If |budgetAndSafetyOk| is true,
                 [=set/extend=] |matchedImpressions| with |impressions|.
 
 
@@ -1961,7 +1959,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
         |options|'s [=validated conversion options/max value=],
         and |l1Norm|.
 
-    1.  If |budgetAndSafetyOk| is false or |activationOk| is false, set |histogram| to the result of invoking
+    1.  If |budgetAndSafetyOk| is false, set |histogram| to the result of invoking
         [=create an all-zero histogram=] with |options|' [=validated conversion options/histogram size=].
 
 1.  Return |histogram|.
