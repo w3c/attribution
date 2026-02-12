@@ -592,12 +592,17 @@ export class Backend {
       this.#globalPrivacyBudgetStore.set(epoch, currentValue - deduction);
     }
     for (const [impressionSite, siteDeduction] of impressionSiteDeductions) {
-      const entry = this.#impressionSiteQuotaStore.find(
+      let entry = this.#impressionSiteQuotaStore.find(
         (e) => e.epoch === epoch && e.site === impressionSite,
-      )!;
-      // FIXME: `entry` is always undefined here because we never insert into
-      // #impressionSiteQuotaStore:
-      // https://github.com/w3c/attribution/pull/309/changes#r2794099410.
+      );
+      if (entry === undefined) {
+        entry = {
+          epoch,
+          site: impressionSite,
+          value: this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons,
+        };
+        this.#impressionSiteQuotaStore.push(entry);
+      }
       entry.value -= siteDeduction;
     }
     return true;
