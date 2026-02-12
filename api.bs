@@ -1210,8 +1210,8 @@ how locking is performed to ensure atomicity across checks and deductions, but l
         1.  Let |impressionQuotaKey| be an [=impression site quota key=]
             whose items are |epoch| and |impressionSite|.
 
-        1. If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
-           [=map/set=] its value to the [=impression site quota per epoch=].
+        1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
+            [=map/set=] its value to the [=impression site quota per epoch=].
 
         1.  Decrement [=impression site quota store=]\[|impressionQuotaKey|] by |siteDeduction|.
 
@@ -1377,7 +1377,7 @@ throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 
     1.  Return.
 
-1.  [=Throw=] a {{"NotAllowedError"}} {{DOMException}}.
+1.  Throw a {{"NotAllowedError"}} {{DOMException}}.
 
 </div>
 
