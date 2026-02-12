@@ -1191,7 +1191,7 @@ nullable integer |l1Norm|:
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
 
 1.  Let |budgetAvailable| be the result of [=check for available privacy budget|checking for available privacy budget=]
-    with |key|, |epoch|, |deduction|, and |impressionSiteDeductions|.
+    with |key|, |deduction|, and |impressionSiteDeductions|.
 
 1.  If |budgetAvailable| is false, return false.
 
@@ -1209,6 +1209,9 @@ how locking is performed to ensure atomicity across checks and deductions, but l
 
         1.  Let |impressionQuotaKey| be an [=impression site quota key=]
             whose items are |epoch| and |impressionSite|.
+
+        1. If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
+           [=map/set=] its value to the [=impression site quota per epoch=].
 
         1.  Decrement [=impression site quota store=]\[|impressionQuotaKey|] by |siteDeduction|.
 
@@ -1236,6 +1239,8 @@ a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
 
 1.  If |deduction| is greater than |currentValue|, return false.
 
+1.  Let |epoch| be the [=epoch index=] component of |key|.
+
 1.  If the [=global privacy budget store=] does not [=map/contain=] |epoch|,
     [=map/set=] its value to the [=global budget per epoch=].
 
@@ -1247,9 +1252,8 @@ a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
     1.  Let |impressionQuotaKey| be an [=impression site quota key=]
         whose items are |epoch| and |impressionSite|.
 
-    1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
-        compare |siteDeduction| to the value of [=impression site quota per epoch=]
-        and if it is greater, return false.
+1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|
+    and |siteDeduction| is greater than the [=impression site quota per epoch=], return false.
 
     1.  If |siteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
         return false.
@@ -1297,7 +1301,6 @@ boolean |isSingleEpoch|:
 1.  Return |impressionSiteDeductions|.
 
 </div>
-
 
 
 
@@ -1353,7 +1356,7 @@ The API can be invoked if either:
 2.  The current {{Window}} has [=transient activation=] that can be [=consume user activation|consumed=].
 
 <p class=note>This approach allows a single user action to enable multiple
-API invocations within the same page session, while still requiring
+API invocations within the same session, while still requiring
 an initial user gesture to activate the API.
 
 <p class=issue>TODO: Define how long the [=global attribution API flag=] remains true
@@ -1377,7 +1380,6 @@ throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 1.  [=Throw=] a {{"NotAllowedError"}} {{DOMException}}.
 
 </div>
-
 
 ### Epoch Start Store ### {#s-epoch-start}
 
@@ -1924,7 +1926,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
             1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
 
             1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-                with |key|, |epoch|, |impressions|,
+                with |key|, |impressions|,
                 |options|' [=validated conversion options/epsilon=],
                 |options|' [=validated conversion options/value=],
                 |options|'s [=validated conversion options/max value=],
@@ -1939,7 +1941,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     [=create an all-zero histogram=] with
     |options|' [=validated conversion options/histogram size=].
 
-
 1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
     |options|' [=validated conversion options/histogram size=],
     |options|' [=validated conversion options/value=], and
@@ -1953,7 +1954,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
 
     1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-        with |key|, |currentEpoch|, |impressions|,
+        with |key|, |matchedImpressions|,
         |options|' [=validated conversion options/epsilon=],
         |options|' [=validated conversion options/value=]
         |options|'s [=validated conversion options/max value=],
