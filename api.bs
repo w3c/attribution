@@ -1346,7 +1346,28 @@ that could be maliciously triggered.
 
 ### Attribution API Activation ### {#s-api-activation}
 
-The Attribution API requires user activation to prevent abuse.
+The Attribution API requires user activation to prevent abuse. Examples of user activations
+that could be used to activate the API include
+<a href="https://html.spec.whatwg.org/#user-navigation-involvement">user navigation involvement</a> or clicks on the page.
+The web platform uses <a href="https://html.spec.whatwg.org/#tracking-user-activation">transient activation</a> to limit the amount of time that a
+user activation remains available for calling certain user activation-gated APIs.
+The Attribution API can be activated by transient activation,
+and within the time window of a user action, the site can redirect to another site
+that will be able to use the transient activation if the first site has not consumed it.
+
+A couple of notes:
+
+1.  Since calling the Attribution API consumes a user activation, the site would no longer have this
+    particular user activation to use for other APIs (e.g., opening popups).
+
+1.  One common web pattern related to web advertising is for an advertiser site to have the user
+    click on a purchase button and be taken to a separate payment processor page. In such a scenario,
+    both sites will be able to use the API if the first site has used a different, earlier user action
+    to activate the API for that site (setting the window's [=global attribution API flag=] to true)
+    and then the second site uses the transient activation from the click to activate the API for
+    its use. But no further sites will be able to use the API without further user action in order
+    to prevent abuse.
+
 A <dfn>global attribution API flag</dfn> is associated with each {{Window}} object.
 The [=global attribution API flag=] is enabled whenever the API is successfully invoked.
 This flag is initially false.
@@ -1380,6 +1401,8 @@ throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 1.  Throw a {{"NotAllowedError"}} {{DOMException}}.
 
 </div>
+
+
 
 ### Epoch Start Store ### {#s-epoch-start}
 
