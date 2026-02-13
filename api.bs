@@ -1171,7 +1171,7 @@ nullable integer |l1Norm|:
 
 1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  Let |impressionsSites| be a new [=set=].
+1.  Let |impressionSites| be a new [=set=].
 
 1.  [=set/iterate|For each=] |impression| in |impressions|:
 
@@ -1179,12 +1179,10 @@ nullable integer |l1Norm|:
 
     1.  [=set/append=] |impressionSite| to |impressionSites|.
 
-1.  Let |numberImpressionSites| be the [=set/size|number of impression sites=] in |impressionsSites|.
-
 1.  Let |isSingleEpoch| be true if |l1Norm| is non-null, false otherwise.
 
 1.  Let |impressionSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
-    with |numberImpressionSites|, |deduction|, |value|, |maxValue|, |epsilon|, and |isSingleEpoch|.
+    with |impressionSites|, |deduction|, |value|, |maxValue|, |epsilon|, and |isSingleEpoch|.
 
 <p class=issue>TODO: Additional work to specify
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
@@ -1263,7 +1261,7 @@ a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
 
 <div algorithm>
 To <dfn>compute impression site deductions</dfn>
-given an integer |numberImpressionSites|,
+given an set |impressionSites| of [=impression sites=],
 integer |deduction|,
 integer |value|,
 integer |maxValue|,
@@ -1279,6 +1277,8 @@ boolean |isSingleEpoch|:
 1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
 
 1.  Let |globalDeduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
+
+1.  Let |numberImpressionSites| be the [=set/size|number of impression sites=] in |impressionSites|.
 
 1.  [=map/iterate|For each=] |impressionSite| in |impressionsBySite|:
 
