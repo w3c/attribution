@@ -1171,21 +1171,20 @@ nullable integer |l1Norm|:
 
 1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  Let |impressionsBySite| be a new [=map=].
+1.  Let |impressionsSites| be a new [=set=].
 
 1.  [=set/iterate|For each=] |impression| in |impressions|:
 
     1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-    1.  If |impressionsBySite| does not [=map/contain=] |impressionSite|,
-        [=map/set=] |impressionsBySite|\[|impressionSite|] to an empty [=set=].
+    1.  [=set/append=] |impressionSite| to |impressionSites|.
 
-    1.  [=set/Append=] |impression| to |impressionsBySite|\[|impressionSite|].
+1.  Let |numberImpressionSites| be the [=set/size|number of impression sites=] in |impressionsSites|.
 
-1. Let |isSingleEpoch| be true if |l1Norm| is non-null, false otherwise.
+1.  Let |isSingleEpoch| be true if |l1Norm| is non-null, false otherwise.
 
 1.  Let |impressionSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
-    with |impressionsBySite|, |deduction|, |value|, |maxValue|, |epsilon|, and |isSingleEpoch|.
+    with |numberImpressionSites|, |deduction|, |value|, |maxValue|, |epsilon|, and |isSingleEpoch|.
 
 <p class=issue>TODO: Additional work to specify
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
@@ -1264,7 +1263,7 @@ a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
 
 <div algorithm>
 To <dfn>compute impression site deductions</dfn>
-given a [=map=] |impressionsBySite| from [=impression sites=] to [=sets=] of [=impressions=],
+given an integer |numberImpressionSites|,
 integer |deduction|,
 integer |value|,
 integer |maxValue|,
@@ -1272,8 +1271,6 @@ integer |maxValue|,
 boolean |isSingleEpoch|:
 
 1.  Let |impressionSiteDeductions| be a new [=map=].
-
-1.  Let |numberImpressionSites| be the [=map/size|number of impression sites=] in |impressionsBySite|.
 
 1.  Let |sensitivity| be 2 * |value|.
 
