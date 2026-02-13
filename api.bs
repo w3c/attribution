@@ -1254,7 +1254,7 @@ a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
     1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|
         and |siteDeduction| is greater than the [=impression site quota per epoch=], return false.
 
-    1.  If [=map/contains] |impressionQuotaKey| and |siteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
+    1.  If [=map/contains=] |impressionQuotaKey| and |siteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
         return false.
 
 1.  Return true.
