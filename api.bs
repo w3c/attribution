@@ -1280,7 +1280,7 @@ boolean |isSingleEpoch|:
 
 1.  Let |numberImpressionSites| be the [=set/size|number of impression sites=] in |impressionSites|.
 
-1.  [=map/iterate|For each=] |impressionSite| in |impressionsBySite|:
+1.  [=map/iterate|For each=] |impressionSite| in |impressionSites|:
 
     1.  If |isSingleEpoch| is true and |numberImpressionSites| is 1:
 
