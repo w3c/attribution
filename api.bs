@@ -1901,7 +1901,22 @@ There is no point to having different maximum values for
 these values as the smaller of the two values
 will determine which saved [=impressions=] are available for conversions.
 
-Implementations [=must=] set a [=maximum lookback=] of at least 90 days.
+Implementations [=must=] set a [=maximum lookback=] of at least 30 days.
+Within this period, implementations [=should=] attempt to retain
+at least 1000 impressions per site.
+
+Implementations [=should=] retain impressions
+beyond these recommended limits on time and number where possible.
+Available capacity for storing impressions depends on both
+the storage necessary to retain impression data
+and the processing time needed to [=measure a conversion|produce a conversion report=].
+An implementation [=may=] discard impressions before these limits are reached
+if a site requests storage of impressions in excess of available capacity,
+if requested by a user (see [[#opt-out]]),
+or for [=implementation-defined=] reasons.
+
+<p class=note>One possible reason an implementation might choose not to retain impressions
+is that the site has not received sufficient user engagement.
 
 An [=implementation-defined=] value is chosen for the lists of sites
 passed to <a method for=Attribution>saveImpression()</a>
