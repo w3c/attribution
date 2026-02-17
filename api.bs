@@ -333,7 +333,7 @@ path:images/overview.svg
 </figure>
 
 When an [=impression=] occurs,
-the <a method for=Attribution>saveImpression()</a> method can be used
+the {{Attribution/saveImpression()}} method can be used
 to request that the browser save information.
 This includes an identifier for the impression
 and some additional information about the impression.
@@ -344,7 +344,7 @@ At [=conversion=] time, a [=conversion report=] is created.
 A <dfn>conversion report</dfn> is an encrypted histogram contribution
 that includes information from any [=impressions=] that the browser previously stored.
 
-The <a method for=Attribution>measureConversion()</a> method accepts a simple query that is used
+The {{Attribution/measureConversion()}} method accepts a simple query that is used
 to tell the browser how to construct a [=conversion report=].
 That includes a simple query that selects from the [=impressions=]
 that the browser has stored,
@@ -396,7 +396,7 @@ A site using the Attribution API will typically register either
 do both.
 
 To register an impression, a site calls
-<a method for=Attribution>saveImpression()</a>. No preparation is
+{{Attribution/saveImpression()}}. No preparation is
 required to use this API beyond collecting parameter values, although
 it may be useful to examine the supported
 <a attribute for=Attribution>aggregationServices</a> in deciding
@@ -407,7 +407,7 @@ It is also possible to register an impression by including the
 header in the HTTP response when serving a resource to the user agent.
 
 To request a conversion report, a site calls
-<a method for=Attribution>measureConversion()</a>.
+{{Attribution/measureConversion()}}.
 Before calling this API, a site must
 select a supported [=aggregation service=].
 The page may select any of the supported services found in
@@ -415,7 +415,7 @@ The page may select any of the supported services found in
 The name of the selected service must be supplied as
 the {{AttributionConversionOptions/aggregationService}} member of the
 {{AttributionConversionOptions}} dictionary when calling the
-<a method for=Attribution>measureConversion()</a> method.
+{{Attribution/measureConversion()}} method.
 
 ## Site Identities ## {#sites}
 
@@ -476,7 +476,7 @@ This provides three key functions:
 The <dfn attribute for=Attribution>aggregationServices</dfn> attribute
 contains a set of aggregation services supported by the [=user agent=]. The page
 must select and specify one of these services when calling the
-<a method for=Attribution>measureConversion()</a> method.
+{{Attribution/measureConversion()}} method.
 It may also be useful to query the supported services
 before registering an impression,
 but that is not required,
@@ -542,7 +542,7 @@ that service:
 </dl>
 
 The URL is passed as the {{AttributionConversionOptions/aggregationService}} parameter
-to <a method for=Attribution>measureConversion()</a> to select the identified aggregation service.
+to {{Attribution/measureConversion()}} to select the identified aggregation service.
 
 The <dfn enum>AttributionAggregationProtocol</dfn> describes the submission protocol
 used by different [=aggregation services=]. This document defines two protocols:
@@ -554,7 +554,7 @@ used by different [=aggregation services=]. This document defines two protocols:
 
 ## Saving Impressions ## {#save-impression-api}
 
-The <a method for=Attribution>saveImpression()</a> method requests
+The {{Attribution/saveImpression()}} method requests
 that the [=user agent=] record an [=impression=] in the [=impression store=].
 
 <div class=example id=ex-save-impression>
@@ -608,12 +608,12 @@ partial interface Attribution {
 };
 </xmp>
 
-The arguments to <a method for=Attribution>saveImpression()</a> are as follows:
+The arguments to {{Attribution/saveImpression()}} are as follows:
 
 <dl dfn-for=AttributionImpressionOptions dfn-type=dict-member>
   <dt><dfn>histogramIndex</dfn></dt>
   <dd>
-    If <a method for=Attribution>measureConversion()</a> matches this
+    If {{Attribution/measureConversion()}} matches this
     [=impression=] with a subsequent [=conversion=], the [=conversion value=]
     will be added to the histogram bucket identified by this index.
   </dd>
@@ -627,7 +627,7 @@ The arguments to <a method for=Attribution>saveImpression()</a> are as follows:
   <dd>
     The top-level [=conversion sites=] where [=conversions=] for this impression may occur,
     identified by their domain names.
-    The <a method for=Attribution>measureConversion()</a> method
+    The {{Attribution/measureConversion()}} method
     will only attribute to this impression when called by one of the indicated sites.
     If empty, any [=conversion site=] will match.
   <dt><dfn>conversionCallers</dfn></dt>
@@ -635,7 +635,7 @@ The arguments to <a method for=Attribution>saveImpression()</a> are as follows:
     The [=intermediary sites=] or [=conversion sites=]
     that are able to [=common matching logic|select=] this impression for [=conversion=],
     identified by their domain names.
-    The <a method for=Attribution>measureConversion()</a> method
+    The {{Attribution/measureConversion()}} method
     will only attribute to this impression when called by one of the indicated sites.
     This option includes both [=conversion sites=] and [=intermediary sites=].
     If empty, any site that invokes the API will match.
@@ -654,11 +654,11 @@ The arguments to <a method for=Attribution>saveImpression()</a> are as follows:
 
 ## Requesting Attribution for a Conversion ## {#measure-conversion-api}
 
-The <a method for=Attribution>measureConversion()</a> method
+The {{Attribution/measureConversion()}} method
 requests that the [=user agent=] perform [=attribution=] for a [=conversion=],
 and return a [=conversion report=].
 
-The <a method for=Attribution>measureConversion()</a> method
+The {{Attribution/measureConversion()}} method
 always returns a conversion report,
 regardless of whether matching [=impression|impression(s)=] are found.
 If there is no match, or if [[#dp|differential privacy]] disallows
@@ -777,7 +777,7 @@ partial interface Attribution {
 };
 </xmp>
 
-The arguments to <a method for=Attribution>measureConversion()</a> are as follows:
+The arguments to {{Attribution/measureConversion()}} are as follows:
 
 <dl dfn-for=AttributionConversionOptions dfn-type=dict-member>
   <dt><dfn>aggregationService</dfn></dt>
@@ -804,7 +804,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dd>
     A [=set=] of sites,
     both [=impression sites=] and [=intermediary sites=],
-    that might have called the <a method for=Attribution>saveImpression()</a> API.
+    that might have called the {{Attribution/saveImpression()}} API.
     If not empty,
     only [=impressions=] recorded by one of the listed sites
     are eligible to match this [=conversion=].
@@ -902,10 +902,10 @@ is controlled by [[#permission-policy|Permission Policy]].
 
 This specification defines two [=policy-controlled features=]:
 
-*   Invocation of the <a method for=Attribution>saveImpression()</a> API,
+*   Invocation of the {{Attribution/saveImpression()}} API,
     identified by the string "<code><dfn export for="PermissionPolicy"
     enum-value>save-impression</dfn></code>".
-*   Invocation of the <a method for=Attribution>measureConversion()</a> API,
+*   Invocation of the {{Attribution/measureConversion()}} API,
     identified by the string "<code><dfn export for="PermissionPolicy"
     enum-value>measure-conversion</dfn></code>".
 
@@ -913,8 +913,8 @@ The [=policy-controlled feature/default allowlist=] for both of these features i
 <code><a dfn for="default allowlist">*</a></code>.
 
 <p class=note>Having separate permissions for
-<a method for=Attribution>saveImpression()</a> and
-<a method for=Attribution>measureConversion()</a>
+{{Attribution/saveImpression()}} and
+{{Attribution/measureConversion()}}
 allows pages that do both to limit subresources
 to the expected kind of activity.
 
@@ -968,7 +968,7 @@ to identify and delete any [=impressions=] in the [=impression store=]
 that have expired.
 
 It is not necessary to remove [=impressions=] immediately upon expiry,
-as long as <a method for=Attribution>measureConversion()</a>
+as long as {{Attribution/measureConversion()}}
 excludes expired [=impressions=] from [=attribution=]. However, the
 [=user agent=] should not retain expired [=impressions=] indefinitely.
 
@@ -1086,7 +1086,7 @@ that are used to manage the expenditure of [=privacy budgets=]:
 *   The [=epoch start store=] records when each [=epoch=] starts
     for [=conversion sites=].
     This store is initialized as a side effect
-    of invoking <a method for=Attribution>measureConversion()</a>.
+    of invoking {{Attribution/measureConversion()}}.
 
 *   A singleton [=last browsing history clear=] value
     that tracks when the browsing activity for a [=site=] was last cleared.
@@ -1470,7 +1470,7 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  Let |result| be a new {{AttributionImpressionResult}}.
 1.  Return [=a promise resolved with=] |result| in |realm|.
 
-<p class=advisement><a method for=Attribution>saveImpression()</a>
+<p class=advisement>{{Attribution/saveImpression()}}
 does not return a status indicating whether the impression was recorded.
 This minimizes the ability to detect when the Attribution
 API is [[#opt-out|disabled]].
@@ -1522,7 +1522,7 @@ optional [=origin=] (default null):
 
 ## Measure Conversion Algorithm ## {#measure-conversion-api-operation}
 
-The <a method for=Attribution>measureConversion()</a> method completes
+The {{Attribution/measureConversion()}} method completes
 asynchronously, queuing work on the <dfn>Attribution [=task source=]</dfn>.
 
 <div algorithm>
@@ -1904,8 +1904,8 @@ will determine which saved [=impressions=] are available for conversions.
 Implementations [=must=] set a [=maximum lookback=] of at least 90 days.
 
 An [=implementation-defined=] value is chosen for the lists of sites
-passed to <a method for=Attribution>saveImpression()</a>
-and <a method for=Attribution>measureConversion()</a>.
+passed to {{Attribution/saveImpression()}}
+and {{Attribution/measureConversion()}}.
 The <dfn>maximum number of conversion sites per impression</dfn>
 is a limit on the number of values for {{AttributionImpressionOptions/conversionSites}};
 implementations [=must=] set this value to at least 5.
@@ -1928,7 +1928,7 @@ which is a limit on the number of values for {{AttributionConversionOptions/matc
 implementations [=must=] set this value to at least 30.
 
 The size of histograms
-produced by <a method for=Attribution>measureConversion()</a>
+produced by {{Attribution/measureConversion()}}
 is subject to both an [=implementation-define=] <dfn>maximum histogram size</dfn>
 and <dfn>maximum aggregation-service histogram size</dfn>.
 No minimum value for the [=maximum histogram size=] is set
@@ -1976,7 +1976,7 @@ if the user has opted out of collection of diagnostic data.
 \`<dfn http-header><code>Save-Impression</code></dfn>\` is a
 [=structured header/dictionary|Dictionary Structured Header=]
 set on a response requesting that the user agent invoke the
-<a method for=Attribution>saveImpression()</a> API.
+{{Attribution/saveImpression()}} API.
 
 <div class=example id=ex-save-impression-header>
 This is the HTTP equivalent of <a href=#ex-save-impression>the JavaScript `saveImpression` example</a>:
@@ -1987,7 +1987,7 @@ Save-Impression: histogram-index=3, match-value=2, conversion-sites=("advertiser
 
 The following keys are defined, corresponding to the members of
 the {{AttributionImpressionOptions}} dictionary passed to
-<a method for=Attribution>saveImpression()</a>. Default values for omitted
+{{Attribution/saveImpression()}}. Default values for omitted
 optional keys are treated the same way as the corresponding
 {{AttributionImpressionOptions}} field. Unknown dictionary keys are ignored,
 as are unknown parameters.
@@ -2077,7 +2077,7 @@ To <dfn noexport>parse a `Save-Impression` header</dfn> given a [=header value=]
 \`<dfn http-header><code>Measure-Conversion</code></dfn>\` is a
 [=structured header/dictionary|Dictionary Structured Header=]
 set on a response requesting that the user agent invoke the
-<a method for=Attribution>measureConversion()</a> API.
+{{Attribution/measureConversion()}} API.
 
 <div class=example id=ex-measure-conversion-header>
 This is the HTTP equivalent of <a href=#ex-measure-conversion>the JavaScript `measureConversion` example</a>,
@@ -2089,7 +2089,7 @@ Measure-Conversion: aggregation-service="https://aggregator.example/tee", histog
 
 The following keys are defined, corresponding to the members of
 the {{AttributionConversionOptions}} dictionary passed to
-<a method for=Attribution>measureConversion()</a>. Default values for omitted
+{{Attribution/measureConversion()}}. Default values for omitted
 optional keys are treated the same way as the corresponding
 {{AttributionConversionOptions}} field. Unknown dictionary keys are ignored, as
 are unknown parameters.
@@ -2560,7 +2560,7 @@ and a [=list=] of [=integers=] |histogram|:
         <p class=note>The URL for <a enum-value for=AttributionAggregationProtocol>"dap-15-histogram"</a> is expected to identify the DAP Leader role.
         Implementations need to obtain HPKE configuration for both Aggregators statically.
         The HPKE configuration <span class=allow-2119>must not</span> be fetched on demand, as the time that takes
-        will leak information to callers of <a method for=Attribution>measureConversion()</a>.
+        will leak information to callers of {{Attribution/measureConversion()}}.
 
     1.  Let |serverRole| be 2 for the first item (the Leader)
         and 3 for the second (the Helper role).
@@ -2736,7 +2736,7 @@ Any system that provides continuous measurement has this property, so the only c
 
 An assumption of no cross-site leakage is necessary when we have shared limits that span multiple sites. An example of
 such shared limits are the global safety limits that aim to provide a global DP guarantee.
-If <a method for=Attribution>measureConversion()</a> requests from some sites cause a shared limit
+If {{Attribution/measureConversion()}} requests from some sites cause a shared limit
 to be reached, reports to other sites may be
 filtered. For instance, a site that knows it has impressions learns something about whether the shared limit has been reached. Though this information is aggregated and noisy, it is information about the site that exhausted its budget, in excess of the per-site budget for that site.
 
@@ -2858,7 +2858,7 @@ the budget for the [=privacy budget epoch=] in which those impressions were save
 If the [=privacy budget=] for that [=epoch=] is not sufficient,
 the impressions from that [=epoch=] are not used.
 
-Each time a [=conversion site=] invokes <a method for=Attribution>measureConversion()</a>
+Each time a [=conversion site=] invokes {{Attribution/measureConversion()}}
 the [=deduct privacy budget|privacy budget is deducted=]
 for [=epochs=] from which the [=attribution logic=] selected [=impressions=].
 
@@ -2999,7 +2999,7 @@ Strategies to prevent leakage include:
 *   Fully validating all API inputs, even when the API
     is disabled.
 *   Avoiding conditional logic. For example,
-    <a method for=Attribution>measureConversion()</a>
+    {{Attribution/measureConversion()}}
     should always go through the full process of constructing
     a conversion report, even when the [=conversion value=] to be
     reported is zero.
@@ -3011,7 +3011,7 @@ Although not part of the web platform,
 security of aggregation services is quite important
 to the overall security of the Attribution mechanism.
 [=Conversion reports=]
-produced by <a method for=Attribution>measureConversion()</a>
+produced by {{Attribution/measureConversion()}}
 are encrypted using cryptographic key(s) of the aggregation service.
 Thus, much of the potential for disclosure
 of the information contained in these reports
@@ -3156,15 +3156,15 @@ by the site receiving the conversion report.
 
 This API assumes that [=user agent=] instances
 have all of the configuration necessary
-to answer requests to <a for=Attribution>measureConversion()</a>.
+to answer requests to {{Attribution/measureConversion()}}.
 
 If the [=aggregation service=] configuration necessary
-for invoking <a for=Attribution>measureConversion()</a>
+for invoking {{Attribution/measureConversion()}}
 is either absent or out of date,
 that could be observable to sites.
 
 If the retrieval of configuration
-could delay the resolution of a call to <a for=Attribution>measureConversion()</a>,
+could delay the resolution of a call to {{Attribution/measureConversion()}},
 this creates a timing side channel.
 If a fake response is generated instead, differences between
 a response from a properly configured [=user agent=]
@@ -3187,7 +3187,7 @@ before starting to load any content.
 If the necessary configuration cannot be obtained,
 or is obviously stale,
 an implementation might choose to immediately reject
-when <a for=Attribution>measureConversion()</a> is invoked.
+when {{Attribution/measureConversion()}} is invoked.
 This leaks information,
 but it could leak less than attempting to generate a fake value.
 
@@ -3221,7 +3221,7 @@ The following measures mitigate this risk:
 
 The Attribution API is available even in third-party contexts.
 In particular, a third-party iframe
-may call <a method for=Attribution>saveImpression()</a>.
+may call {{Attribution/saveImpression()}}.
 Note, however, that the impression is recorded with the [=site=]
 of the top-level navigation context, not the [=origin=] of the iframe.
 
