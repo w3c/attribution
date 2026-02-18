@@ -3656,8 +3656,8 @@ spec:css-2025; type:dfn; text:user
       "Phillipp Schoppmann"
     ],
     "title": "Verifiable Distributed Aggregation Functions",
-    "date": "2025-06-17",
-    "href": "https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-17"
+    "date": "2026-01-30",
+    "href": "https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-18"
   },
   "WEB-WITHOUT-3P-COOKIES": {
     "title": "A Web Without Third-Party Cookies",
