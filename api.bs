@@ -1903,7 +1903,7 @@ will determine which saved [=impressions=] are available for conversions.
 
 Implementations [=must=] set a [=maximum lookback=] of at least 30 days.
 Within this period, implementations [=should=] attempt to retain
-at least 1000 impressions per site.
+at least 1000 impressions per [=impression site=].
 
 Implementations [=should=] retain impressions
 beyond these recommended limits on time and number where possible.
