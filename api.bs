@@ -1958,31 +1958,6 @@ Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
 
 
-## User Control and Visibility ## {#user-control}
-
-<p class=issue>
-Consider merging this section with [[#privacy-opt-out]].
-
-### Optional Participation ### {#opt-out}
-
-
-* Users should be able to opt out. Opt out should be undetectable.
-
-This mechanism may be a dedicated control
-for the Attribution API,
-or it may be a consolidated privacy control
-that applies to multiple features,
-including Attribution.
-Further, user agent developers should consider interaction
-of other privacy modes with the Attribution API.
-For example, attribution might be disabled in a private browsing mode,
-or it might be disabled
-if the user has opted out of collection of diagnostic data.
-
-### Visibility ### {#visibility}
-
-* User ability to view the impression store and past report submissions.
-
 
 # HTTP API # {#http-api}
 
@@ -2574,7 +2549,7 @@ and a [=list=] of [=integers=] |histogram|:
 
         <p class=note>The URL for <a enum-value for=AttributionAggregationProtocol>"dap-15-histogram"</a> is expected to identify the DAP Leader role.
         Implementations need to obtain HPKE configuration for both Aggregators statically.
-        The HPKE configuration <span class=allow-2119>must not</span> be fetched on demand, as the time that takes
+        The HPKE configuration [=must not=] be fetched on demand, as the time that takes
         will leak information to callers of <a method for=Attribution>measureConversion()</a>.
 
     1.  Let |serverRole| be 2 for the first item (the Leader)
@@ -3140,7 +3115,10 @@ depleted privacy budget is maintained until that budget is no longer relevant
 (i.e. the end of the [=privacy budget epoch=]).
 
 
-## Disabling the Attribution API ## {#privacy-opt-out}
+## Disabling the Attribution API ## {#opt-out}
+
+User agents [=must=] provide controls
+for users to disable the Attribution API.
 
 The Attribution API
 is designed to reveal only aggregate information.
@@ -3149,22 +3127,45 @@ limits the chance of determining whether any particular user
 contributed to the aggregated output.
 However, some users may still prefer
 not to participate in attribution measurement.
-As discussed in [[#opt-out]], the user agent must provide
-a mechanism for the user to disable the Attribution API.
+
+Implementations can offer users a choice to opt out
+using a dedicated control for the Attribution API,
+or through a consolidated privacy control that applies to multiple features.
+
+User agent developers should consider interaction
+of other privacy modes with the Attribution API.
+For example, attribution might be disabled in a private browsing mode,
+or it might be disabled
+if the user has opted out of collection of diagnostic data.
+
+By design, whether a user has opted out is not detectable by websites.
 
 To minimize the risk of [=fingerprinting=],
 and to prevent discrimination
 against users who choose to disable the Attribution API,
-sites must not be able to detect that the API is disabled.
+sites [=must not=] be able to detect that the API is disabled.
 Specifically, all calls to the Attribution API
 that are otherwise valid
-must complete successfully, even when the API is disabled.
+complete successfully, even when the API is disabled.
 The only difference in behavior
 is that [=conversion reports=] returned when the API is disabled
 will never report any [=conversion value=].
 Because the reports are encrypted,
 this difference cannot be detected
 by the site receiving the conversion report.
+
+
+## Visibility ## {#visibility}
+
+Implementations [=should=] offer users a way
+to view the status of the impression store
+and to review past report submissions.
+
+These interfaces might be limited to summary information that
+show aggregate use of the Attribution API by sites.
+Interfaces to examine the details of impressions and submitted reports
+could enable diagnosing the operation of the API
+by both users and web developers.
 
 
 ## Unconfigured Browsers ## {#unconfigured}
@@ -3193,7 +3194,7 @@ or changes in choice of algorithm.
 Detecting stale or absent configuration might be used
 to [=fingerprint=] the [=user agent=].
 
-A [=user agent=] <span class=allow-2119>should</span> therefore
+A [=user agent=] [=should=] therefore
 prioritize the acquisition of [=aggregation service=] configuration
 in a way that is not observable to sites.
 This might be achieved by obtaining configuration at startup,
