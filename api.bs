@@ -2455,9 +2455,15 @@ Extensions to DAP [[DAP-ATTRIBUTION]] are necessary for this application:
     (`collector_identity`)
     identifies the entity that is responsible
     for requesting aggregates.
-    In the Attribution API,
-    the [=conversion site=] takes the DAP Collector role.
+    The value for this extension encodes the identity of the API caller,
+    either an [=intermediary site=] or the [=conversion site=].
     The collector identity extension applies to an entire DAP task.
+
+*   [[DAP-ATTRIBUTION#budget-source|Budget source]]
+    (`budget_source`)
+    identifies the entity that has expended [=privacy budget=].
+    The value for this extension encodes the identity of the [=conversion site=].
+    The budget source extension applies to an entire DAP task.
 
 *   [[DAP-ATTRIBUTION#dp|Privacy budget]]
     (`privacy_budget`)
@@ -2466,8 +2472,8 @@ Extensions to DAP [[DAP-ATTRIBUTION]] are necessary for this application:
     than the aggregation task was configured with.
     The privacy budget extension applies to each report.
 
-User agents use these extensions
-in reports that they generate.
+User agents use these extensions to construct
+the reports that they generate.
 
 
 ### Report Encryption For DAP ### {#encrypt-dap}
