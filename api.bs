@@ -2525,7 +2525,7 @@ and a [=list=] of [=integers=] |histogram|:
 
     1.  A `min_batch_size` value of 20.
 
-    1.  A `batch_mode` value of  TBD (see [[DAP-ATTRIBUTION#batch-mode]]).
+    1.  A `batch_mode` value of TBD (see [[DAP-ATTRIBUTION#batch-mode]]).
 
     1.  An empty `batch_config`.
 
@@ -2599,7 +2599,7 @@ and a [=list=] of [=integers=] |histogram|:
         and 3 for the second (the Helper).
 
     1.  Let |info| be the [=byte sequence=] formed by concatenating:
-        the [=isomorphic encode|encoded=] value of the string `dap-16 input share`,
+        the [=isomorphic encode|encoded=] value of the string `dap-18 input share`,
         a byte with the value 0x01, and |serverRole|.
 
     1.  Let |inputShareAAD| be constructed from
