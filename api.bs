@@ -3147,7 +3147,7 @@ to view the status of the impression store
 and to review past report submissions.
 
 These interfaces might be limited to summary information that
-showing aggregate use of the Attribution API by sites.
+show aggregate use of the Attribution API by sites.
 Interfaces to examine the details of impressions and submitted reports
 could enable diagnosing the operation of the API
 by both users and web developers.
