@@ -1181,16 +1181,15 @@ nullable integer |l1Norm|:
 
 1.  Let |isSingleEpoch| be true if |l1Norm| is non-null, false otherwise.
 
-1.  Let |impressionSiteDeductions| be the result of [=compute impression site deductions|computing impression site deductions=]
+1.  Let |impressionSiteDeduction| be the result of [=compute impression site deductions|computing impression site deductions=]
     with |impressionSites|, |deduction|, |value|, |maxValue|, |epsilon|, and |isSingleEpoch|.
 
 <p class=issue>TODO: Additional work to specify
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
 
-1.  Let |budgetAvailable| be the result of [=check for available privacy budget|checking for available privacy budget=]
-    with |key|, |deduction|, and |impressionSiteDeductions|.
-
-1.  If |budgetAvailable| is false, return false.
+1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
+    with |key|, |deduction|, and |impressionSiteDeductions|
+    is false, return false.
 
 1.  All budget checks passed, so perform the deductions atomically:
 
@@ -1202,7 +1201,7 @@ how locking is performed to ensure atomicity across checks and deductions, but l
 
     1.  Decrement [=global privacy budget store=]\[|epoch|] by |deduction|.
 
-    1.  [=map/iterate|For each=] |impressionSite| → |siteDeduction| in |impressionSiteDeductions|:
+    1.  [=map/iterate|For each=] |impressionSite|  in |impressionSites|:
 
         1.  Let |impressionQuotaKey| be an [=impression site quota key=]
             whose items are |epoch| and |impressionSite|.
@@ -1210,7 +1209,7 @@ how locking is performed to ensure atomicity across checks and deductions, but l
         1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
             [=map/set=] its value to the [=impression site quota per epoch=].
 
-        1.  Decrement [=impression site quota store=]\[|impressionQuotaKey|] by |siteDeduction|.
+        1.  Decrement [=impression site quota store=]\[|impressionQuotaKey|] by |impressionSiteDeduction|.
 
 1.  Return true.
 
@@ -1220,31 +1219,25 @@ how locking is performed to ensure atomicity across checks and deductions, but l
 To <dfn>check for available privacy budget</dfn>
 given a [=privacy budget key=] |key|,
 integer |deduction|, and
-a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
+an integer |impressionSiteDeduction|
+and a set |impressionSites| of [=impression sites=],:
 
-1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
-    its value of |key| to be a [=user agent=]-defined value,
-    plus 1000.
-
-    <p class=note>The addition of 1000 to this value
-    ensures that the rounding errors added by this algorithm do not cause
-    the budget to be exceeded unnecessarily after multiple invocations.
-    The privacy loss from the additional one-thousandth of an epsilon is trivial.
-
-1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
-    in the [=privacy budget store=].
+1.  Let |currentValue| be set to the value of [=map/get|getting the value=] of |key|
+    from [=privacy budget store=], or the [=per-site privacy budget=]
+    if [=map/contain|no value has been set=].
 
 1.  If |deduction| is greater than |currentValue|, return false.
 
 1.  Let |epoch| be the [=epoch index=] component of |key|.
 
-1.  If the [=global privacy budget store=] does not [=map/contain=] |epoch|,
-    [=map/set=] its value to the [=global budget per epoch=].
+1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
+    of |epoch| from the [=global privacy budget store=], or the [=global privacy budget
+    per epoch=] if [=map/contain|no value has been set=].
 
-1.  If |deduction| is greater than [=global privacy budget store=]\[|epoch|],
+1.  If |deduction| is greater than |currentGlobalValue|,
     return false.
 
-1.  [=map/iterate|For each=] |impressionSite| → |siteDeduction| in |impressionSiteDeductions|:
+1.  [=map/iterate|For each=] |impressionSite| in |impressionSites|:
 
     1.  Let |impressionQuotaKey| be an [=impression site quota key=]
         whose items are |epoch| and |impressionSite|.
@@ -1252,8 +1245,8 @@ a [=map=] |impressionSiteDeductions| from [=impression sites=] to integers:
     1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|
         and |siteDeduction| is greater than the [=impression site quota per epoch=], return false.
 
-    1.  If [=map/contains=] |impressionQuotaKey| and |siteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
-        return false.
+    1.  If [=map/contains=] |impressionQuotaKey| and |impressionSiteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
+            return false.
 
 1.  Return true.
 
@@ -1267,8 +1260,6 @@ integer |value|,
 integer |maxValue|,
 [[WEBIDL#idl-double|double]] |epsilon|, and
 boolean |isSingleEpoch|:
-
-1.  Let |impressionSiteDeductions| be a new [=map=].
 
 1.  Let |sensitivity| be 2 * |value|.
 
@@ -1284,18 +1275,14 @@ boolean |isSingleEpoch|:
 
     1.  If |isSingleEpoch| is true and |numberImpressionSites| is 1:
 
-        1.  [=map/Set=] |impressionSiteDeductions|\[|impressionSite|] to |deduction|.
-
-        1.  Return |impressionSiteDeductions|.
+        1.  Return |deduction|.
 
     1.  Otherwise:
 
         <p class=note>In this case we need to use the global sensitivity which is the value of |deduction| only in the multi-epoch case;
         so we need to recompute it in case we are in the single epoch but multiple impression sites case.
 
-        1.  [=map/Set=] |impressionSiteDeductions|\[|impressionSite|] to |globalDeduction|.
-
-1.  Return |impressionSiteDeductions|.
+        1.  Return |globalDeduction|.
 
 </div>
 
@@ -1343,9 +1330,7 @@ that could be maliciously triggered.
 
 ### Attribution API Activation ### {#s-api-activation}
 
-The Attribution API requires user activation to prevent abuse. Examples of user activations
-that could be used to activate the API include
-<a href="https://html.spec.whatwg.org/#user-navigation-involvement">user navigation involvement</a> or clicks on the page.
+The Attribution API is a [=transient activation-consuming API=].
 The web platform uses <a href="https://html.spec.whatwg.org/#tracking-user-activation">transient activation</a> to limit the amount of time that a
 user activation remains available for calling certain user activation-gated APIs.
 The Attribution API can be activated by transient activation,
@@ -1373,12 +1358,10 @@ The API can be invoked if either:
 1.  The [=global attribution API flag=] for the current {{Window}} is true, or
 2.  The current {{Window}} has [=transient activation=] that can be [=consume user activation|consumed=].
 
-<p class=note>This approach allows a single user action to enable multiple
-API invocations within the same session, while still requiring
-an initial user gesture to activate the API.
-
-<p class=issue>TODO: Define how long the [=global attribution API flag=] remains true
-and under what conditions it should be reset (e.g., navigation, page lifecycle events).
+<p class=note>This approach allows a single user action
+to enable multiple API invocations within the same session,
+while only making the API available to one site
+per [=activation triggering input event|activation=].
 
 <div algorithm>
 To <dfn>check attribution API activation</dfn>,
@@ -1398,7 +1381,6 @@ throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 1.  Throw a {{"NotAllowedError"}} {{DOMException}}.
 
 </div>
-
 
 
 ### Epoch Start Store ### {#s-epoch-start}
@@ -1692,8 +1674,8 @@ and [=implicit API inputs=] |implicitInputs|:
          ::  |options|.{{AttributionImpressionOptions/histogramIndex}}
          :   [=impression/Priority=]
          ::  |options|.{{AttributionImpressionOptions/priority}}
-     1.  If the Attribution API is [[#opt-out|enabled]]:
-         1.  Save |impression| to the [=impression store=].
+     1.  If the Attribution API is [[#opt-out|enabled]],
+        save |impression| to the [=impression store=].
 
 1.  Let |result| be a new {{AttributionImpressionResult}}.
 1.  Return [=a promise resolved with=] |result| in |realm|.
@@ -2180,8 +2162,8 @@ it is not [=implementation-defined=].
 <p class=issue> Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
 
-[=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
-for the following:  per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>):
+<dfn>Privacy Parameters</dfn>: [=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
+for the following:
 
 *   The per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>) within the range of: TBD
 
