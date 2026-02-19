@@ -2160,7 +2160,7 @@ it is not [=implementation-defined=].
 <p class=issue> Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
 
-<dfn>Privacy Parameters</dfn>: [=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
+[=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
 for the following:
 
 *   The <dfn>per-site privacy budget</dfn> (&epsilon;<sub>site</sub>) within the range of: TBD
