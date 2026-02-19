@@ -559,25 +559,27 @@ export class Backend {
       return false;
     }
     const deduction = Math.ceil(deductionFp * 1000000);
-    const impressionsBySite = new Set<string>();
+    const impressionSites = new Set<string>();
     for (const impression of impressions) {
-      impressionsBySite.add(impression.impressionSite);
+      impressionSites.add(impression.impressionSite);
     }
     const isSingleEpoch = l1Norm !== null;
-    const impressionSiteDeductions = this.#computeImpressionSiteDeductions(
-      impressionsBySite,
+    const impressionSiteDeduction = this.#computeImpressionSiteDeductions(
+      impressionSites,
       deduction,
       value,
       maxValue,
       epsilon,
       isSingleEpoch,
     );
-    const budgetAvailable = this.#checkForAvailablePrivacyBudget(
-      key,
-      deduction,
-      impressionSiteDeductions,
-    );
-    if (!budgetAvailable) {
+    if (
+      !this.#checkForAvailablePrivacyBudget(
+        key,
+        deduction,
+        impressionSiteDeduction,
+        impressionSites,
+      )
+    ) {
       return false;
     }
     lookup(this.#privacyBudgetStore, key)!.value -= deduction;
@@ -585,69 +587,60 @@ export class Backend {
       const currentValue = this.#globalPrivacyBudgetStore.get(epoch)!;
       this.#globalPrivacyBudgetStore.set(epoch, currentValue - deduction);
     }
-    for (const [site, siteDeduction] of impressionSiteDeductions) {
+    for (const site of impressionSites) {
       const entry = lookupOrInsert(
         this.#impressionSiteQuotaStore,
         { epoch, site },
         this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons,
       );
-      entry.value -= siteDeduction;
+      entry.value -= impressionSiteDeduction;
     }
     return true;
   }
 
   #computeImpressionSiteDeductions(
-    impressionsBySite: ReadonlySet<string>,
+    impressionSites: ReadonlySet<string>,
     deduction: number,
     value: number,
     maxValue: number,
     epsilon: number,
     isSingleEpoch: boolean,
-  ): Map<string, number> {
-    const impressionSiteDeductions = new Map<string, number>();
-    const numberImpressionSites = impressionsBySite.size;
+  ): number {
     const sensitivity = 2 * value;
     const noiseScale = (2 * maxValue) / epsilon;
     const deductionFp = sensitivity / noiseScale;
     const globalDeduction = Math.ceil(deductionFp * 1000000);
-    for (const impressionSite of impressionsBySite.keys()) {
-      if (isSingleEpoch && numberImpressionSites === 1) {
-        impressionSiteDeductions.set(impressionSite, deduction);
-        return impressionSiteDeductions;
-      } else {
-        impressionSiteDeductions.set(impressionSite, globalDeduction);
-      }
+    const numberImpressionSites = impressionSites.size;
+    if (isSingleEpoch && numberImpressionSites === 1) {
+      return deduction;
     }
-    return impressionSiteDeductions;
+    return globalDeduction;
   }
 
   #checkForAvailablePrivacyBudget(
     key: BudgetKey,
     deduction: number,
-    impressionSiteDeductions: ReadonlyMap<string, number>,
+    impressionSiteDeduction: number,
+    impressionSites: ReadonlySet<string>,
   ): boolean {
-    const entry = lookupOrInsert(
-      this.#privacyBudgetStore,
-      key,
-      this.#delegate.privacyBudgetMicroEpsilons + 1000,
-    );
-    if (deduction > entry.value) {
+    const currentValue =
+      lookup(this.#privacyBudgetStore, key)?.value ??
+      this.#delegate.privacyBudgetMicroEpsilons;
+    if (deduction > currentValue) {
       return false;
     }
     const epoch = key.epoch;
-    let globalEntry = this.#globalPrivacyBudgetStore.get(epoch);
-    if (globalEntry === undefined) {
-      globalEntry = this.#delegate.globalBudgetPerEpochMicroEpsilons;
-      this.#globalPrivacyBudgetStore.set(epoch, globalEntry);
-    }
-    if (deduction > globalEntry) {
+    const currentGlobalValue =
+      this.#globalPrivacyBudgetStore.get(epoch) ??
+      this.#delegate.globalBudgetPerEpochMicroEpsilons;
+    if (deduction > currentGlobalValue) {
       return false;
     }
-    for (const [site, siteDeduction] of impressionSiteDeductions) {
+    for (const site of impressionSites) {
       const value =
         lookup(this.#impressionSiteQuotaStore, { epoch, site })?.value ??
         this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons;
-      if (siteDeduction > value) {
+      if (impressionSiteDeduction > value) {
         return false;
       }
     }
