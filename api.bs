@@ -1188,7 +1188,7 @@ nullable integer |l1Norm|:
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
 
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
-    with |key|, |deduction|, and |impressionSiteDeductions|
+    with |key|, |deduction|, and |impressionSiteDeduction|
     is false, return false.
 
 1.  All budget checks passed, so perform the deductions atomically:
@@ -1243,7 +1243,7 @@ and a set |impressionSites| of [=impression sites=],:
         whose items are |epoch| and |impressionSite|.
 
     1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|
-        and |siteDeduction| is greater than the [=impression site quota per epoch=], return false.
+        and |impressionSiteDeduction| is greater than the [=impression site quota per epoch=], return false.
 
     1.  If [=map/contains=] |impressionQuotaKey| and |impressionSiteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
             return false.
@@ -1271,18 +1271,16 @@ boolean |isSingleEpoch|:
 
 1.  Let |numberImpressionSites| be the [=set/size|number of impression sites=] in |impressionSites|.
 
-1.  [=map/iterate|For each=] |impressionSite| in |impressionSites|:
+1.  If |isSingleEpoch| is true and |numberImpressionSites| is 1:
 
-    1.  If |isSingleEpoch| is true and |numberImpressionSites| is 1:
+    1.  Return |deduction|.
 
-        1.  Return |deduction|.
+1.  Otherwise:
 
-    1.  Otherwise:
-
-        <p class=note>In this case we need to use the global sensitivity which is the value of |deduction| only in the multi-epoch case;
+    <p class=note>In this case we need to use the global sensitivity which is the value of |deduction| only in the multi-epoch case;
         so we need to recompute it in case we are in the single epoch but multiple impression sites case.
 
-        1.  Return |globalDeduction|.
+    1.  Return |globalDeduction|.
 
 </div>
 
@@ -2165,9 +2163,9 @@ is hard and therefore TBD.
 <dfn>Privacy Parameters</dfn>: [=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
 for the following:
 
-*   The per-[=site=] [=privacy budget=] (&epsilon;<sub>site</sub>) within the range of: TBD
+*   The <dfn>per-site privacy budget</dfn> (&epsilon;<sub>site</sub>) within the range of: TBD
 
-*   The <dfn>global budget per epoch</dfn> (&epsilon;<sub>global</sub>) which is
+*   The <dfn>global privacy budget per epoch</dfn> (&epsilon;<sub>global</sub>) which is
     the maximum privacy budget available across all [=sites=] per [=epoch=],
     specified in [=microepsilons=].
     Implementations [=must=] set this value as a multiple of
