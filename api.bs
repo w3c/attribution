@@ -1188,10 +1188,13 @@ nullable integer |l1Norm|:
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
 
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
-    with |key|, |deduction|, and |impressionSiteDeduction|
+    with |key|, |deduction|, |impressionSites|, and |impressionSiteDeduction|
     is false, return false.
 
 1.  All budget checks passed, so perform the deductions atomically:
+
+    1.  If the [=privacy budget store=] does not [=map/contain=] |key|,
+        [=map/set=] its value to the [=per-site privacy budget=].
 
     1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
         in the [=privacy budget store=].
