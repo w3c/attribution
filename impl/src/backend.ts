@@ -27,13 +27,33 @@ interface Impression {
   priority: number;
 }
 
-interface PrivacyBudgetKey {
-  epoch: number;
-  site: string;
+interface BudgetKey {
+  readonly epoch: number;
+  readonly site: string;
 }
 
-interface PrivacyBudgetStoreEntry extends Readonly<PrivacyBudgetKey> {
+interface BudgetEntry extends BudgetKey {
   value: number;
+}
+
+function lookup(
+  entries: readonly BudgetEntry[],
+  key: BudgetKey,
+): BudgetEntry | undefined {
+  return entries.find((e) => e.epoch === key.epoch && e.site === key.site);
+}
+
+function lookupOrInsert(
+  entries: BudgetEntry[],
+  key: BudgetKey,
+  valueIfNew: number,
+): BudgetEntry {
+  let entry = lookup(entries, key);
+  if (entry === undefined) {
+    entry = { ...key, value: valueIfNew };
+    entries.push(entry);
+  }
+  return entry;
 }
 
 interface ValidatedConversionOptions {
@@ -107,6 +127,8 @@ export interface Delegate {
   readonly maxHistogramSize: number;
   readonly privacyBudgetMicroEpsilons: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
+  readonly globalBudgetPerEpochMicroEpsilons: number;
+  readonly impressionSiteQuotaPerEpochMicroEpsilons: number;
 
   now(): Temporal.Instant;
   fairlyAllocateCreditFraction(): number;
@@ -135,7 +157,9 @@ export class Backend {
   readonly #delegate: Delegate;
   #impressions: Readonly<Impression>[] = [];
   readonly #epochStartStore: Map<string, Temporal.Instant> = new Map();
-  #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
+  #privacyBudgetStore: BudgetEntry[] = [];
+  #impressionSiteQuotaStore: BudgetEntry[] = [];
+  #globalPrivacyBudgetStore: Map<number, number> = new Map();
 
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
 
@@ -147,7 +171,7 @@ export class Backend {
     return this.#epochStartStore;
   }
 
-  get privacyBudgetEntries(): ReadonlyArray<Readonly<PrivacyBudgetStoreEntry>> {
+  get privacyBudgetEntries(): ReadonlyArray<Readonly<BudgetEntry>> {
     return this.#privacyBudgetStore;
   }
 
@@ -163,6 +187,8 @@ export class Backend {
     return this.#lastBrowsingHistoryClear;
   }
 
+  // This does not check permission policy or activation, as those are outside
+  // the scope of the simulator.
   saveImpression(
     impressionSite: string,
     intermediarySite: string | undefined,
@@ -323,6 +349,8 @@ export class Backend {
     };
   }
 
+  // This does not check permission policy or activation, as those are outside
+  // the scope of the simulator.
   measureConversion(
     topLevelSite: string,
     intermediarySite: string | undefined,
@@ -459,14 +487,15 @@ export class Backend {
         );
         if (impressions.size > 0) {
           const key = { epoch, site: topLevelSite };
-          const budgetOk = this.#deductPrivacyBudget(
+          const budgetAndSafetyOk = this.#deductPrivacyAndSafetyBudgets(
             key,
+            impressions,
             options.epsilon,
             options.value,
             options.maxValue,
             /*l1Norm=*/ null,
           );
-          if (budgetOk) {
+          if (budgetAndSafetyOk) {
             for (const i of impressions) {
               matchedImpressions.add(i);
             }
@@ -495,15 +524,16 @@ export class Backend {
         epoch: currentEpoch,
       };
 
-      const budgetOk = this.#deductPrivacyBudget(
+      const budgetAndSafetyOk = this.#deductPrivacyAndSafetyBudgets(
         key,
+        matchedImpressions,
         options.epsilon,
         options.value,
         options.maxValue,
         l1Norm,
       );
 
-      if (!budgetOk) {
+      if (!budgetAndSafetyOk) {
         histogram = allZeroHistogram(options.histogramSize);
       }
     }
@@ -511,36 +541,116 @@ export class Backend {
     return histogram;
   }
 
-  #deductPrivacyBudget(
-    key: PrivacyBudgetKey,
+  #deductPrivacyAndSafetyBudgets(
+    key: BudgetKey,
+    impressions: ReadonlySet<Readonly<Impression>>,
     epsilon: number,
     value: number,
     maxValue: number,
     l1Norm: number | null,
   ): boolean {
-    let entry = this.#privacyBudgetStore.find(
-      (e) => e.epoch === key.epoch && e.site === key.site,
-    );
-    if (entry === undefined) {
-      entry = {
-        value: this.#delegate.privacyBudgetMicroEpsilons + 1000,
-        ...key,
-      };
-      this.#privacyBudgetStore.push(entry);
-    }
+    const epoch = key.epoch;
     const sensitivity = l1Norm ?? 2 * value;
     const noiseScale = (2 * maxValue) / epsilon;
     const deductionFp = sensitivity / noiseScale;
     if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
+      const entry = lookupOrInsert(this.#privacyBudgetStore, key, 0);
       entry.value = 0;
       return false;
     }
     const deduction = Math.ceil(deductionFp * 1000000);
-    if (deduction > entry.value) {
-      entry.value = 0;
+    const impressionSites = new Set<string>();
+    for (const impression of impressions) {
+      impressionSites.add(impression.impressionSite);
+    }
+    const isSingleEpoch = l1Norm !== null;
+    const impressionSiteDeduction = this.#computeImpressionSiteDeductions(
+      impressionSites,
+      deduction,
+      value,
+      maxValue,
+      epsilon,
+      isSingleEpoch,
+    );
+    if (
+      !this.#checkForAvailablePrivacyBudget(
+        key,
+        deduction,
+        impressionSiteDeduction,
+        impressionSites,
+      )
+    ) {
       return false;
     }
-    entry.value -= deduction;
+    {
+      const entry = lookupOrInsert(
+        this.#privacyBudgetStore,
+        key,
+        this.#delegate.privacyBudgetMicroEpsilons,
+      );
+      entry.value -= deduction;
+    }
+    {
+      const currentValue = this.#globalPrivacyBudgetStore.get(epoch)!;
+      this.#globalPrivacyBudgetStore.set(epoch, currentValue - deduction);
+    }
+    for (const site of impressionSites) {
+      const entry = lookupOrInsert(
+        this.#impressionSiteQuotaStore,
+        { epoch, site },
+        this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons,
+      );
+      entry.value -= impressionSiteDeduction;
+    }
+    return true;
+  }
+
+  #computeImpressionSiteDeductions(
+    impressionSites: ReadonlySet<string>,
+    deduction: number,
+    value: number,
+    maxValue: number,
+    epsilon: number,
+    isSingleEpoch: boolean,
+  ): number {
+    const sensitivity = 2 * value;
+    const noiseScale = (2 * maxValue) / epsilon;
+    const deductionFp = sensitivity / noiseScale;
+    const globalDeduction = Math.ceil(deductionFp * 1000000);
+    const numberImpressionSites = impressionSites.size;
+    if (isSingleEpoch && numberImpressionSites === 1) {
+      return deduction;
+    }
+    return globalDeduction;
+  }
+
+  #checkForAvailablePrivacyBudget(
+    key: BudgetKey,
+    deduction: number,
+    impressionSiteDeduction: number,
+    impressionSites: ReadonlySet<string>,
+  ): boolean {
+    const currentValue =
+      lookup(this.#privacyBudgetStore, key)?.value ??
+      this.#delegate.privacyBudgetMicroEpsilons;
+    if (deduction > currentValue) {
+      return false;
+    }
+    const epoch = key.epoch;
+    const currentGlobalValue =
+      this.#globalPrivacyBudgetStore.get(epoch) ??
+      this.#delegate.globalBudgetPerEpochMicroEpsilons;
+    if (deduction > currentGlobalValue) {
+      return false;
+    }
+    for (const site of impressionSites) {
+      const value =
+        lookup(this.#impressionSiteQuotaStore, { epoch, site })?.value ??
+        this.#delegate.impressionSiteQuotaPerEpochMicroEpsilons;
+      if (impressionSiteDeduction > value) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -662,18 +772,12 @@ export class Backend {
       const startEpoch = this.#getStartEpoch(site, now);
       const currentEpoch = this.#getCurrentEpoch(site, now);
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
-        const entry = this.#privacyBudgetStore.find(
-          (e) => e.epoch === epoch && e.site === site,
+        const entry = lookupOrInsert(
+          this.#privacyBudgetStore,
+          { epoch, site },
+          0,
         );
-        if (entry === undefined) {
-          this.#privacyBudgetStore.push({
-            site,
-            epoch,
-            value: 0,
-          });
-        } else {
-          entry.value = 0;
-        }
+        entry.value = 0;
       }
     }
   }

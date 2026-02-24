@@ -20,6 +20,8 @@ export interface TestConfig {
   privacyBudgetEpochDays: number;
   epochStart: number;
   fairlyAllocateCreditFraction: number;
+  globalBudgetPerEpochMicroEpsilons: number;
+  impressionSiteQuotaPerEpochMicroEpsilons: number;
 }
 
 export function makeBackend(
@@ -46,6 +48,9 @@ export function makeBackend(
     maxHistogramSize: config.maxHistogramSize,
     privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
+    globalBudgetPerEpochMicroEpsilons: config.globalBudgetPerEpochMicroEpsilons,
+    impressionSiteQuotaPerEpochMicroEpsilons:
+      config.impressionSiteQuotaPerEpochMicroEpsilons,
 
     now: () => now,
     fairlyAllocateCreditFraction: () => config.fairlyAllocateCreditFraction,

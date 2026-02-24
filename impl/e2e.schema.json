@@ -27,6 +27,14 @@
           "minimum": 0,
           "exclusiveMaximum": 1
         },
+        "globalBudgetPerEpochMicroEpsilons": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "impressionSiteQuotaPerEpochMicroEpsilons": {
+          "type": "integer",
+          "minimum": 1
+        },
         "maxConversionCallersPerImpression": {
           "type": "integer",
           "minimum": 0

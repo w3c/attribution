@@ -16,6 +16,8 @@ const backend = new Backend({
   includeUnencryptedHistogram: true,
 
   // TODO: Allow these values to be configured in the UI.
+  globalBudgetPerEpochMicroEpsilons: Infinity, // TODO
+  impressionSiteQuotaPerEpochMicroEpsilons: Infinity, // TODO
   maxConversionSitesPerImpression: 10,
   maxConversionCallersPerImpression: 10,
   maxImpressionSitesForConversion: 10,
