@@ -1144,20 +1144,23 @@ given a [=privacy budget key=] |key|,
 [=set=] of [=impressions=] |impressions|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
-integer |maxValue|, and
-nullable integer |l1Norm|:
+integer |maxValue|,
+boolean |isSingleEpoch| and integer |l1Norm|:
 
 1.  Let |epoch| be the [=epoch index=] component of |key|.
 
-1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, 2 * |value| otherwise.
+1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
+
+1.  Let |valueSensitivity| be 2 * |value|.
 
 1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
 
-1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
+1.  Let |l1NormDeductionFp| be |l1NormSensitivity| / |noiseScale|.
+
+1.  Let |valueDeductionFp| be |valueSensitivity| / |noiseScale|.
 
 
-    <p class=note>Single epoch attributions &mdash;
-    the only case that |l1Norm| is non-null &mdash;
+    <p class=note> Single epoch attributions
     do not cause any cascading effects across epochs.
     Attribution that involves multiple epochs consumes double the budget
     because of the potential for one change to affect attribution across epochs.
@@ -1165,30 +1168,19 @@ nullable integer |l1Norm|:
     proportional to |maxValue| / |epsilon|
     is added to the aggregated histogram.
 
-1.  If |deductionFp| is negative or greater than [=maximum epsilon=],
-    [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
-    and return false.
+1.  Let |l1Normdeduction| be |l1NormDeductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
+1.  Let |valueDeduction| be |valueDeductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  Let |impressionSites| be a new [=set=].
-
-1.  [=set/iterate|For each=] |impression| in |impressions|:
-
-    1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
-
-    1.  [=set/append=] |impressionSite| to |impressionSites|.
-
-1.  Let |isSingleEpoch| be true if |l1Norm| is non-null, false otherwise.
-
-1.  Let |impressionSiteDeduction| be the result of [=compute impression site deductions|computing impression site deductions=]
-    with |impressionSites|, |deduction|, |value|, |maxValue|, |epsilon|, and |isSingleEpoch|.
+    <p class=note> One epoch (which is the epoch of the conversion site) may overlap with multiple global epochs used by the global budget
+    and cross-site quotas. We will look at each impression individually and map it to the global epoch it is in to deduct from the global budget
+    and impression site quota if those have not already deducted from in this epoch.
 
 <p class=issue>TODO: Additional work to specify
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
 
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
-    with |key|, |deduction|, |impressionSites|, and |impressionSiteDeduction|
+    with |key|, |l1Normdeduction|, |valueDeduction|, |impressions|,
     is false, return false.
 
 1.  All budget checks passed, so perform the deductions atomically:
@@ -1199,20 +1191,35 @@ how locking is performed to ensure atomicity across checks and deductions, but l
     1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
         in the [=privacy budget store=].
 
+    1.  If |isSingleEpoch| let |deduction| be |l1Normdeduction| else let |deduction| be |valueDeduction|
+
     1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
         to |currentValue| − |deduction|.
 
-    1.  Decrement [=global privacy budget store=]\[|epoch|] by |deduction|.
+    1.  Let |deductedImpressionQuotas| be a new [=set=].
 
-    1.  [=map/iterate|For each=] |impressionSite|  in |impressionSites|:
+    1.  Let |deductedGlobalEpochs| be a new [=set=].
+
+    1.  [=list/iterate|For each=] |impression| in |impressions|:
+
+        1. Let |impressionTime| be |impression|'s [=impression/impression time=]
+
+        1. Let |impressionSite| be |impression|'s [=impression/impression site=].
+
+        1. Let |globalEpoch| be the result of [=get the current global epoch=]
+        with |impressionTime|.
 
         1.  Let |impressionQuotaKey| be an [=impression site quota key=]
-            whose items are |epoch| and |impressionSite|.
+            whose items are |globalEpoch| and |impressionSite|.
 
         1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
             [=map/set=] its value to the [=impression site quota per epoch=].
 
-        1.  Decrement [=impression site quota store=]\[|impressionQuotaKey|] by |impressionSiteDeduction|.
+        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|, [=set/extend] |deductedImpressionQuotas| with |impressionQuotaKey|
+         and decrement [=impression site quota store=]\[|impressionQuotaKey|] by |valueDeduction|.
+
+        1.  If |deductedGlobalEpochs| does not [=map/contain=] |globalEpoch|, [=set/extend] |deductedGlobalEpochs| with |globalEpoch|
+         and decrement [=global privacy budget store=]\[|globalEpoch|] by |valueDeduction|.
 
 1.  Return true.
 
@@ -1220,73 +1227,43 @@ how locking is performed to ensure atomicity across checks and deductions, but l
 
 <div algorithm>
 To <dfn>check for available privacy budget</dfn>
-given a [=privacy budget key=] |key|,
-integer |deduction|, and
-an integer |impressionSiteDeduction|
-and a set |impressionSites| of [=impression sites=],:
+given a [=privacy budget key=] |key|, integer |l1Normdeduction|,
+integer |valueDeduction|, an integer |impressionSiteDeduction|,
+[=set=] of [=impressions=] |impressions| and boolean |isSingleEpoch|:
 
 1.  Let |currentValue| be set to the value of [=map/get|getting the value=] of |key|
     from [=privacy budget store=], or the [=per-site privacy budget=]
     if [=map/contain|no value has been set=].
 
+1.  If |isSingleEpoch| let |deduction| be |l1Normdeduction| else let |deduction| be |valueDeduction|
+
 1.  If |deduction| is greater than |currentValue|, return false.
 
-1.  Let |epoch| be the [=epoch index=] component of |key|.
+1.  [=list/iterate|For each=] |impression| in |impressions|:
 
-1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
-    of |epoch| from the [=global privacy budget store=], or the [=global privacy budget
+    1. Let |impressionTime| be |impression|'s [=impression/impression time=]
+
+    1. Let |impressionSite| be |impression|'s [=impression/impression site=].
+
+    1. Let |globalEpoch| be the result of [=get the current global epoch=]
+    with |impressionTime|.
+
+    1. Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
+    of |globalEpoch| from the [=global privacy budget store=], or the [=global privacy budget
     per epoch=] if [=map/contain|no value has been set=].
 
-1.  If |deduction| is greater than |currentGlobalValue|,
-    return false.
+    1. Let |impressionQuotaKey| be an [=impression site quota key=]
+        whose items are |globalEpoch| and |impressionSite|
 
-1.  [=map/iterate|For each=] |impressionSite| in |impressionSites|:
+    1. Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
+    of |impressionQuotaKey| from the [=impression site quota store=],
+    or the [=impression site quota per epoch=] if [=map/contain|no value has been set=].
 
-    1.  Let |impressionQuotaKey| be an [=impression site quota key=]
-        whose items are |epoch| and |impressionSite|.
-
-    1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|
-        and |impressionSiteDeduction| is greater than the [=impression site quota per epoch=], return false.
-
-    1.  If [=map/contains=] |impressionQuotaKey| and |impressionSiteDeduction| is greater than [=impression site quota store=]\[|impressionQuotaKey|],
-            return false.
+    1. If |valueDeduction| is greater than |currentGlobalValue| or greater than |currentImpressionQuotaValue|, return false.
 
 1.  Return true.
 
 </div>
-
-<div algorithm>
-To <dfn>compute impression site deductions</dfn>
-given an set |impressionSites| of [=impression sites=],
-integer |deduction|,
-integer |value|,
-integer |maxValue|,
-[[WEBIDL#idl-double|double]] |epsilon|, and
-boolean |isSingleEpoch|:
-
-1.  Let |sensitivity| be 2 * |value|.
-
-1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
-
-1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
-
-1.  Let |globalDeduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
-
-1.  Let |numberImpressionSites| be the [=set/size|number of impression sites=] in |impressionSites|.
-
-1.  If |isSingleEpoch| is true and |numberImpressionSites| is 1:
-
-    1.  Return |deduction|.
-
-1.  Otherwise:
-
-    <p class=note>In this case we need to use the global sensitivity which is the value of |deduction| only in the multi-epoch case;
-        so we need to recompute it in case we are in the single epoch but multiple impression sites case.
-
-    1.  Return |globalDeduction|.
-
-</div>
-
 
 
 ### Global Privacy Budget Store ### {#s-global-privacy-budget-store}
@@ -1327,6 +1304,14 @@ that any single [=impression site=] can contribute in an [=epoch=].
 This prevents a single [=impression site=]
 from enabling excessive budget
 that could be maliciously triggered.
+
+### Epoch Cadences ### {#s-epoch-cadences}
+Each site has a separate cadence for the epochs of its per-[=site=] [=privacy budget store=].
+A separate global epoch cadence is shared by the [=global privacy budget store=] and all of the
+ [=impression site quota stores|impression site quota store=].  This is to ensure there is
+ no device-sepecific value shared across sites that could potentially be learned through
+ timing and side channel attacks.
+
 
 
 ### Attribution API Activation ### {#s-api-activation}
@@ -1912,59 +1897,52 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
     passing |topLevelSite| and (|now| − |options|' [=validated conversion options/lookback=]).
 
-1.  Let |singleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
+1.  Let |isSingleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
 
-1.  If |singleEpoch| is true:
+1.  If |isSingleEpoch| is true:
     1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
 
-1.  If |singleEpoch| is false:
-    1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
-
-        1.  Let |impressions| be the result of invoking [=common matching logic=]
-            with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
-
-        1.  If |impressions| [=set/is empty|is not empty=]:
-
-            1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
-
-            1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-                with |key|, |impressions|,
-                |options|' [=validated conversion options/epsilon=],
-                |options|' [=validated conversion options/value=],
-                |options|'s [=validated conversion options/max value=],
-                and null.
-
-            1.  If |budgetAndSafetyOk| is true,
-                [=set/extend=] |matchedImpressions| with |impressions|.
-
-
-
-1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
+    1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
     [=create an all-zero histogram=] with
     |options|' [=validated conversion options/histogram size=].
 
-1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+    1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
     |options|' [=validated conversion options/histogram size=],
     |options|' [=validated conversion options/value=], and
     |options|' [=validated conversion options/credit=].
 
-1.  If |singleEpoch| is true:
     1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
 
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
-    1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
+1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
 
-    1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-        with |key|, |matchedImpressions|,
-        |options|' [=validated conversion options/epsilon=],
-        |options|' [=validated conversion options/value=]
-        |options|'s [=validated conversion options/max value=],
-        and |l1Norm|.
+    1.  Let |impressions| be the result of invoking [=common matching logic=]
+        with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
 
-    1.  If |budgetAndSafetyOk| is false, set |histogram| to the result of invoking
-        [=create an all-zero histogram=] with |options|' [=validated conversion options/histogram size=].
+    1.  If |impressions| [=set/is empty|is not empty=]:
+
+        1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
+
+        1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
+            with |key|, |impressions|,
+            |options|' [=validated conversion options/epsilon=],
+            |options|' [=validated conversion options/value=],
+            |options|'s [=validated conversion options/max value=],
+            |isSingleEpoch| and |l1Norm|.
+
+        1.  If |budgetAndSafetyOk| is true,
+            [=set/extend=] |matchedImpressions| with |impressions|.
+
+1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
+[=create an all-zero histogram=] with
+|options|' [=validated conversion options/histogram size=].
+
+1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+|options|' [=validated conversion options/histogram size=],
+|options|' [=validated conversion options/value=], and
+|options|' [=validated conversion options/credit=].
 
 1.  Return |histogram|.
 
