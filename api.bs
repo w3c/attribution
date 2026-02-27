@@ -1147,8 +1147,6 @@ integer |value|,
 integer |maxValue|,
 boolean |isSingleEpoch| and integer |l1Norm|:
 
-1.  Let |epoch| be the [=epoch index=] component of |key|.
-
 1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
 
 1.  Let |valueSensitivity| be 2 * |value|.
@@ -1180,7 +1178,8 @@ boolean |isSingleEpoch| and integer |l1Norm|:
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
 
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
-    with |key|, |l1Normdeduction|, |valueDeduction|, |impressions|,
+    with |key|, |l1Normdeduction|, |valueDeduction|,
+    |impressions|, and |isSingleEpoch|,
     is false, return false.
 
 1.  All budget checks passed, so perform the deductions atomically:
@@ -1202,12 +1201,12 @@ how locking is performed to ensure atomicity across checks and deductions, but l
 
     1.  [=list/iterate|For each=] |impression| in |impressions|:
 
-        1. Let |impressionTime| be |impression|'s [=impression/impression time=]
+        1.  Let |impressionTime| be |impression|'s [=impression/timestamp=].
 
-        1. Let |impressionSite| be |impression|'s [=impression/impression site=].
+        1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-        1. Let |globalEpoch| be the result of [=get the current global epoch=]
-        with |impressionTime|.
+        1.  Let |globalEpoch| be the result of [=get the current global epoch=]
+            with |impressionTime|.
 
         1.  Let |impressionQuotaKey| be an [=impression site quota key=]
             whose items are |globalEpoch| and |impressionSite|.
@@ -1215,11 +1214,13 @@ how locking is performed to ensure atomicity across checks and deductions, but l
         1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
             [=map/set=] its value to the [=impression site quota per epoch=].
 
-        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|, [=set/extend] |deductedImpressionQuotas| with |impressionQuotaKey|
-         and decrement [=impression site quota store=]\[|impressionQuotaKey|] by |valueDeduction|.
+        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|,
+            [=set/extend=] |deductedImpressionQuotas| with |impressionQuotaKey|
+            and decrement [=impression site quota store=]\[|impressionQuotaKey|] by |valueDeduction|.
 
-        1.  If |deductedGlobalEpochs| does not [=map/contain=] |globalEpoch|, [=set/extend] |deductedGlobalEpochs| with |globalEpoch|
-         and decrement [=global privacy budget store=]\[|globalEpoch|] by |valueDeduction|.
+        1.  If |deductedGlobalEpochs| does not [=map/contain=] |globalEpoch|,
+            [=set/extend=] |deductedGlobalEpochs| with |globalEpoch|
+            and decrement [=global privacy budget store=]\[|globalEpoch|] by |valueDeduction|.
 
 1.  Return true.
 
@@ -1228,7 +1229,7 @@ how locking is performed to ensure atomicity across checks and deductions, but l
 <div algorithm>
 To <dfn>check for available privacy budget</dfn>
 given a [=privacy budget key=] |key|, integer |l1Normdeduction|,
-integer |valueDeduction|, an integer |impressionSiteDeduction|,
+integer |valueDeduction|,
 [=set=] of [=impressions=] |impressions| and boolean |isSingleEpoch|:
 
 1.  Let |currentValue| be set to the value of [=map/get|getting the value=] of |key|
@@ -1241,23 +1242,23 @@ integer |valueDeduction|, an integer |impressionSiteDeduction|,
 
 1.  [=list/iterate|For each=] |impression| in |impressions|:
 
-    1. Let |impressionTime| be |impression|'s [=impression/impression time=]
+    1.  Let |impressionTime| be |impression|'s [=impression/timestamp=].
 
-    1. Let |impressionSite| be |impression|'s [=impression/impression site=].
+    1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-    1. Let |globalEpoch| be the result of [=get the current global epoch=]
-    with |impressionTime|.
+    1.  Let |globalEpoch| be the result of [=get the current global epoch=]
+        with |impressionTime|.
 
-    1. Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
-    of |globalEpoch| from the [=global privacy budget store=], or the [=global privacy budget
-    per epoch=] if [=map/contain|no value has been set=].
+    1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
+        of |globalEpoch| from the [=global privacy budget store=], or the [=global privacy budget
+        per epoch=] if [=map/contain|no value has been set=].
 
-    1. Let |impressionQuotaKey| be an [=impression site quota key=]
-        whose items are |globalEpoch| and |impressionSite|
+    1.  Let |impressionQuotaKey| be an [=impression site quota key=]
+        whose items are |globalEpoch| and |impressionSite|.
 
-    1. Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
-    of |impressionQuotaKey| from the [=impression site quota store=],
-    or the [=impression site quota per epoch=] if [=map/contain|no value has been set=].
+    1.  Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
+        of |impressionQuotaKey| from the [=impression site quota store=],
+        or the [=impression site quota per epoch=] if [=map/contain|no value has been set=].
 
     1. If |valueDeduction| is greater than |currentGlobalValue| or greater than |currentImpressionQuotaValue|, return false.
 
@@ -1309,7 +1310,7 @@ that could be maliciously triggered.
 Each site has a separate cadence for the epochs of its per-[=site=] [=privacy budget store=].
 A separate global epoch cadence is shared by the [=global privacy budget store=] and all of the
  [=impression site quota stores|impression site quota store=].  This is to ensure there is
- no device-sepecific value shared across sites that could potentially be learned through
+ no device-specific value shared across sites that could potentially be learned through
  timing and side channel attacks.
 
 
@@ -1347,7 +1348,7 @@ The API can be invoked if either:
 <p class=note>This approach allows a single user action
 to enable multiple API invocations within the same session,
 while only making the API available to one site
-per [=activation triggering input event|activation=].
+per <a href="https://html.spec.whatwg.org/#activation-triggering-input-event">activation</a>.
 
 <div algorithm>
 To <dfn>check attribution API activation</dfn>,
@@ -1904,13 +1905,13 @@ To <dfn>do attribution and fill a histogram</dfn>, given
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
 
     1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
-    [=create an all-zero histogram=] with
-    |options|' [=validated conversion options/histogram size=].
+          [=create an all-zero histogram=] with
+          |options|' [=validated conversion options/histogram size=].
 
     1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
-    |options|' [=validated conversion options/histogram size=],
-    |options|' [=validated conversion options/value=], and
-    |options|' [=validated conversion options/credit=].
+        |options|' [=validated conversion options/histogram size=],
+        |options|' [=validated conversion options/value=], and
+        |options|' [=validated conversion options/credit=].
 
     1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
 
@@ -1936,13 +1937,13 @@ To <dfn>do attribution and fill a histogram</dfn>, given
             [=set/extend=] |matchedImpressions| with |impressions|.
 
 1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
-[=create an all-zero histogram=] with
-|options|' [=validated conversion options/histogram size=].
+    [=create an all-zero histogram=] with
+    |options|' [=validated conversion options/histogram size=].
 
 1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
-|options|' [=validated conversion options/histogram size=],
-|options|' [=validated conversion options/value=], and
-|options|' [=validated conversion options/credit=].
+    |options|' [=validated conversion options/histogram size=],
+    |options|' [=validated conversion options/value=], and
+    |options|' [=validated conversion options/credit=].
 
 1.  Return |histogram|.
 
