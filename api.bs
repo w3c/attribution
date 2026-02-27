@@ -1145,7 +1145,8 @@ given a [=privacy budget key=] |key|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|,
-boolean |isSingleEpoch| and integer |l1Norm|:
+boolean |isSingleEpoch|, integer |l1Norm|, [=set=] of [=impression quota keys=] |deductedImpressionQuotas|
+and a [=set=] of [=safety limit epoch indicies=] |deductedGlobalBudgets|:
 
 1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
 
@@ -1170,9 +1171,9 @@ boolean |isSingleEpoch| and integer |l1Norm|:
 
 1.  Let |valueDeduction| be |valueDeductionFp| * 1000000, rounded towards positive Infinity.
 
-    <p class=note> One epoch (which is the epoch of the conversion site) may overlap with multiple global epochs used by the global budget
-    and cross-site quotas. We will look at each impression individually and map it to the global epoch it is in to deduct from the global budget
-    and impression site quota if those have not already deducted from in this epoch.
+    <p class=note> One [=epoch=] (which is the epoch of the conversion site) can overlap with multiple [=safety limit epochs=] used by the [=global budget=]
+    and [=impression site quotas=]. We will look at each impression individually and map it to the [=safety limit epoch=] it is in to deduct from the global budget
+    and impression site quota if those have not already deducted from in this call to [=measure a conversion=].
 
 <p class=issue>TODO: Additional work to specify
 how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
@@ -1195,21 +1196,17 @@ how locking is performed to ensure atomicity across checks and deductions, but l
     1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
         to |currentValue| − |deduction|.
 
-    1.  Let |deductedImpressionQuotas| be a new [=set=].
-
-    1.  Let |deductedGlobalEpochs| be a new [=set=].
-
     1.  [=list/iterate|For each=] |impression| in |impressions|:
 
         1.  Let |impressionTime| be |impression|'s [=impression/timestamp=].
 
         1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-        1.  Let |globalEpoch| be the result of [=get the current global epoch=]
+        1.  Let |safetyLimitEpoch| be the result of [=get the current safety limit epoch=]
             with |impressionTime|.
 
         1.  Let |impressionQuotaKey| be an [=impression site quota key=]
-            whose items are |globalEpoch| and |impressionSite|.
+            whose items are |safetyLimitEpoch| and |impressionSite|.
 
         1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
             [=map/set=] its value to the [=impression site quota per epoch=].
@@ -1218,9 +1215,9 @@ how locking is performed to ensure atomicity across checks and deductions, but l
             [=set/extend=] |deductedImpressionQuotas| with |impressionQuotaKey|
             and decrement [=impression site quota store=]\[|impressionQuotaKey|] by |valueDeduction|.
 
-        1.  If |deductedGlobalEpochs| does not [=map/contain=] |globalEpoch|,
-            [=set/extend=] |deductedGlobalEpochs| with |globalEpoch|
-            and decrement [=global privacy budget store=]\[|globalEpoch|] by |valueDeduction|.
+        1.  If |deductedGlobalBudgets| does not [=map/contain=] |safetyLimitEpoch|,
+            [=set/extend=] |deductedGlobalBudgets| with |safetyLimitEpoch|
+            and decrement [=global privacy budget store=]\[|safetyLimitEpoch|] by |valueDeduction|.
 
 1.  Return true.
 
@@ -1246,15 +1243,15 @@ integer |valueDeduction|,
 
     1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-    1.  Let |globalEpoch| be the result of [=get the current global epoch=]
+    1.  Let |safetyLimitEpoch| be the result of [=get the current safety limit epoch=]
         with |impressionTime|.
 
     1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
-        of |globalEpoch| from the [=global privacy budget store=], or the [=global privacy budget
+        of |safetyLimitEpoch| from the [=global privacy budget store=], or the [=global privacy budget
         per epoch=] if [=map/contain|no value has been set=].
 
     1.  Let |impressionQuotaKey| be an [=impression site quota key=]
-        whose items are |globalEpoch| and |impressionSite|.
+        whose items are |safetyLimitEpoch| and |impressionSite|.
 
     1.  Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
         of |impressionQuotaKey| from the [=impression site quota store=],
@@ -1305,14 +1302,6 @@ that any single [=impression site=] can contribute in an [=epoch=].
 This prevents a single [=impression site=]
 from enabling excessive budget
 that could be maliciously triggered.
-
-### Epoch Cadences ### {#s-epoch-cadences}
-Each site has a separate cadence for the epochs of its per-[=site=] [=privacy budget store=].
-A separate global epoch cadence is shared by the [=global privacy budget store=] and all of the
- [=impression site quota stores|impression site quota store=].  This is to ensure there is
- no device-specific value shared across sites that could potentially be learned through
- timing and side channel attacks.
-
 
 
 ### Attribution API Activation ### {#s-api-activation}
@@ -1444,6 +1433,37 @@ returning an [=epoch index=]:
 1.  Return |elapsed| as an integer, rounded towards negative Infinity.
 
 </div>
+
+### Saftety Limit Epoch Start ### {#s-epoch-start}
+A [=safety limit epoch=] starts at the same time for all devices.  This
+ensures that it does not create a device-specific value that could be learned
+through timing or other side-channel attacks.
+
+A <dfn>safety limit epoch</dfn> identifies a period of time. The length
+of a [=safety limit epoch=] is fixed at one [=day=]. The start time for an
+[=safetly limit epoch=] is defined relative to the [=Unix epoch=].
+
+An <dfn local-lt="safety limit epoch indices">safety limit epoch index</dfn> is an integer
+that refers to a given [=safety limit epoch=].
+An [=safety limit epoch index=] is used to access the
+[=global privacy budget store=] and the [=impression site quota stores=].
+
+[=moment|Points in time=] are translated to an [=safety limit epoch index=]
+for the corresponding [=safetly limit epoch=]
+using the [=get the current safetly limit epoch=] algorithm.
+
+<div algorithm>
+To <dfn>get the current safety limit epoch</dfn>
+given [=moment=] |t|,
+returning a [=safety limit epoch index=]:
+
+1.  Let |period| be the [=duration=] of one [=epoch=].
+
+1.  Let |start| be the [=Unix epoch=].
+
+1.  Let |elapsed| be (|t| − |start|) / |period|.
+
+1.  Return |elapsed| as an integer, rounded towards negative Infinity.
 
 ### Last Browsing History Clear Time ### {#last-clear}
 
@@ -1917,7 +1937,19 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
-1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
+1.  Let |deductedImpressionQuotas| be a new [=set=].
+
+1.  Let |deductedGlobalBudgets| be a new [=set=].
+
+<p class=note> The |deductedImpressionQuotas| and |deductedGlobalBudgets| sets are initialized outside the
+loop over epochs so that [=safety limit epochs=] which overlap two per-site [=epochs=] will not be have
+their safety limits deducted from more than once.
+
+1.  For each |epoch| from |currentEpoch| to |startEpoch|, inclusive:
+
+    <p class=note> Epochs are processed sequentially starting from the most recent epoch
+    and going back in time as safety limit deductions may depleate from same safety limits as
+    the next epoch will need to check.
 
     1.  Let |impressions| be the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
@@ -1931,7 +1963,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
             |options|' [=validated conversion options/epsilon=],
             |options|' [=validated conversion options/value=],
             |options|'s [=validated conversion options/max value=],
-            |isSingleEpoch| and |l1Norm|.
+            |isSingleEpoch|, |l1Norm|, |deductedImpressionQuotas| and |deductedGlobalBudgets|.
 
         1.  If |budgetAndSafetyOk| is true,
             [=set/extend=] |matchedImpressions| with |impressions|.
