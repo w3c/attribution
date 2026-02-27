@@ -2568,8 +2568,9 @@ and a [=list=] of [=integers=] |histogram|:
     with |ctx|, |histogram|, |reportID| (as the VDAF "nonce" parameter), and |rand|.
 
 1.  Let |time| be the integer resulting from dividing
-    |now| as a [=duration=] since the [=Unix epoch=]
-    by a [=duration=] of 5 seconds.
+    the [=duration from=] the [=Unix epoch=] to |now|
+    by a [=duration=] of 5 seconds,
+    rounding towards negative Infinity.
 
 1.  Let |extensions| be a [=map=] of [=16-bit unsigned integers=] to [=byte sequences=],
     comprised of:
