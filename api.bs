@@ -1075,13 +1075,11 @@ For example, "`extra.example.com`" is parsed as "`example.com`".
 
 ## State For Privacy Budget Management ## {#privacy-state}
 
-[=User agents=] maintain three pieces of state
+[=User agents=] maintain several pieces of state
 that are used to manage the expenditure of [=privacy budgets=]:
 
 *   The [=privacy budget store=] records the state
     of the per-[=site=] and per-[=epoch=] [=privacy budgets=].
-    It is updated by [=deduct privacy budget=].
-
 
 *   The [=epoch start store=] records when each [=epoch=] starts
     for [=conversion sites=].
@@ -1091,15 +1089,25 @@ that are used to manage the expenditure of [=privacy budgets=]:
 *   A singleton [=last browsing history clear=] value
     that tracks when the browsing activity for a [=site=] was last cleared.
 
+*   The [=global privacy budget store=] records the state
+    of the per-[=epoch=] global [=privacy budget=]
+    that applies across all [=sites=].
+
+*   The [=impression site quota store=] records the state
+    of per-[=impression site=] and per-[=epoch=] quota [=privacy budgets=].
+
+*   The [=privacy budget store=], [=global privacy budget store=],
+    and [=impression site quota store=] are updated by [=deduct privacy and safety budgets=].
+
+
 <p class=note>
 Like the [=impression store=],
-the [=privacy budget store=] does not use a [=storage key=].
+the [=privacy budget store=] and related stores do not use a [=storage key=].
 These stores have some additional constraints
 on how information is cleared;
 see [[#clear-budget-store]] for details.
 
 <p class=issue>
-The [=safety limits=] need to be described in more detail.
 Some references to clearing
 the [=impression store=] may need to be
 updated to refer to the [=privacy budget store=] as well.
@@ -1128,35 +1136,30 @@ A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items
 
 </dl>
 
+
+
 <div algorithm>
-To <dfn>deduct privacy budget</dfn>
+To <dfn>deduct privacy and safety budgets</dfn>
 given a [=privacy budget key=] |key|,
+[=set=] of [=impressions=] |impressions|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
-integer |maxValue|, and
-nullable integer |l1Norm|:
+integer |maxValue|,
+boolean |isSingleEpoch|, integer |l1Norm|, [=set=] of [=impression site quota keys=] |deductedImpressionQuotas|
+and a [=set=] of [=safety limit epoch indices=] |deductedGlobalBudgets|:
 
-1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
-    its value of |key| to be a [=user agent=]-defined value,
-    plus 1000.
+1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
 
-    <p class=note>The addition of 1000 to this value
-    ensures that the rounding errors added by this algorithm do not cause
-    the budget to be exceeded unnecessarily after multiple invocations.
-    The privacy loss from the additional one-thousandth of an epsilon is trivial.
-
-1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
-    in the [=privacy budget store=].
-
-1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, 2 * |value| otherwise.
+1.  Let |valueSensitivity| be 2 * |value|.
 
 1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
 
-1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
+1.  Let |l1NormDeductionFp| be |l1NormSensitivity| / |noiseScale|.
+
+1.  Let |valueDeductionFp| be |valueSensitivity| / |noiseScale|.
 
 
-    <p class=note>Single epoch attributions &mdash;
-    the only case that |l1Norm| is non-null &mdash;
+    <p class=note> Single epoch attributions
     do not cause any cascading effects across epochs.
     Attribution that involves multiple epochs consumes double the budget
     because of the potential for one change to affect attribution across epochs.
@@ -1164,21 +1167,197 @@ nullable integer |l1Norm|:
     proportional to |maxValue| / |epsilon|
     is added to the aggregated histogram.
 
-1.  If |deductionFp| is negative or greater than [=maximum epsilon=],
-    [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
-    and return false.
+1.  Let |l1Normdeduction| be |l1NormDeductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
+1.  Let |valueDeduction| be |valueDeductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  If |deduction| is greater than |currentValue|,
-    [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
-    and return false.
+    <p class=note> One [=epoch=] (which is the epoch of the conversion site) can overlap with multiple [=safety limit epochs=] used by the [=global privacy budget store|global budget=]
+    and [=impression site quota store|impression site quotas=]. We will look at each impression individually and map it to the [=safety limit epoch=] it is in to deduct from the global budget
+    and impression site quota if those have not already deducted from in this call to [=measure a conversion=].
 
-1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
-    to |currentValue| − |deduction|
-    and return true.
+<p class=issue>TODO: Additional work to specify
+how locking is performed to ensure atomicity across checks and deductions, but lock should start about here.
+
+1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
+    with |key|, |l1Normdeduction|, |valueDeduction|,
+    |impressions|, and |isSingleEpoch|,
+    is false, return false.
+
+1.  All budget checks passed, so perform the deductions atomically:
+
+    1.  If the [=privacy budget store=] does not [=map/contain=] |key|,
+        [=map/set=] its value to the [=per-site privacy budget=].
+
+    1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
+        in the [=privacy budget store=].
+
+    1.  If |isSingleEpoch| let |deduction| be |l1Normdeduction| else let |deduction| be |valueDeduction|
+
+    1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
+        to |currentValue| − |deduction|.
+
+    1.  [=list/iterate|For each=] |impression| in |impressions|:
+
+        1.  Let |impressionTime| be |impression|'s [=impression/timestamp=].
+
+        1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
+
+        1.  Let |safetyLimitEpoch| be the result of [=get the current safety limit epoch=]
+            with |impressionTime|.
+
+        1.  Let |impressionQuotaKey| be an [=impression site quota key=]
+            whose items are |safetyLimitEpoch| and |impressionSite|.
+
+        1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
+            [=map/set=] its value to the [=impression site quota per epoch=].
+
+        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|,
+            [=set/extend=] |deductedImpressionQuotas| with |impressionQuotaKey|
+            and decrement [=impression site quota store=]\[|impressionQuotaKey|] by |valueDeduction|.
+
+        1.  If |deductedGlobalBudgets| does not [=map/contain=] |safetyLimitEpoch|,
+            [=set/extend=] |deductedGlobalBudgets| with |safetyLimitEpoch|
+            and decrement [=global privacy budget store=]\[|safetyLimitEpoch|] by |valueDeduction|.
+
+1.  Return true.
 
 </div>
+
+<div algorithm>
+To <dfn>check for available privacy budget</dfn>
+given a [=privacy budget key=] |key|, integer |l1Normdeduction|,
+integer |valueDeduction|,
+[=set=] of [=impressions=] |impressions| and boolean |isSingleEpoch|:
+
+1.  Let |currentValue| be set to the value of [=map/get|getting the value=] of |key|
+    from [=privacy budget store=], or the [=per-site privacy budget=]
+    if [=map/contain|no value has been set=].
+
+1.  If |isSingleEpoch| let |deduction| be |l1Normdeduction| else let |deduction| be |valueDeduction|
+
+1.  If |deduction| is greater than |currentValue|, return false.
+
+1.  [=list/iterate|For each=] |impression| in |impressions|:
+
+    1.  Let |impressionTime| be |impression|'s [=impression/timestamp=].
+
+    1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
+
+    1.  Let |safetyLimitEpoch| be the result of [=get the current safety limit epoch=]
+        with |impressionTime|.
+
+    1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
+        of |safetyLimitEpoch| from the [=global privacy budget store=], or the [=global privacy budget
+        per epoch=] if [=map/contain|no value has been set=].
+
+    1.  Let |impressionQuotaKey| be an [=impression site quota key=]
+        whose items are |safetyLimitEpoch| and |impressionSite|.
+
+    1.  Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
+        of |impressionQuotaKey| from the [=impression site quota store=],
+        or the [=impression site quota per epoch=] if [=map/contain|no value has been set=].
+
+    1. If |valueDeduction| is greater than |currentGlobalValue| or greater than |currentImpressionQuotaValue|, return false.
+
+1.  Return true.
+
+</div>
+
+
+### Global Privacy Budget Store ### {#s-global-privacy-budget-store}
+
+The <dfn>global privacy budget store</dfn> is a [=map=] whose keys are
+[=epoch indices=] and whose values are [=32-bit unsigned integers=]
+in units of [=microepsilons=].
+
+The [=global privacy budget store=] enforces a single [=privacy budget=]
+per [=epoch=] that applies across all [=sites=].
+This provides a [=safety limit=] against adversaries
+that can correlate activity for the same person across multiple [=sites=].
+
+<p class=note>Unlike the per-[=site=] [=privacy budget store=],
+the [=global privacy budget store=] is keyed only by [=epoch index=],
+not by [=site=].
+
+
+### Impression Site Quota Store ### {#s-impression-site-quota-store}
+
+The <dfn>impression site quota store</dfn> is a [=map=] whose keys are
+[=impression site quota keys=] and whose values are [=32-bit unsigned integers=]
+in units of [=microepsilons=].
+
+An <dfn>impression site quota key</dfn> is a [=tuple=] consisting of the following items:
+
+<dl dfn-for="impression site quota key">
+: <dfn ignore>epoch index</dfn>
+:: An [=epoch index=]
+: <dfn ignore>impression site</dfn>
+:: An [=impression site=]
+
+</dl>
+
+The [=impression site quota store=] limits the amount of "stock"
+(privacy budget related to [=impressions=])
+that any single [=impression site=] can contribute in an [=epoch=].
+This prevents a single [=impression site=]
+from enabling excessive budget
+that could be maliciously triggered.
+
+
+### Attribution API Activation ### {#s-api-activation}
+
+The Attribution API is a [=transient activation-consuming API=].
+The web platform uses <a href="https://html.spec.whatwg.org/#tracking-user-activation">transient activation</a> to limit the amount of time that a
+user activation remains available for calling certain user activation-gated APIs.
+The Attribution API can be activated by transient activation,
+and within the time window of a user action, the site can redirect to another site
+that will be able to use the transient activation if the first site has not consumed it.
+
+A couple of notes:
+
+1.  Since calling the Attribution API consumes a user activation, the site would no longer have this
+    particular user activation to use for other APIs (e.g., opening popups).
+
+1.  One common web pattern related to web advertising is for an advertiser site to have the user
+    click on a purchase button and be taken to a separate payment processor page. In such a scenario,
+    both sites will be able to use the API if the first site has used a different, earlier user action
+    to activate the API for that site (setting the window's [=global attribution API flag=] to true)
+    and then the second site uses the transient activation from the click to activate the API for
+    its use. But no further sites will be able to use the API without further user action in order
+    to prevent abuse.
+
+A <dfn>global attribution API flag</dfn> is associated with each {{Window}} object.
+The [=global attribution API flag=] is enabled whenever the API is successfully invoked.
+This flag is initially false.
+
+The API can be invoked if either:
+1.  The [=global attribution API flag=] for the current {{Window}} is true, or
+2.  The current {{Window}} has [=transient activation=] that can be [=consume user activation|consumed=].
+
+<p class=note>This approach allows a single user action
+to enable multiple API invocations within the same session,
+while only making the API available to one site
+per <a href="https://html.spec.whatwg.org/#activation-triggering-input-event">activation</a>.
+
+<div algorithm>
+To <dfn>check attribution API activation</dfn>,
+given a {{Window}} |window|,
+throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
+
+1.  If |window|'s [=global attribution API flag=] is true, return.
+
+1.  If |window| has [=transient activation=]:
+
+    1.  [=Consume user activation=] given |window|.
+
+    1.  Set |window|'s [=global attribution API flag=] to true.
+
+    1.  Return.
+
+1.  Throw a {{"NotAllowedError"}} {{DOMException}}.
+
+</div>
+
 
 ### Epoch Start Store ### {#s-epoch-start}
 
@@ -1248,6 +1427,39 @@ returning an [=epoch index=]:
 
 1.  Let |start| be the result of [=map/get|getting the value=] of |site|
     from the [=epoch start store=].
+
+1.  Let |elapsed| be (|t| − |start|) / |period|.
+
+1.  Return |elapsed| as an integer, rounded towards negative Infinity.
+
+</div>
+
+### Safety Limit Epoch Start ### {#s-safety-limit-epoch-start}
+A [=safety limit epoch=] starts at the same time for all devices.  This
+ensures that it does not create a device-specific value that could be learned
+through timing or other side-channel attacks.
+
+A <dfn>safety limit epoch</dfn> identifies a period of time. The length
+of a [=safety limit epoch=] is fixed at one [=day=]. The start time for a
+[=safety limit epoch=] is defined relative to the [=Unix epoch=].
+
+An <dfn local-lt="safety limit epoch indices">safety limit epoch index</dfn> is an integer
+that refers to a given [=safety limit epoch=].
+An [=safety limit epoch index=] is used to access the
+[=global privacy budget store=] and the [=impression site quota store|impression site quota stores=].
+
+[=moment|Points in time=] are translated to a [=safety limit epoch index=]
+for the corresponding [=safety limit epoch=]
+using the [=get the current safety limit epoch=] algorithm.
+
+<div algorithm>
+To <dfn>get the current safety limit epoch</dfn>
+given [=moment=] |t|,
+returning a [=safety limit epoch index=]:
+
+1.  Let |period| be the [=duration=] of one [=safety limit epoch=].
+
+1.  Let |start| be the [=Unix epoch=].
 
 1.  Let |elapsed| be (|t| − |start|) / |period|.
 
@@ -1374,6 +1586,9 @@ and a [=moment=] |now|:
 
     1.  [=map/clear|Clear=] the [=epoch start store=].
 
+    <p class=issue>TODO (issue https://github.com/w3c/attribution/issues/367): Define how to clear [=safety limits=] stores:
+    [=global privacy budget store=] and [=impression site quota store=].
+
 1.  If |sites| [=set/is empty|is not empty=]:
 
     1.  [=set/iterate|For each=] |impression| in the [=impression store=],
@@ -1417,6 +1632,9 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/save-impression}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
+1.  Let |window| be |document|'s [=relevant global object=].
+1.  [=check attribution API activation|Check attribution API activation=]
+    given |window|, returning [=a promise rejected with=] any thrown reason.
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -1466,7 +1684,8 @@ and [=implicit API inputs=] |implicitInputs|:
          :   [=impression/Priority=]
          ::  |options|.{{AttributionImpressionOptions/priority}}
      1.  If the Attribution API is [[#opt-out|enabled]],
-         save |impression| to the [=impression store=].
+        save |impression| to the [=impression store=].
+
 1.  Let |result| be a new {{AttributionImpressionResult}}.
 1.  Return [=a promise resolved with=] |result| in |realm|.
 
@@ -1543,6 +1762,9 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
+1.  Let |window| be |document|'s [=relevant global object=].
+1.  [=check attribution API activation|Check attribution API activation=]
+    given |window|, returning [=a promise rejected with=] any thrown reason.
 1.  Let |validatedOptions| be the result of
     [=validate AttributionConversionOptions|validating=] |options|,
     returning [=a promise rejected with=] any thrown reason.
@@ -1550,8 +1772,9 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  Run the following steps [=in parallel=]:
      1.  Let |report| be the result of invoking [=create an all-zero histogram=] with
          |validatedOptions|' [=validated conversion options/histogram size=].
-     1.  If the Attribution API is [[#opt-out|enabled]], set |report| to the
-         result of [=do attribution and fill a histogram=] with |validatedOptions|,
+     1.  If the Attribution API is [[#opt-out|enabled]],
+         set |report| to the result of [=do attribution and fill a histogram=] with
+         |validatedOptions|,
          |implicitInputs|' [=implicit API inputs/top-level site=],
          |implicitInputs|' [=implicit API inputs/intermediary site=], and
          |implicitInputs|' [=implicit API inputs/timestamp=].
@@ -1683,8 +1906,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 To <dfn>do attribution and fill a histogram</dfn>, given
   [=validated conversion options=] |options|,
   [=site=] |topLevelSite|,
-  [=site=] or `undefined` |intermediarySite|,
-  and [=moment=] |now|:
+  [=site=] or `undefined` |intermediarySite|, and
+  [=moment=] |now|:
 
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
@@ -1697,30 +1920,55 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
     passing |topLevelSite| and (|now| − |options|' [=validated conversion options/lookback=]).
 
-1.  Let |singleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
+1.  Let |isSingleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
 
-1.  If |singleEpoch| is true:
+1.  If |isSingleEpoch| is true:
     1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
 
-1.  If |singleEpoch| is false:
+    1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
+          [=create an all-zero histogram=] with
+          |options|' [=validated conversion options/histogram size=].
 
-    1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
+    1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+        |options|' [=validated conversion options/histogram size=],
+        |options|' [=validated conversion options/value=], and
+        |options|' [=validated conversion options/credit=].
 
-        1.  Let |impressions| be the result of invoking [=common matching logic=]
-            with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
+    1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
 
-        1.  If |impressions| [=set/is empty|is not empty=]:
+    1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
-            1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
+1.  Let |deductedImpressionQuotas| be a new [=set=].
 
-            1.  Let |budgetOk| be the result of invoking [=deduct privacy budget=]
-                with |key|, |options|' [=validated conversion options/epsilon=],
-                |options|' [=validated conversion options/value=],
-                |options|'s [=validated conversion options/max value=],
-                and null.
+1.  Let |deductedGlobalBudgets| be a new [=set=].
 
-            1.  If |budgetOk| is true, [=set/extend=] |matchedImpressions| with |impressions|.
+<p class=note> The |deductedImpressionQuotas| and |deductedGlobalBudgets| sets are initialized outside the
+loop over epochs so that [=safety limit epochs=] which overlap two per-site [=epochs=] will not be have
+their safety limits deducted from more than once.
+
+1.  For each |epoch| from |currentEpoch| to |startEpoch|, inclusive:
+
+    <p class=note> Epochs are processed sequentially starting from the most recent epoch
+    and going back in time as safety limit deductions can depleate from same safety limits as
+    the next epoch will need to check.
+
+    1.  Let |impressions| be the result of invoking [=common matching logic=]
+        with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
+
+    1.  If |impressions| [=set/is empty|is not empty=]:
+
+        1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
+
+        1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
+            with |key|, |impressions|,
+            |options|' [=validated conversion options/epsilon=],
+            |options|' [=validated conversion options/value=],
+            |options|'s [=validated conversion options/max value=],
+            |isSingleEpoch|, |l1Norm|, |deductedImpressionQuotas| and |deductedGlobalBudgets|.
+
+        1.  If |budgetAndSafetyOk| is true,
+            [=set/extend=] |matchedImpressions| with |impressions|.
 
 1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
     [=create an all-zero histogram=] with
@@ -1730,22 +1978,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     |options|' [=validated conversion options/histogram size=],
     |options|' [=validated conversion options/value=], and
     |options|' [=validated conversion options/credit=].
-
-1.  If |singleEpoch| is true:
-    1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
-
-    1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
-
-    1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
-
-    1.  Let |budgetOk| be the result of [=deduct privacy budget=]
-        with |key|, |options|' [=validated conversion options/epsilon=],
-        |options|' [=validated conversion options/value=]
-        |options|'s [=validated conversion options/max value=],
-        and |l1Norm|.
-
-    1.  If |budgetOk| is false, set |histogram| to the result of invoking
-        [=create an all-zero histogram=] with |options|' [=validated conversion options/histogram size=].
 
 1.  Return |histogram|.
 
@@ -1954,8 +2186,33 @@ will be a fixed value that is determined
 by the choice of technology used by the [=aggregation service=];
 it is not [=implementation-defined=].
 
-Deciding on a value for differential privacy parameters
+### Privacy and Safety Limit Parameter Configuration ### {#safety-limits-configuration}
+
+<p class=issue> Deciding on a value for differential privacy parameters
 is hard and therefore TBD.
+
+[=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
+for the following:
+
+*   The <dfn>per-site privacy budget</dfn> (&epsilon;<sub>site</sub>) within the range of: TBD
+
+*   The <dfn>global privacy budget per epoch</dfn> (&epsilon;<sub>global</sub>) which is
+    the maximum privacy budget available across all [=sites=] per [=epoch=],
+    specified in [=microepsilons=].
+    Implementations [=must=] set this value as a multiple of
+    the per-[=site=] [=privacy budget=] per [=epoch=].
+
+*   The <dfn>impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>) which is
+    the maximum privacy budget that a single [=impression site=]
+    can enable to be consumed from the [=global privacy budget store|global privacy budget=] per [=epoch=],
+    specified in [=microepsilons=].
+    Implementations [=must=] set this value as a multiple of
+    the per-[=site=] [=privacy budget=] per [=epoch=].
+
+<p class=note>Setting [=safety limits=] as multiples of the per-[=site=] budget
+ensures that exploiting shared limits requires coordination by many sites,
+making them primarily useful as a means of protecting against abuse
+rather than as a primary privacy mechanism.
 
 
 
@@ -2705,11 +2962,12 @@ The first [[PPA-DP]] establishes the theory
 for on-device Individual DP accounting. The second [[PPA-DP-2]] expands the analysis to
 the mathematical privacy guarantees afforded by per-site budgets and by the global budget.
 
-The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee. However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees:
+The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee.
+However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees:
 
 1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
-    and conversions) must be generated independently of past DP [=attribution results=] from other sites.
-1.  *No leakage through cross-site shared limits.* Queries from one site must not affect which
+    and conversions) <span class=allow-2119>must</span> be generated independently of past DP [=attribution results=] from other sites.
+1.  *No leakage through cross-site shared limits.* Queries from one site <span class=allow-2119>must not</span> affect which
     reports are emitted to others.
 
 In short, neither assumption can hold in practice.
@@ -2849,7 +3107,7 @@ If the [=privacy budget=] for that [=epoch=] is not sufficient,
 the impressions from that [=epoch=] are not used.
 
 Each time a [=conversion site=] invokes <a method for=Attribution>measureConversion()</a>
-the [=deduct privacy budget|privacy budget is deducted=]
+the [=deduct privacy and safety budgets|privacy budget is deducted=]
 for [=epochs=] from which the [=attribution logic=] selected [=impressions=].
 
 <div class=example id=ex-budget>
@@ -2869,7 +3127,7 @@ for [=epochs=] from which the [=attribution logic=] selected [=impressions=].
     corresponding to impressions from Sites B, C, and E.
 
     As a result, [=privacy budget=] for the [=conversion site=]
-    is [=deduct privacy budget|deducted=]
+    is [=deduct privacy and safety budgets|deducted=]
     from [=epochs=] 1, 3, 4, and 5.
     No impressions were recorded for [=epoch=] 2,
     so no [=privacy budget|budget=] is deducted from that [=epoch=].
