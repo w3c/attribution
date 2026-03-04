@@ -26,22 +26,20 @@ const siteTable: readonly SiteTableEntry[] = [
   },
 ];
 
-async function setupImpressions(config?: TestConfig): Promise<Backend> {
+function setupImpressions(config?: TestConfig): Backend {
   const backend = makeBackend(config);
-  await Promise.all(
-    siteTable.map(({ impression, conversion: conversionSites }) =>
-      backend.saveImpression(impression, undefined, {
-        histogramIndex: 1,
-        conversionSites,
-      }),
-    ),
-  );
+  for (const entry of siteTable) {
+    backend.saveImpression(entry.impression, undefined, {
+      histogramIndex: 1,
+      conversionSites: entry.conversion,
+    });
+  }
   return backend;
 }
 
 // Clearing state for a given site only affects available privacy budget.
-void test("clear-site-state", async () => {
-  const backend = await setupImpressions();
+void test("clear-site-state", () => {
+  const backend = setupImpressions();
 
   // Check that this rejects correctly.
   assert.throws(() => backend.clearState([], false));
@@ -83,9 +81,9 @@ void test("clear-site-state", async () => {
 });
 
 // Forgetting all sites resets the entire thing, except the last reset time.
-void test("forget-all-sites", async () => {
+void test("forget-all-sites", () => {
   const now = Temporal.Instant.from("2025-01-01T00:00Z");
-  const backend = await setupImpressions({ now, ...defaultConfig });
+  const backend = setupImpressions({ now, ...defaultConfig });
   backend.clearState([], true);
 
   assert.deepEqual(backend.impressions, []);
@@ -95,9 +93,9 @@ void test("forget-all-sites", async () => {
 });
 
 // Forgetting a site with impressions removes impressions.
-void test("forget-one-site-impressions", async () => {
+void test("forget-one-site-impressions", () => {
   const now = Temporal.Instant.from("2025-01-01T00:00Z");
-  const backend = await setupImpressions({ now, ...defaultConfig });
+  const backend = setupImpressions({ now, ...defaultConfig });
   backend.clearState(["imp-one.example"], true);
 
   assert.deepEqual(
@@ -111,9 +109,9 @@ void test("forget-one-site-impressions", async () => {
 });
 
 // Forgetting a site with conversion state removes those.
-void test("forget-one-site-conversions", async () => {
+void test("forget-one-site-conversions", () => {
   const now = Temporal.Instant.from("2025-01-01T00:00Z");
-  const backend = await setupImpressions({ now, ...defaultConfig });
+  const backend = setupImpressions({ now, ...defaultConfig });
 
   const before = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
