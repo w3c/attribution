@@ -1563,6 +1563,7 @@ and [=implicit API inputs=] |implicitInputs|:
                 1.  Let |encryptedReport| be the result of invoking <a>construct a DAP report</a>,
                     given |validatedOptions|,
                     |implicitInputs|' [=implicit API inputs/top-level site=],
+                    |implicitInputs|' [=implicit API inputs/intermediary site=],
                     |implicitInputs|' [=implicit API inputs/timestamp=], and |report|.
          </dl>
      1.  Let |result| be a {{AttributionConversionResult}} with the following items:
@@ -2471,6 +2472,7 @@ To <dfn>construct a DAP report</dfn>,
 producing a [=byte sequence=] |report|,
 given [=validated conversion options=] |options|,
 [=site=] |topLevelSite|,
+[=site=] or `undefined` |intermediarySite|,
 [=moment=] |now|,
 and a [=list=] of [=integers=] |histogram|:
 
@@ -2533,8 +2535,11 @@ and a [=list=] of [=integers=] |histogram|:
     *   The extension codepoint for [[DAP-EXT#name-requester-website-identity|requester identity]],
         mapped to the [=isomorphic encode|encoded=] value of |topLevelSite|[1].
 
+1.  Let |conversionCaller| be |intermediarySite| if |intermediarySite| is not `undefined`,
+    |topLevelSite| otherwise.
+
 1.  Let |reportMetadata| be encoded DAP [`ReportMetadata`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.2)
-    generated from |reportID|, |time|, and |extensions|.
+    generated from |reportID|, |conversionCaller|, |time|, and |extensions|.
 
 1.  Let |encryptedInputShares| be an [=list/is empty|empty=] [=list=].
 
@@ -2590,6 +2595,22 @@ that was expended by the site that requested the report.
 
 An [=aggregation service=] MUST guarantee
 that it does not accept the same report more than once.
+
+To support anti-replay verification,
+each [=conversion report=] includes associated data
+that is authenticated as part of the AEAD encryption.
+This associated data includes:
+
+*   The [=site=] that invoked the {{Attribution/measureConversion()}} API.
+    This is the [=intermediary site=] if the API was called from a cross-site frame,
+    or the [=conversion site=] otherwise.
+*   A timestamp, as determined by the device at the time of the API call.
+
+The [=aggregation service=] uses this associated data
+to shard its anti-replay mechanism.
+This sharding enables efficient verification
+that each report is processed only once,
+while allowing the service to scale.
 
 
 # Differential Privacy # {#dp}
