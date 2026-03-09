@@ -13,7 +13,7 @@ import assert from "assert";
 
 import { Temporal } from "temporal-polyfill";
 
-import * as psl from "psl";
+import { getDomain } from "tldts";
 
 interface Impression {
   matchValue: number;
@@ -57,7 +57,7 @@ export function days(days: number): Temporal.Duration {
 }
 
 function parseSite(input: string): string {
-  const site = psl.get(input);
+  const site = getDomain(input, { allowPrivateDomains: true });
   if (site === null) {
     throw new DOMException(`invalid site ${input}`, "SyntaxError");
   }
