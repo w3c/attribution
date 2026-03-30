@@ -1081,9 +1081,8 @@ that are used to manage the expenditure of [=privacy budgets=]:
 *   The [=privacy budget store=] records the state
     of the per-[=site=] and per-[=epoch=] [=privacy budgets=].
 
-*   The [=epoch start store=] records when each [=epoch=] starts
-    for [=conversion sites=].
-    This store is initialized as a side effect
+*   The [=epoch start time=] records when the first [=epoch=] starts.
+    This value is initialized as a side effect
     of invoking <a method for=Attribution>measureConversion()</a>.
 
 *   A singleton [=last browsing history clear=] value
@@ -1351,7 +1350,7 @@ throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 </div>
 
 
-### Epoch Start Store ### {#s-epoch-start}
+### Epoch Start Time ### {#s-epoch-start}
 
 For each device there is a independently random epoch cadence.  On that
 one device the per-site budget and safety limits all share this same epoch
@@ -1364,8 +1363,7 @@ is averaged across all the contributions from all [=users=].
 
 
 
-The <dfn>epoch start store</dfn> is a [=map=] keyed by [=site=]
-and contains values that are [=moments=]
+The <dfn>epoch start time</dfn> is a [=moment=]
 from the [=wall clock=].
 
 A <dfn local-lt=epoch>privacy budget epoch</dfn> (or [=epoch=])
@@ -1374,19 +1372,16 @@ The length of an [=epoch=] is fixed at one week or 7 [=days=],
 where a <dfn>day</dfn> is defined as 86400 seconds.
 
 The exact time span for an [=epoch=] is different
-for each combination of [=user agent=] and [=site=].
-The start time for a given pair of [=user agent=] and [=site=]
+for each [=user agent=].
+The start time
 is chosen randomly by the [=user agent=] when an epoch is first needed--
 as a side effect of invoking the [=get the current epoch=] algorithm.
-The [=epochs=] for a given [=site=] will change
-if the [=user agent=] clears browsing history;
-see [[#clear-browsing-history]].
 
 An <dfn local-lt="epoch indices">epoch index</dfn> is an integer
 that refers to a given [=epoch=].
 An [=epoch index=] is used to access
 the [=impression store|impression=]
-and [=epoch start store|epoch start=] stores.
+and [=epoch start time=].
 
 <div class=note>
 In the same way that a [=moment=] is an abstract concept
@@ -1397,7 +1392,7 @@ relative to another [=moment=],
 [=Epoch indices=] are stored as integers
 relative to a set reference point.
 The [=epoch indices=] in this specification
-use the values from the [=epoch start store=]
+use the [=epoch start time=]
 as a reference point.
 A [=user agent=] could choose to use a different [=moment=]
 to indicate a "zero" or reference [=epoch=].
@@ -1411,19 +1406,17 @@ using the [=get the current epoch=] algorithm.
 
 <div algorithm>
 To <dfn>get the current epoch</dfn>
-given a [=site=] |site|,
-and [=moment=] |t|,
+given a [=moment=] |t|,
 returning an [=epoch index=]:
 
 1.  Let |period| be the [=duration=] of one [=epoch=].
 
-1.  If the [=epoch start store=] does not [=map/contain=] |site|, [=map/set=]
-    its value to |t|, minus a [=duration=]
+1.  If the [=epoch start time=] is not set,
+    set it to |t|, minus a [=duration=]
     that is randomly selected
     from between 0 (inclusive) and |period| (exclusive).
 
-1.  Let |start| be the result of [=map/get|getting the value=] of |site|
-    from the [=epoch start store=].
+1.  Let |start| be the [=epoch start time=].
 
 1.  Let |elapsed| be (|t| − |start|) / |period|.
 
@@ -1451,7 +1444,7 @@ all of the following are true:
     that have other uncleared interactions.
 *   All cleared interactions occurring during [=epochs=]
     where other interactions with the same [=site=] were retained.
-*   All affected [=sites=] have a value in the [=epoch start store=].
+*   The [=epoch start time=] is set.
 
 If all three conditions are true,
 the [=last browsing history clear=] does not need to be updated.
@@ -1478,7 +1471,7 @@ given [=site=] |site| and [=moment=] |now|,
 returning an [=epoch index=]:
 
 1.  Let |earliestEpochIndex| be the result of [=get the current epoch=]
-    with |site| and |now| − the [=maximum lookback=] [=days=].
+    with |now| − the [=maximum lookback=] [=days=].
 
     <p class=note>
     This ensures that all possible [=impressions=] can be queried.
@@ -1489,12 +1482,12 @@ returning an [=epoch index=]:
     perform the following steps:
 
     1.  Let |clearEpoch| be the result of [=get the current epoch=]
-        with |site| and the value of [=last browsing history clear=].
+        with the value of [=last browsing history clear=].
 
         <p class=note>
         This use of [=get the current epoch=]
         can return a negative value.
-        This is because the value in [=epoch start store=]
+        This is because the [=epoch start time=]
         is likely to be set to a time after history was last cleared.
 
     1.  Set |clearEpoch| to |clearEpoch| + 2.
@@ -1502,9 +1495,7 @@ returning an [=epoch index=]:
         <p class=note>
         Adding <em>two</em> is necessary so that the [=epoch=]
         does not overlap with an [=epoch=]
-        before browsing history--
-        and the [=epoch start store=]--
-        was cleared.
+        before browsing history was cleared.
 
     1.  If |clearEpoch| is greater than |startEpoch|,
         return |clearEpoch|.
@@ -1531,7 +1522,7 @@ and a [=moment=] |now|:
 
         1.  Let |currentEpoch| be the result of
             invoking [=get the current epoch=]
-            given |site| and |now|.
+            given |now|.
 
         1.  [=set/iterate|For each=] |epoch| in [=the inclusive range=]
             from |startingEpoch| to |currentEpoch|:
@@ -1549,8 +1540,6 @@ and a [=moment=] |now|:
 
     1.  [=map/clear|Clear=] the [=privacy budget store=].
 
-    1.  [=map/clear|Clear=] the [=epoch start store=].
-
     <p class=issue>TODO (issue https://github.com/w3c/attribution/issues/367): Define how to clear [=safety limits=] stores:
     [=global privacy budget store=] and [=impression site quota store=].
 
@@ -1563,10 +1552,6 @@ and a [=moment=] |now|:
     1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],
         if |sites| [=set/contains=] the [=site=] component of |key|,
         [=map/remove=] [=privacy budget store=]\[|key|].
-
-    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=epoch start store=],
-        if |sites| [=set/contains=] |key|,
-        [=map/remove=] [=epoch start store=]\[|key|].
 
 1.  Set the [=last browsing history clear=] to |now|.
 
@@ -1877,13 +1862,13 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
 1.  Let |currentEpoch| be the result of [=get the current epoch=]
-    with |topLevelSite| and |now|.
+    with |now|.
 
 1.  Let |startEpoch| be the result of [=get the starting epoch for attribution=]
     with |topLevelSite| and |now|.
 
 1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
-    passing |topLevelSite| and (|now| − |options|' [=validated conversion options/lookback=]).
+    passing (|now| − |options|' [=validated conversion options/lookback=]).
 
 1.  Let |isSingleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
 
@@ -1961,7 +1946,7 @@ To perform <dfn>common matching logic</dfn>, given
 1.  [=set/iterate|For each=] |impression| in the [=impression store=]:
 
     1.  Let |impressionEpoch| be the result of calling [=get the current epoch=],
-        passing |topLevelSite| and |impression|'s [=impression/timestamp=].
+        passing |impression|'s [=impression/timestamp=].
 
     1.  If |impressionEpoch| is not equal to |epoch|, [=iteration/continue=].
 
@@ -3465,7 +3450,7 @@ Sites would then be able to gain more information
 from attribution.
 
 A [=user agent=] may clear data
-from the [=privacy budget store=] and [=epoch start store=]
+from the [=privacy budget store=] and [=epoch start time=]
 when the API is [[#opt-out|disabled]].
 In that case, if the API is re-enabled,
 there is no way to determine what budget was expended
@@ -3493,7 +3478,7 @@ When clearing site data at the request of a [=site=],
 through the use of the [:Clear-Site-Data:] header,
 a [=user agent=] only [=clear impressions for a site|removes impressions=],
 without altering either the [=privacy budget store=]
-or the [=epoch start store=] for affected [=sites=].
+or the [=epoch start time=].
 
 
 ### Clearing Browsing History ### {#clear-browsing-history}
@@ -3515,8 +3500,7 @@ and the time that the operation was initiated.
 When clearing browsing history,
 [=user agents=] need to
 remove all per-[=site=] [=privacy budget=] information
-(that is, remove entries from both the [=privacy budget store=]
-and the [=epoch start store=]).
+(that is, remove entries from the [=privacy budget store=]).
 [=User agents=] also need to ensure that
 any subsequent [=privacy budget=] expenditure
 cannot cause privacy loss in excess of configured limits
@@ -3533,12 +3517,10 @@ than it could without the clearing of state.
 <p class=note>
 This disables the API for up to <em>two</em> [=epochs=]
 for affected [=sites=].
-Because the [=epoch start store=] is cleared,
-the start of any newly-defined [=epoch=] for that [=site=]
-becomes unknown.
-Any new [=epoch=] will [start at a fresh randomly-selected time](#s-epoch-start),
-which cannot overlap with any [=epoch=] that might have been defined
-before history was cleared.
+Because the [=epoch start time=] is not cleared,
+the [=epoch=] timeline remains continuous.
+However, a new [=epoch=] might overlap with an [=epoch=]
+that existed before history was cleared.
 
 A [=user agent=] remembers when history was last cleared
 in the [=last browsing history clear=] value.
