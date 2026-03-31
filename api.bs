@@ -1201,7 +1201,7 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
         1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-        1.  Let |impressionQuotaKey| be an [=impression site quota key=]
+        1.  Let |impressionQuotaKey| be an [=privacy budget key=]
             whose items are |epoch| and |impressionSite|.
 
         1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
@@ -1249,7 +1249,7 @@ integer |valueDeduction|,
 
     1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
-    1.  Let |impressionQuotaKey| be an [=impression site quota key=]
+    1.  Let |impressionQuotaKey| be an [=privacy budget key=]
         whose items are |epoch| and |impressionSite|.
 
     1.  Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
@@ -3351,7 +3351,7 @@ By design, whether a user has opted out is not detectable by websites.
 To minimize the risk of [=fingerprinting=],
 and to prevent discrimination
 against users who choose to disable the Attribution API,
-sites [=must not=] be able to detect that the API is disabled.
+sites <span class=allow-2119>must not</span> be able to detect that the API is disabled.
 Specifically, all calls to the Attribution API
 that are otherwise valid
 complete successfully, even when the API is disabled.
