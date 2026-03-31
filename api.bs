@@ -1145,7 +1145,7 @@ given a [=privacy budget key=] |key|,
 integer |value|,
 integer |maxValue|,
 boolean |isSingleEpoch|, integer |l1Norm|, [=set=] of [=impression site quota keys=] |deductedImpressionQuotas|
-and a [=set=] of [=safety limit epoch indices=] |deductedGlobalBudgets|:
+and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
 1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
 
@@ -1191,7 +1191,7 @@ and a [=set=] of [=safety limit epoch indices=] |deductedGlobalBudgets|:
     1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
         to |currentValue| − |deduction|.
 
-    1.  Let |epoch| be the |epoch index| component of |key|.
+    1.  Let |epoch| be the [=epoch index=] component of |key|.
 
     1.  If |deductedGlobalBudgets| does not [=map/contain=] |safetyLimitEpoch|,
         [=set/append=] |deductedGlobalBudgets| with |safetyLimitEpoch|
@@ -1202,7 +1202,7 @@ and a [=set=] of [=safety limit epoch indices=] |deductedGlobalBudgets|:
         1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
 
         1.  Let |impressionQuotaKey| be an [=impression site quota key=]
-            whose items are the |epoch| componet of |key| and |impressionSite|.
+            whose items are |epoch| and |impressionSite|.
 
         1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
             [=map/set=] its value to the [=impression site quota per epoch=].
@@ -1467,7 +1467,7 @@ is exposed.
 
 <div algorithm="get the starting epoch for attribution">
 To <dfn>get the starting epoch for attribution</dfn>
-given [=site=] |site| and [=moment=] |now|,
+given [=moment=] |now|,
 returning an [=epoch index=]:
 
 1.  Let |earliestEpochIndex| be the result of [=get the current epoch=]
@@ -1518,7 +1518,7 @@ and a [=moment=] |now|:
 
         1.  Let |startingEpoch| be the result of
             invoking [=get the starting epoch for attribution=]
-            given |site| and |now|.
+            given |now|.
 
         1.  Let |currentEpoch| be the result of
             invoking [=get the current epoch=]
@@ -1865,7 +1865,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     with |now|.
 
 1.  Let |startEpoch| be the result of [=get the starting epoch for attribution=]
-    with |topLevelSite| and |now|.
+    with |now|.
 
 1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
     passing (|now| − |options|' [=validated conversion options/lookback=]).
@@ -3173,7 +3173,7 @@ of harmful information flow through the impression store:
 
 The Attribution APIs must be implemented carefully
 to maintain the required security and privacy properties.
-A site calling the APIs must not be able to learn:
+A site calling the APIs cannot learn:
 
 *   Whether the Attribution APIs are [[#opt-out|enabled]].
 *   Whether an attribution occurred.
@@ -3342,7 +3342,7 @@ a mechanism for the user to disable the Attribution API.
 To minimize the risk of [=fingerprinting=],
 and to prevent discrimination
 against users who choose to disable the Attribution API,
-sites must not be able to detect that the API is disabled.
+sites cannot detect that the API is disabled.
 Specifically, all calls to the Attribution API
 that are otherwise valid
 must complete successfully, even when the API is disabled.
