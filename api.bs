@@ -1178,7 +1178,7 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
     |impressions|, and |isSingleEpoch|,
     is false, return false.
 
-1.  All budget checks passed, so perform the deductions atomically:
+1.  All budget checks passed, so perform the deductions:
 
     1.  If the [=privacy budget store=] does not [=map/contain=] |key|,
         [=map/set=] its value to the [=per-site privacy budget=].
@@ -1208,8 +1208,17 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
             [=map/set=] its value to the [=impression site quota per epoch=].
 
         1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|,
-            [=set/append=] |deductedImpressionQuotas| with |impressionQuotaKey|
-            and decrement [=impression site quota store=]\[|impressionQuotaKey|] by |valueDeduction|.
+            [=set/append=] |deductedImpressionQuotas| with |impressionQuotaKey|.
+
+                <p class=note> Do not deduct more than once from the same impression
+                quota when there are multiple impressions for the site
+
+            1.  Let |currentImpressionQuotaValue| be the result of [=map/get|getting the value=] of |impressionQuotaKey|
+                in the [=impression site quota per epoch=].
+
+            1.  [=map/set|Set=] the value of |impressionQuotaKey| in the [=impression site quota per epoch=]
+                to |currentImpressionQuotaValue| − |valueDeduction|.
+
 
 1.  Return true.
 
@@ -1221,19 +1230,18 @@ given a [=privacy budget key=] |key|, integer |l1NormDeduction|,
 integer |valueDeduction|,
 [=set=] of [=impressions=] |impressions| and boolean |isSingleEpoch|:
 
-1.  Let |currentValue| be set to the value of [=map/get|getting the value=] of |key|
-    from [=privacy budget store=], or the [=per-site privacy budget=]
-    if [=map/contain|no value has been set=].
-
 1.  If |isSingleEpoch| let |deduction| be |l1NormDeduction| else let |deduction| be |valueDeduction|.
+
+1.  Let |currentValue| be set to the value of [=map/get|getting the value=] of |key|
+    from [=privacy budget store=], with a default of the [=per-site privacy budget=].
 
 1.  If |deduction| is greater than |currentValue|, return false.
 
 1.  Let |epoch| be the |epoch index| component of |key|.
 
-1.  Let |currentGlobalValue| be the value of [=map/get|getting the value=]
-    of |epoch| from the [=global privacy budget store=], or the [=global privacy budget
-    per epoch=] if [=map/contain|no value has been set=].
+1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
+    of |epoch| from the [=global privacy budget store=], with a default of the [=global privacy budget
+    per epoch=].
 
 1. If |valueDeduction| is greater than |currentGlobalValue|, return false.
 
@@ -1244,9 +1252,9 @@ integer |valueDeduction|,
     1.  Let |impressionQuotaKey| be an [=impression site quota key=]
         whose items are |epoch| and |impressionSite|.
 
-    1.  Let |currentImpressionQuotaValue| be the value of [=map/get|getting the value=]
-        of |impressionQuotaKey| from the [=impression site quota store=],
-        or the [=impression site quota per epoch=] if [=map/contain|no value has been set=].
+    1.  Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
+        of |impressionQuotaKey| from the [=impression site quota store=], with a default of
+        the [=impression site quota per epoch=].
 
     1. If |valueDeduction| is greater than |currentImpressionQuotaValue|, return false.
 
@@ -1261,7 +1269,7 @@ The <dfn>global privacy budget store</dfn> is a [=map=] whose keys are
 [=epoch indices=] and whose values are [=32-bit unsigned integers=]
 in units of [=microepsilons=].
 
-The [=global privacy budget store=] enforces a single [=privacy budget=]
+The [=global privacy budget store=] tracks expenditure of a single [=privacy budget=]
 per [=epoch=] that applies across all [=sites=].
 This provides a [=safety limit=] against adversaries
 that can correlate activity for the same person across multiple [=sites=].
@@ -1274,18 +1282,8 @@ not by [=site=].
 ### Impression Site Quota Store ### {#s-impression-site-quota-store}
 
 The <dfn>impression site quota store</dfn> is a [=map=] whose keys are
-[=impression site quota keys=] and whose values are [=32-bit unsigned integers=]
+[=privacy budget keys=] and whose values are [=32-bit unsigned integers=]
 in units of [=microepsilons=].
-
-An <dfn>impression site quota key</dfn> is a [=tuple=] consisting of the following items:
-
-<dl dfn-for="impression site quota key">
-: <dfn ignore>epoch index</dfn>
-:: An [=epoch index=]
-: <dfn ignore>impression site</dfn>
-:: An [=impression site=]
-
-</dl>
 
 The [=impression site quota store=] limits the amount of "stock"
 (privacy budget related to [=impressions=])
@@ -1297,7 +1295,10 @@ that could be maliciously triggered.
 
 ### Attribution API Activation ### {#s-api-activation}
 
-The Attribution API is a [=transient activation-consuming API=].
+<p class=issue>The following text is not completely accurate.
+See https://github.com/w3c/attribution/issues/378 for details.
+
+The Attribution API is like a [=transient activation-consuming API=].
 The web platform uses <a href="https://html.spec.whatwg.org/#tracking-user-activation">transient activation</a> to limit the amount of time that a
 user activation remains available for calling certain user activation-gated APIs.
 The Attribution API can be activated by transient activation,
@@ -1490,7 +1491,7 @@ returning an [=epoch index=]:
         This is because the [=epoch start time=]
         is likely to be set to a time after history was last cleared.
 
-    1.  Set |clearEpoch| to |clearEpoch| + 2.
+    1.  Set |clearEpoch| to |clearEpoch| + 1.
 
         <p class=note>
         Adding <em>two</em> is necessary so that the [=epoch=]
@@ -2128,15 +2129,20 @@ for the following:
 *   The <dfn>global privacy budget per epoch</dfn> (&epsilon;<sub>global</sub>) which is
     the maximum privacy budget available across all [=sites=] per [=epoch=],
     specified in [=microepsilons=].
-    Implementations [=must=] set this value as a multiple of
+    Implementations [=should=] set this value as a multiple of
     the per-[=site=] [=privacy budget=] per [=epoch=].
 
 *   The <dfn>impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>) which is
     the maximum privacy budget that a single [=impression site=]
     can enable to be consumed from the [=global privacy budget store|global privacy budget=] per [=epoch=],
     specified in [=microepsilons=].
-    Implementations [=must=] set this value as a multiple of
+    Implementations [=should=] set this value as a multiple of
     the per-[=site=] [=privacy budget=] per [=epoch=].
+
+<p class=note> Configuring [=safety limits=] as multiples of the per-[=site=] budget determines
+how the API can be used by multiple sites. It is encouraged to consider the expectation of the number
+of sites that might use their budget, maybe adjusted downward for the number of sites that do
+not fully use the budget provided to them.
 
 <p class=note>Setting [=safety limits=] as multiples of the per-[=site=] budget
 ensures that exploiting shared limits requires coordination by many sites,
@@ -3509,20 +3515,18 @@ cannot cause privacy loss in excess of configured limits
 as a result of losing that information.
 
 This can be achieved by disabling attribution
-for a period between one and two [=epochs=]
-from the point that browsing history is discarded.
+for the [=epoch=]
+in which browsing history was discarded.
 Otherwise, a [=site=] that expends its budget
 immediately prior to the clearing of history
 would be able to learn more through the API
 than it could without the clearing of state.
 
 <p class=note>
-This disables the API for up to <em>two</em> [=epochs=]
+This disables the API for the remainder of the [=epoch=]
 for affected [=sites=].
 Because the [=epoch start time=] is not cleared,
 the [=epoch=] timeline remains continuous.
-However, a new [=epoch=] might overlap with an [=epoch=]
-that existed before history was cleared.
 
 A [=user agent=] remembers when history was last cleared
 in the [=last browsing history clear=] value.
