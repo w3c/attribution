@@ -1093,7 +1093,7 @@ that are used to manage the expenditure of [=privacy budgets=]:
     that applies across all [=sites=].
 
 *   The [=impression site quota store=] records the state
-    of per-[=impression site=] and per-[=epoch=] quota [=privacy budgets=].
+    of per-[=impression site=] and per-[=epoch=] quota for comsuming from the [=global privacy budget store=].
 
 *   The [=privacy budget store=], [=global privacy budget store=],
     and [=impression site quota store=] are updated by [=deduct privacy and safety budgets=].
@@ -1113,6 +1113,16 @@ updated to refer to the [=privacy budget store=] as well.
 
 
 ### Privacy Budget Store ### {#s-privacy-budget-store}
+A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items:
+
+<dl dfn-for="privacy budget key">
+: <dfn ignore>epoch index</dfn>
+:: An [=epoch index=]
+: <dfn ignore>site</dfn>
+:: A [=site=]
+
+</dl>
+
 
 The <dfn>privacy budget store</dfn> is a [=map=] whose keys are
 [=privacy budget keys=] and whose values are [=32-bit unsigned integers=].
@@ -1125,17 +1135,29 @@ used in differential privacy [[DP]].
 be less than or equal to the <dfn>maximum epsilon</dfn> of 4294.
 This <span class=allow-2119>should</span> be more than sufficient for implementations.
 
-A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items:
+The <dfn>global privacy budget store</dfn> is a [=map=] whose keys are
+[=epoch indices=] and whose values are [=32-bit unsigned integers=]
+in units of [=microepsilons=].
 
-<dl dfn-for="privacy budget key">
-: <dfn ignore>epoch index</dfn>
-:: An [=epoch index=]
-: <dfn ignore>site</dfn>
-:: A [=site=]
+The [=global privacy budget store=] tracks expenditure of a single [=privacy budget=]
+per [=epoch=] that applies across all [=sites=].
+This provides a [=safety limit=] against adversaries
+that can correlate activity for the same person across multiple [=sites=].
 
-</dl>
+<p class=note>Unlike the per-[=site=] [=privacy budget store=],
+the [=global privacy budget store=] is keyed only by [=epoch index=],
+not by [=site=].
 
+The <dfn>impression site quota store</dfn> is a [=map=] whose keys are
+[=privacy budget keys=] and whose values are [=32-bit unsigned integers=]
+in units of [=microepsilons=].
 
+The [=impression site quota store=] limits the amount of "stock"
+(privacy budget related to [=impressions=])
+that any single [=impression site=] can contribute in an [=epoch=].
+This prevents a single [=impression site=]
+from enabling excessive budget
+that could be maliciously triggered.
 
 <div algorithm>
 To <dfn>deduct privacy and safety budgets</dfn>
@@ -1263,34 +1285,7 @@ integer |valueDeduction|,
 </div>
 
 
-### Global Privacy Budget Store ### {#s-global-privacy-budget-store}
 
-The <dfn>global privacy budget store</dfn> is a [=map=] whose keys are
-[=epoch indices=] and whose values are [=32-bit unsigned integers=]
-in units of [=microepsilons=].
-
-The [=global privacy budget store=] tracks expenditure of a single [=privacy budget=]
-per [=epoch=] that applies across all [=sites=].
-This provides a [=safety limit=] against adversaries
-that can correlate activity for the same person across multiple [=sites=].
-
-<p class=note>Unlike the per-[=site=] [=privacy budget store=],
-the [=global privacy budget store=] is keyed only by [=epoch index=],
-not by [=site=].
-
-
-### Impression Site Quota Store ### {#s-impression-site-quota-store}
-
-The <dfn>impression site quota store</dfn> is a [=map=] whose keys are
-[=privacy budget keys=] and whose values are [=32-bit unsigned integers=]
-in units of [=microepsilons=].
-
-The [=impression site quota store=] limits the amount of "stock"
-(privacy budget related to [=impressions=])
-that any single [=impression site=] can contribute in an [=epoch=].
-This prevents a single [=impression site=]
-from enabling excessive budget
-that could be maliciously triggered.
 
 
 ### Attribution API Activation ### {#s-api-activation}
@@ -1352,28 +1347,20 @@ throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 
 
 ### Epoch Start Time ### {#s-epoch-start}
-
-For each device there is a independently random epoch cadence.  On that
-one device the per-site budget and safety limits all share this same epoch
-cadence.
-
-An [=epoch=] starts at a randomly-selected hour of the week
-for each device. This ensures that any bias in aggregates
-that arises from a [=privacy budget=] reaching zero
-is averaged across all the contributions from all [=users=].
-
-
-
-The <dfn>epoch start time</dfn> is a [=moment=]
-from the [=wall clock=].
-
 A <dfn local-lt=epoch>privacy budget epoch</dfn> (or [=epoch=])
 identifies a period of time.
 The length of an [=epoch=] is fixed at one week or 7 [=days=],
 where a <dfn>day</dfn> is defined as 86400 seconds.
 
-The exact time span for an [=epoch=] is different
-for each [=user agent=].
+The <dfn>epoch start time</dfn> is a [=moment=]
+from the [=wall clock=].  An [=epoch=] starts at a randomly-selected hour of the week
+for each [=user agent=]. This ensures that any bias in aggregates
+that arises from a [=privacy budget=] reaching zero
+is averaged across all the contributions from all [=users=].
+
+<div class=note> On each device the per-site budget and safety limits all share this same epoch
+cadence. </div>
+
 The start time
 is chosen randomly by the [=user agent=] when an epoch is first needed--
 as a side effect of invoking the [=get the current epoch=] algorithm.
@@ -1412,10 +1399,14 @@ returning an [=epoch index=]:
 
 1.  Let |period| be the [=duration=] of one [=epoch=].
 
-1.  If the [=epoch start time=] is not set,
-    set it to |t|, minus a [=duration=]
-    that is randomly selected
-    from between 0 (inclusive) and |period| (exclusive).
+1.  If the [=epoch start time=] is not set:
+
+    1.  Let |rounded| be |t|, rounded to the nearest hour
+        of the [=wall clock=].
+
+    1.  Set the [=epoch start time=] to |rounded|, minus a [=duration=]
+        that is randomly selected
+        from between 0 (inclusive) and |period| (exclusive).
 
 1.  Let |start| be the [=epoch start time=].
 
