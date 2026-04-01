@@ -1144,7 +1144,7 @@ given a [=privacy budget key=] |key|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|,
-boolean |isSingleEpoch|, integer |l1Norm|, [=set=] of [=impression site quota keys=] |deductedImpressionQuotas|
+boolean |isSingleEpoch|, integer |l1Norm|, [=set=] of [=privacy budget keys=] |deductedImpressionQuotas|
 and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
 1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
@@ -1237,7 +1237,7 @@ integer |valueDeduction|,
 
 1.  If |deduction| is greater than |currentValue|, return false.
 
-1.  Let |epoch| be the |epoch index| component of |key|.
+1.  Let |epoch| be the [=epoch index=] component of |key|.
 
 1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
     of |epoch| from the [=global privacy budget store=], with a default of the [=global privacy budget
@@ -2756,7 +2756,7 @@ and a [=list=] of [=integers=] |histogram|:
 
         <p class=note>The URL for <a enum-value for=AttributionAggregationProtocol>"dap-15-histogram"</a> is expected to identify the DAP Leader role.
         Implementations need to obtain HPKE configuration for both Aggregators statically.
-        The HPKE configuration [=must not=] be fetched on demand, as the time that takes
+        The HPKE configuration <span class=allow-2119>must not</span> be fetched on demand, as the time that takes
         will leak information to callers of <a method for=Attribution>measureConversion()</a>.
 
     1.  Let |serverRole| be 2 for the first item (the Leader)
