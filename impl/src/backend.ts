@@ -9,8 +9,6 @@ import type {
 
 import * as index from "./index";
 
-import assert from "assert";
-
 import { Temporal } from "temporal-polyfill";
 
 import { getDomain } from "tldts";
@@ -115,6 +113,12 @@ export interface Delegate {
 
 function allZeroHistogram(size: number): number[] {
   return new Array<number>(size).fill(0);
+}
+
+function assert(condition: boolean): void {
+  if (!condition) {
+    throw new Error("invalid assertion");
+  }
 }
 
 function isUnsignedLong(v: number): boolean {
