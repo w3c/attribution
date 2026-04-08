@@ -27,6 +27,14 @@
           "minimum": 0,
           "exclusiveMaximum": 1
         },
+        "globalPrivacyBudgetPerEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "impressionSiteQuotaPerEpoch": {
+          "type": "integer",
+          "minimum": 1
+        },
         "maxConversionCallersPerImpression": {
           "type": "integer",
           "minimum": 0
@@ -59,17 +67,19 @@
           "type": "integer",
           "minimum": 0
         },
-        "privacyBudgetEpochDays": {
+        "perSitePrivacyBudget": {
           "type": "integer",
           "minimum": 1
         },
-        "privacyBudgetMicroEpsilons": {
+        "privacyBudgetEpochDays": {
           "type": "integer",
           "minimum": 1
         }
       },
       "required": [
         "aggregationServices",
+        "globalPrivacyBudgetPerEpoch",
+        "impressionSiteQuotaPerEpoch",
         "maxConversionCallersPerImpression",
         "maxConversionSitesPerImpression",
         "maxCreditSize",
@@ -77,8 +87,8 @@
         "maxImpressionSitesForConversion",
         "maxImpressionCallersForConversion",
         "maxMatchValues",
-        "privacyBudgetEpochDays",
-        "privacyBudgetMicroEpsilons"
+        "perSitePrivacyBudget",
+        "privacyBudgetEpochDays"
       ]
     },
     {
