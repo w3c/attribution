@@ -1197,7 +1197,7 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
     with |key|, |l1NormDeduction|, |valueDeduction|,
-    |impressions|, and |isSingleEpoch|,
+    |impressions|, and |isSingleEpoch|
     is false, return false.
 
 1.  All budget checks passed, so perform the deductions:
@@ -1215,9 +1215,9 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
     1.  Let |epoch| be the [=epoch index=] component of |key|.
 
-    1.  If |deductedGlobalBudgets| does not [=map/contain=] |safetyLimitEpoch|,
-        [=set/append=] |deductedGlobalBudgets| with |safetyLimitEpoch|
-        and decrement [=global privacy budget store=]\[|safetyLimitEpoch|] by |valueDeduction|.
+    1.  If |deductedGlobalBudgets| does not [=set/contain=] |epoch|,
+        [=set/append=] |deductedGlobalBudgets| with |epoch|
+        and decrement [=global privacy budget store=]\[|epoch|] by |valueDeduction|.
 
     1.  [=list/iterate|For each=] |impression| in |impressions|:
 
@@ -1229,11 +1229,11 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
         1.  If the [=impression site quota store=] does not [=map/contain=] |impressionQuotaKey|,
             [=map/set=] its value to the [=impression site quota per epoch=].
 
-        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|,
-            [=set/append=] |deductedImpressionQuotas| with |impressionQuotaKey|.
+            <p class=note> The below line checks that we do not deduct more than once from the same impression
+            quota when there are multiple impressions for the site
 
-                <p class=note> Do not deduct more than once from the same impression
-                quota when there are multiple impressions for the site
+        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|,
+            [=set/append=] |deductedImpressionQuotas| with |impressionQuotaKey| and do the following:
 
             1.  Let |currentImpressionQuotaValue| be the result of [=map/get|getting the value=] of |impressionQuotaKey|
                 in the [=impression site quota per epoch=].
@@ -1864,7 +1864,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
 1.  Let |isSingleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
 
-1.  Let |l1Norm| be initialized to 0.
+1.  Let |l1Norm| be 0.
 
 1.  If |isSingleEpoch| is true:
     1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
@@ -1891,6 +1891,8 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
     1.  Let |impressions| be the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
+
+        <p class=note>| In the single-epoch case, this is recomputing |matchedImpressions|.
 
     1.  If |impressions| [=set/is empty|is not empty=]:
 
