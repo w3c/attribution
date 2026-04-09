@@ -1232,8 +1232,9 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
             <p class=note> The below line checks that we do not deduct more than once from the same impression
             quota when there are multiple impressions for the site
 
-        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|,
-            [=set/append=] |deductedImpressionQuotas| with |impressionQuotaKey| and do the following:
+        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|:
+
+            1.  [=set/append=] |deductedImpressionQuotas| with |impressionQuotaKey|.
 
             1.  Let |currentImpressionQuotaValue| be the result of [=map/get|getting the value=] of |impressionQuotaKey|
                 in the [=impression site quota per epoch=].
