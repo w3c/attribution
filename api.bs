@@ -1085,7 +1085,7 @@ that are used to manage the expenditure of [=privacy budgets=]:
     This value is initialized as a side effect
     of invoking <a method for=Attribution>measureConversion()</a>.
 
-*   A singleton [=last browsing history clear=] value
+*   A singular [=last browsing history clear=] value
     that tracks when the browsing activity for a [=site=] was last cleared.
 
 *   The [=global privacy budget store=] records the state
@@ -1409,7 +1409,7 @@ returning an [=epoch index=]:
     1.  Let |rand| be |t| minus a [=duration=]
         that is randomly selected
         from between 0 (inclusive) and |period| (exclusive).
-    
+
     1.  Let |ms| be the number of milliseconds in
         the [=duration from=] the [=unix epoch=] to |rand|.
 
@@ -1545,8 +1545,9 @@ and a [=moment=] |now|:
 
     1.  [=map/clear|Clear=] the [=privacy budget store=].
 
-    <p class=issue>TODO (issue https://github.com/w3c/attribution/issues/367): Define how to clear [=safety limits=] stores:
-    [=global privacy budget store=] and [=impression site quota store=].
+    1.  [=map/clear|Clear=] the [=impression site quota store=].
+
+    1.  [=map/clear|Clear=] the [=global privacy budget store=].
 
 1.  If |sites| [=set/is empty|is not empty=]:
 
@@ -1554,9 +1555,20 @@ and a [=moment=] |now|:
         if |sites| [=set/contains=] |impression|'s [=impression/impression site=],
         [=set/remove=] |impression| from the [=impression store=].
 
-    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=]
+        of the [=privacy budget store=],
         if |sites| [=set/contains=] the [=site=] component of |key|,
         [=map/remove=] [=privacy budget store=]\[|key|].
+
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=]
+        of the [=impression site quota store=],
+        if |sites| [=set/contains=] the [=site=] component of |key|,
+        [=map/remove=] [=impression site quota store=]\[|key|].
+
+        <p class=note>
+        This process does not touch the [=global privacy budget store=].
+        Primarily, this is to ensure that [=privacy budget=],
+        once expended, is not forgotten.
 
 1.  Set the [=last browsing history clear=] to |now|.
 
@@ -1564,8 +1576,13 @@ and a [=moment=] |now|:
     while only clearing state for some sites
     (that is, when |sites| [=set/is empty|is not empty=])
     will make some impressions unreachable for sites that are not present in that set.
+    Implementations could also remove any unusable impressions
+    and any budget records
+    (such as those in the [=global privacy budget store=])
+    that cannot be used as a result.
 
 </div>
+
 
 ## Save Impression Algorithm ## {#save-impression-api-operation}
 
@@ -3522,8 +3539,7 @@ when clearing browsing history.
 Retaining per-[=site=] information
 necessary to prevent privacy loss toward sites
 leaves information about visits to sites
-for other users of a computer to discover
-when removing browsing history.
+for other users of a computer to discover.
 
 A user agent that clears browsing history
 invokes [=clear browsing history for attribution=],
