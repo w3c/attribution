@@ -1184,8 +1184,7 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
 1.  Let |valueDeductionFp| be |valueSensitivity| / |noiseScale|.
 
-
-    <p class=note> Single epoch attributions
+    <p class=note>Single-epoch attributions
     do not cause any cascading effects across epochs.
     Attribution that involves multiple epochs consumes double the budget
     because of the potential for one change to affect attribution across epochs.
@@ -1206,10 +1205,9 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
     1.  If |isSingleEpoch| let |deduction| be |l1NormDeduction| else let |deduction| be |valueDeduction|.
 
-
     1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
         in the [=privacy budget store=]
-        with a default of the [=per-site privacy budget=]..
+        with a default of the [=per-site privacy budget=].
 
     1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
         to |currentValue| − |deduction|.
@@ -1402,23 +1400,23 @@ returning an [=epoch index=]:
 
 1.  Let |period| be the [=duration=] of one [=epoch=].
 
-1.  If the [=epoch start time=] is not set
+1.  If the [=epoch start time=] is not set,
     set it to a randomly selected hour within the last [=epoch=]
     as follows:
 
     1.  Let |rand| be |t| minus a [=duration=]
         that is randomly selected
         from between 0 (inclusive) and |period| (exclusive).
-    
+
     1.  Let |ms| be the number of milliseconds in
-        the [=duration from=] the [=unix epoch=] to |rand|.
+        the [=duration from=] the [=Unix epoch=] to |rand|.
 
     1.  Let |hour| be |ms| divided by 3600000
         (one hour in milliseconds)
         rounded towards zero
         then multiplied by 3600000.
 
-    1.  Set the [=epoch start time=] to the [=unix epoch=]
+    1.  Set the [=epoch start time=] to the [=Unix epoch=]
         plus |hour| as a [=duration=].
 
 1.  Let |start| be the [=epoch start time=].
