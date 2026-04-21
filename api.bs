@@ -1409,7 +1409,7 @@ returning an [=epoch index=]:
     1.  Let |rand| be |t| minus a [=duration=]
         that is randomly selected
         from between 0 (inclusive) and |period| (exclusive).
-    
+
     1.  Let |ms| be the number of milliseconds in
         the [=duration from=] the [=unix epoch=] to |rand|.
 
@@ -1864,8 +1864,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
   [=site=] or `undefined` |intermediarySite|, and
   [=moment=] |now|:
 
-1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
-
 1.  Let |currentEpoch| be the result of [=get the current epoch=]
     with |now|.
 
@@ -1880,14 +1878,14 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  Let |l1Norm| be 0.
 
 1.  If |isSingleEpoch| is true:
-    1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
+    1.  Let |impressions| to the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
 
-    1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
+    1.  If |impressions| [=set/is empty=], return the result of invoking
           [=create an all-zero histogram=] with
           |options|' [=validated conversion options/histogram size=].
 
-    1.  Let |histogram| be the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+    1.  Let |histogram| be the result of [=fill a histogram with last-n-touch attribution=] with |impressions|,
         |options|' [=validated conversion options/histogram size=],
         |options|' [=validated conversion options/value=], and
         |options|' [=validated conversion options/credit=].
@@ -1899,6 +1897,8 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  Let |deductedImpressionQuotas| be a new [=set=].
 
 1.  Let |deductedGlobalBudgets| be a new [=set=].
+
+1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
 1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
 
