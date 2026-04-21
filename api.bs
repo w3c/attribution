@@ -1409,7 +1409,7 @@ returning an [=epoch index=]:
     1.  Let |rand| be |t| minus a [=duration=]
         that is randomly selected
         from between 0 (inclusive) and |period| (exclusive).
-    
+
     1.  Let |ms| be the number of milliseconds in
         the [=duration from=] the [=unix epoch=] to |rand|.
 
@@ -1893,6 +1893,8 @@ To <dfn>do attribution and fill a histogram</dfn>, given
         |options|' [=validated conversion options/credit=].
 
     1.  Set |l1Norm| be the sum of the [=list/items=] in |histogram|.
+
+    1.  Set |matchedImpressions| back to an [=set/is empty|empty=] [=set=].
 
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
