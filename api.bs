@@ -1864,8 +1864,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
   [=site=] or `undefined` |intermediarySite|, and
   [=moment=] |now|:
 
-1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
-
 1.  Let |currentEpoch| be the result of [=get the current epoch=]
     with |now|.
 
@@ -1880,27 +1878,27 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  Let |l1Norm| be 0.
 
 1.  If |isSingleEpoch| is true:
-    1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
+    1.  Let |impressions| to the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
 
-    1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
+    1.  If |impressions| [=set/is empty=], return the result of invoking
           [=create an all-zero histogram=] with
           |options|' [=validated conversion options/histogram size=].
 
-    1.  Let |histogram| be the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+    1.  Let |histogram| be the result of [=fill a histogram with last-n-touch attribution=] with |impressions|,
         |options|' [=validated conversion options/histogram size=],
         |options|' [=validated conversion options/value=], and
         |options|' [=validated conversion options/credit=].
 
     1.  Set |l1Norm| be the sum of the [=list/items=] in |histogram|.
 
-    1.  Set |matchedImpressions| back to an [=set/is empty|empty=] [=set=].
-
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
 1.  Let |deductedImpressionQuotas| be a new [=set=].
 
 1.  Let |deductedGlobalBudgets| be a new [=set=].
+
+1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
 1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
 
