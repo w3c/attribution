@@ -1498,7 +1498,7 @@ returning an [=epoch index=]:
     1.  Set |clearEpoch| to |clearEpoch| + 1.
 
         <p class=note>
-        Adding <em>two</em> is necessary so that the [=epoch=]
+        Adding <em>one</em> is necessary so that the [=epoch=] range for attribution
         does not overlap with an [=epoch=]
         before browsing history was cleared.
 
