@@ -1893,7 +1893,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 1.  Let |l1Norm| be 0.
 
 1.  If |isSingleEpoch| is true:
-    1.  Let |impressions| to the result of invoking [=common matching logic=]
+    1.  Let |impressions| be the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
 
     1.  If |impressions| [=set/is empty=], return the result of invoking
