@@ -110,6 +110,8 @@ function runTest(
     ),
     includeUnencryptedHistogram: true,
 
+    globalPrivacyBudgetPerEpoch: config.globalPrivacyBudgetPerEpoch,
+    impressionSiteQuotaPerEpoch: config.impressionSiteQuotaPerEpoch,
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
     maxImpressionSitesForConversion: config.maxImpressionSitesForConversion,
@@ -118,7 +120,7 @@ function runTest(
     maxMatchValues: config.maxMatchValues,
     maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
-    privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
+    perSitePrivacyBudget: config.perSitePrivacyBudget,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
 
     now: () => now,

@@ -47,6 +47,8 @@ interface ValidatedConversionOptions {
   maxValue: number;
 }
 
+const UNIX_EPOCH = new Temporal.Instant(0n);
+
 export function days(days: number): Temporal.Duration {
   // We use `hours: X` here instead of `days` because days are considered to be
   // "calendar" units, making them incapable of being used in calculations
@@ -103,8 +105,10 @@ export interface Delegate {
   readonly maxLookbackDays: number;
   /// The maximum size of histograms.
   readonly maxHistogramSize: number;
-  readonly privacyBudgetMicroEpsilons: number;
+  readonly perSitePrivacyBudget: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
+  readonly impressionSiteQuotaPerEpoch: number;
+  readonly globalPrivacyBudgetPerEpoch: number;
 
   now(): Temporal.Instant;
   fairlyAllocateCreditFraction(): number;
@@ -138,17 +142,18 @@ export class Backend {
 
   readonly #delegate: Delegate;
   #impressions: Readonly<Impression>[] = [];
-  readonly #epochStartStore: Map<string, Temporal.Instant> = new Map();
+  #epochStartTime: Temporal.Instant | null = null;
+  #globalPrivacyBudgetStore: Map<number, number> = new Map();
   #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
-
+  #impressionSiteQuotaStore: PrivacyBudgetStoreEntry[] = [];
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
 
   constructor(delegate: Delegate) {
     this.#delegate = delegate;
   }
 
-  get epochStarts(): ReadonlyMap<string, Temporal.Instant> {
-    return this.#epochStartStore;
+  get epochStartTime(): Temporal.Instant | null {
+    return this.#epochStartTime;
   }
 
   get privacyBudgetEntries(): ReadonlyArray<Readonly<PrivacyBudgetStoreEntry>> {
@@ -372,10 +377,7 @@ export class Backend {
     const matching = new Set<Impression>();
 
     for (const impression of this.#impressions) {
-      const impressionEpoch = this.#getCurrentEpoch(
-        topLevelSite,
-        impression.timestamp,
-      );
+      const impressionEpoch = this.#getCurrentEpoch(impression.timestamp);
       if (impressionEpoch !== epoch) {
         continue;
       }
@@ -434,46 +436,61 @@ export class Backend {
     now: Temporal.Instant,
     options: ValidatedConversionOptions,
   ): number[] {
-    let matchedImpressions;
-    const currentEpoch = this.#getCurrentEpoch(topLevelSite, now);
-    const startEpoch = this.#getStartEpoch(topLevelSite, now);
-    const earliestEpoch = this.#getCurrentEpoch(
-      topLevelSite,
-      now.subtract(options.lookback),
-    );
-    const singleEpoch = currentEpoch === earliestEpoch;
+    const currentEpoch = this.#getCurrentEpoch(now);
+    const startEpoch = this.#getStartEpoch(now);
+    const earliestEpoch = this.#getCurrentEpoch(now.subtract(options.lookback));
+    const isSingleEpoch = currentEpoch === earliestEpoch;
+    let l1Norm = 0;
 
-    if (singleEpoch) {
-      matchedImpressions = this.#commonMatchingLogic(
+    if (isSingleEpoch) {
+      const impressions = this.#commonMatchingLogic(
         topLevelSite,
         intermediarySite,
         currentEpoch,
         now,
         options,
       );
-    } else {
-      matchedImpressions = new Set<Impression>();
-      for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
-        const impressions = this.#commonMatchingLogic(
-          topLevelSite,
-          intermediarySite,
-          epoch,
-          now,
-          options,
+      if (impressions.size === 0) {
+        return allZeroHistogram(options.histogramSize);
+      }
+      const histogram = this.#fillHistogramWithLastNTouchAttribution(
+        impressions,
+        options.histogramSize,
+        options.value,
+        options.credit,
+      );
+      l1Norm = histogram.reduce((a, b) => a + b, 0);
+      assert(l1Norm <= options.value);
+    }
+
+    const matchedImpressions = new Set<Impression>();
+    const deductedImpressionQuotas: PrivacyBudgetKey[] = [];
+    const deductedGlobalBudgets = new Set<number>();
+
+    for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
+      const impressions = this.#commonMatchingLogic(
+        topLevelSite,
+        intermediarySite,
+        epoch,
+        now,
+        options,
+      );
+      if (impressions.size > 0) {
+        const key = { epoch, site: topLevelSite };
+        const budgetAndSafetyOk = this.#deductPrivacyAndSafetyBudgets(
+          key,
+          impressions,
+          options.epsilon,
+          options.value,
+          options.maxValue,
+          isSingleEpoch,
+          l1Norm,
+          deductedImpressionQuotas,
+          deductedGlobalBudgets,
         );
-        if (impressions.size > 0) {
-          const key = { epoch, site: topLevelSite };
-          const budgetOk = this.#deductPrivacyBudget(
-            key,
-            options.epsilon,
-            options.value,
-            options.maxValue,
-            /*l1Norm=*/ null,
-          );
-          if (budgetOk) {
-            for (const i of impressions) {
-              matchedImpressions.add(i);
-            }
+        if (budgetAndSafetyOk) {
+          for (const i of impressions) {
+            matchedImpressions.add(i);
           }
         }
       }
@@ -483,68 +500,128 @@ export class Backend {
       return allZeroHistogram(options.histogramSize);
     }
 
-    let histogram = this.#fillHistogramWithLastNTouchAttribution(
+    const histogram = this.#fillHistogramWithLastNTouchAttribution(
       matchedImpressions,
       options.histogramSize,
       options.value,
       options.credit,
     );
 
-    if (singleEpoch) {
-      const l1Norm = histogram.reduce((a, b) => a + b);
-      assert(l1Norm <= options.value);
-
-      const key = {
-        site: topLevelSite,
-        epoch: currentEpoch,
-      };
-
-      const budgetOk = this.#deductPrivacyBudget(
-        key,
-        options.epsilon,
-        options.value,
-        options.maxValue,
-        l1Norm,
-      );
-
-      if (!budgetOk) {
-        histogram = allZeroHistogram(options.histogramSize);
-      }
-    }
-
     return histogram;
   }
 
-  #deductPrivacyBudget(
+  #deductPrivacyAndSafetyBudgets(
     key: PrivacyBudgetKey,
+    impressions: ReadonlySet<Impression>,
     epsilon: number,
     value: number,
     maxValue: number,
-    l1Norm: number | null,
+    isSingleEpoch: boolean,
+    l1Norm: number,
+    deductedImpressionQuotas: PrivacyBudgetKey[],
+    deductedGlobalBudgets: Set<number>,
   ): boolean {
+    const l1NormSensitivity = isSingleEpoch ? l1Norm : 2 * value;
+    const valueSensitivity = 2 * value;
+    const noiseScale = (2 * maxValue) / epsilon;
+    const l1NormDeductionFp = l1NormSensitivity / noiseScale;
+    const valueDeductionFp = valueSensitivity / noiseScale;
+    const l1NormDeduction = Math.ceil(l1NormDeductionFp * 1000000);
+    const valueDeduction = Math.ceil(valueDeductionFp * 1000000);
+    if (
+      !this.#checkForAvailablePrivacyBudget(
+        key,
+        l1NormDeduction,
+        valueDeduction,
+        impressions,
+        isSingleEpoch,
+      )
+    ) {
+      return false;
+    }
     let entry = this.#privacyBudgetStore.find(
       (e) => e.epoch === key.epoch && e.site === key.site,
     );
     if (entry === undefined) {
       entry = {
-        value: this.#delegate.privacyBudgetMicroEpsilons + 1000,
+        value: this.#delegate.perSitePrivacyBudget,
         ...key,
       };
       this.#privacyBudgetStore.push(entry);
     }
-    const sensitivity = l1Norm ?? 2 * value;
-    const noiseScale = (2 * maxValue) / epsilon;
-    const deductionFp = sensitivity / noiseScale;
-    if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
-      entry.value = 0;
+    const deduction = isSingleEpoch ? l1NormDeduction : valueDeduction;
+    const currentValue = entry.value;
+    entry.value = currentValue - deduction;
+    const epoch = key.epoch;
+    if (!deductedGlobalBudgets.has(epoch)) {
+      deductedGlobalBudgets.add(epoch);
+      const value = this.#globalPrivacyBudgetStore.get(epoch)!;
+      this.#globalPrivacyBudgetStore.set(epoch, value - valueDeduction);
+    }
+    for (const impression of impressions) {
+      const impressionSite = impression.impressionSite;
+      const impressionQuotaKey = { site: impressionSite, epoch };
+      let entryI = this.#impressionSiteQuotaStore.find(
+        (e) =>
+          e.epoch === impressionQuotaKey.epoch &&
+          e.site === impressionQuotaKey.site,
+      );
+      if (entryI === undefined) {
+        entryI = {
+          value: this.#delegate.impressionSiteQuotaPerEpoch,
+          ...impressionQuotaKey,
+        };
+        this.#impressionSiteQuotaStore.push(entryI);
+      }
+      if (
+        deductedImpressionQuotas.find(
+          (e) =>
+            e.epoch === impressionQuotaKey.epoch &&
+            e.site === impressionQuotaKey.site,
+        ) === undefined
+      ) {
+        deductedImpressionQuotas.push(impressionQuotaKey);
+        entryI.value -= valueDeduction;
+      }
+    }
+    return true;
+  }
+
+  #checkForAvailablePrivacyBudget(
+    key: PrivacyBudgetKey,
+    l1NormDeduction: number,
+    valueDeduction: number,
+    impressions: ReadonlySet<Impression>,
+    isSingleEpoch: boolean,
+  ): boolean {
+    const deduction = isSingleEpoch ? l1NormDeduction : valueDeduction;
+    const currentValue =
+      this.#privacyBudgetStore.find(
+        (e) => e.epoch === key.epoch && e.site === key.site,
+      )?.value ?? this.#delegate.perSitePrivacyBudget;
+    if (deduction > currentValue) {
       return false;
     }
-    const deduction = Math.ceil(deductionFp * 1000000);
-    if (deduction > entry.value) {
-      entry.value = 0;
+    const epoch = key.epoch;
+    const currentGlobalValue =
+      this.#globalPrivacyBudgetStore.get(epoch) ??
+      this.#delegate.globalPrivacyBudgetPerEpoch;
+    if (valueDeduction > currentGlobalValue) {
       return false;
     }
-    entry.value -= deduction;
+    for (const impression of impressions) {
+      const impressionSite = impression.impressionSite;
+      const impressionQuotaKey = { site: impressionSite, epoch };
+      const currentImpressionQuotaValue =
+        this.#impressionSiteQuotaStore.find(
+          (e) =>
+            e.epoch === impressionQuotaKey.epoch &&
+            e.site === impressionQuotaKey.site,
+        )?.value ?? this.#delegate.impressionSiteQuotaPerEpoch;
+      if (valueDeduction > currentImpressionQuotaValue) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -595,33 +672,30 @@ export class Backend {
     return new Uint8Array(0); // TODO
   }
 
-  #getCurrentEpoch(site: string, t: Temporal.Instant): number {
+  #getCurrentEpoch(t: Temporal.Instant): number {
     const period = this.#delegate.privacyBudgetEpoch.total("seconds");
-    let start = this.#epochStartStore.get(site);
-    if (start === undefined) {
-      const p = checkRandom(this.#delegate.epochStart());
-      const dur = Temporal.Duration.from({
-        seconds: p * period,
-      });
-      start = t.subtract(dur);
-      this.#epochStartStore.set(site, start);
+    if (this.#epochStartTime === null) {
+      const rand = t.subtract(
+        Temporal.Duration.from({
+          seconds: checkRandom(this.#delegate.epochStart()) * period,
+        }),
+      );
+      const hours = Math.floor(rand.since(UNIX_EPOCH).total("hours"));
+      this.#epochStartTime = UNIX_EPOCH.add(Temporal.Duration.from({ hours }));
     }
+    const start = this.#epochStartTime;
     const elapsed = t.since(start).total("seconds") / period;
     return Math.floor(elapsed);
   }
 
-  #getStartEpoch(site: string, now: Temporal.Instant): number {
+  #getStartEpoch(now: Temporal.Instant): number {
     const earliestEpochIndex = this.#getCurrentEpoch(
-      site,
       now.subtract(days(this.#delegate.maxLookbackDays)),
     );
     const startEpoch = earliestEpochIndex;
     if (this.#lastBrowsingHistoryClear) {
-      let clearEpoch = this.#getCurrentEpoch(
-        site,
-        this.#lastBrowsingHistoryClear,
-      );
-      clearEpoch += 2;
+      let clearEpoch = this.#getCurrentEpoch(this.#lastBrowsingHistoryClear);
+      clearEpoch += 1;
       if (clearEpoch > startEpoch) {
         return clearEpoch;
       }
@@ -663,8 +737,8 @@ export class Backend {
     const now = this.#delegate.now();
 
     for (const site of sites) {
-      const startEpoch = this.#getStartEpoch(site, now);
-      const currentEpoch = this.#getCurrentEpoch(site, now);
+      const startEpoch = this.#getStartEpoch(now);
+      const currentEpoch = this.#getCurrentEpoch(now);
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
         const entry = this.#privacyBudgetStore.find(
           (e) => e.epoch === epoch && e.site === site,
@@ -692,7 +766,8 @@ export class Backend {
     if (parsedSites.size === 0) {
       this.#impressions = [];
       this.#privacyBudgetStore = [];
-      this.#epochStartStore.clear();
+      this.#impressionSiteQuotaStore = [];
+      this.#globalPrivacyBudgetStore.clear();
     } else {
       this.#impressions = this.#impressions.filter((e) => {
         return !parsedSites.has(e.impressionSite);
@@ -700,9 +775,11 @@ export class Backend {
       this.#privacyBudgetStore = this.#privacyBudgetStore.filter((e) => {
         return !parsedSites.has(e.site);
       });
-      for (const site of parsedSites) {
-        this.#epochStartStore.delete(site);
-      }
+      this.#impressionSiteQuotaStore = this.#impressionSiteQuotaStore.filter(
+        (e) => {
+          return !parsedSites.has(e.site);
+        },
+      );
     }
 
     this.#lastBrowsingHistoryClear = this.#delegate.now();
