@@ -766,6 +766,8 @@ export class Backend {
     if (parsedSites.size === 0) {
       this.#impressions = [];
       this.#privacyBudgetStore = [];
+      this.#impressionSiteQuotaStore = [];
+      this.#globalPrivacyBudgetStore.clear();
     } else {
       this.#impressions = this.#impressions.filter((e) => {
         return !parsedSites.has(e.impressionSite);
@@ -773,6 +775,11 @@ export class Backend {
       this.#privacyBudgetStore = this.#privacyBudgetStore.filter((e) => {
         return !parsedSites.has(e.site);
       });
+      this.#impressionSiteQuotaStore = this.#impressionSiteQuotaStore.filter(
+        (e) => {
+          return !parsedSites.has(e.site);
+        },
+      );
     }
 
     this.#lastBrowsingHistoryClear = this.#delegate.now();
