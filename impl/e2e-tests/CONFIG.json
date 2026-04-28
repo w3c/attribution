@@ -8,6 +8,8 @@
   },
   "epochStart": 0.5,
   "fairlyAllocateCreditFraction": 0.5,
+  "globalPrivacyBudgetPerEpoch": 8000000,
+  "impressionSiteQuotaPerEpoch": 4000000,
   "maxConversionSitesPerImpression": 3,
   "maxConversionCallersPerImpression": 3,
   "maxImpressionSitesForConversion": 3,
@@ -16,6 +18,6 @@
   "maxMatchValues": 10,
   "maxLookbackDays": 30,
   "maxHistogramSize": 5,
-  "privacyBudgetMicroEpsilons": 1000000,
+  "perSitePrivacyBudget": 1000000,
   "privacyBudgetEpochDays": 7
 }

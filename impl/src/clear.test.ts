@@ -48,7 +48,7 @@ void test("clear-site-state", () => {
   const before = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(before.unencryptedHistogram!.some((v) => v > 0));
 
@@ -69,7 +69,7 @@ void test("clear-site-state", () => {
   const after = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(after.unencryptedHistogram!.every((v) => v === 0));
 
@@ -88,7 +88,6 @@ void test("forget-all-sites", () => {
 
   assert.deepEqual(backend.impressions, []);
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 });
 
@@ -104,7 +103,6 @@ void test("forget-one-site-impressions", () => {
     "Impressions for the affected site are removed",
   );
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 });
 
@@ -116,31 +114,27 @@ void test("forget-one-site-conversions", () => {
   const before = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(before.unencryptedHistogram!.some((v) => v > 0));
 
   assert.ok(backend.privacyBudgetEntries.length > 0);
-  assert.equal(backend.epochStarts.size, 1);
 
   backend.clearState(["conv-one.example"], true);
 
   // Impressions are unaffected, and conversion state is gone.
   assert.equal(backend.impressions.length, siteTable.length);
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 
   // Re-run a query and it should return an all zero result.
   const after = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(after.unencryptedHistogram!.every((v) => v === 0));
 
   // Privacy budget entries aren't added; this epoch is off-limits.
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  // The epoch start will be initialized.
-  assert.equal(backend.epochStarts.size, 1);
 });
