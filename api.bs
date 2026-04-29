@@ -1294,10 +1294,10 @@ in terms of how activation state is tracked.
 *   Any [=activation triggering input event|user activation=]
     makes the Attribution API available for a short period.
 
-*   The first attempt access the API by invoking
+*   The first attempt to access the API by invoking
     either <a for=Attribution>saveImpression()</a>
     or <a for=Attribution>measureConversion()</a>
-    within the an [=implementation-defined=] duration of the last activation,
+    within an [=implementation-defined=] duration of the last activation,
     enables the API.
 
 *   Like [=transient activation=],
@@ -1355,11 +1355,11 @@ for the Attribution API:
     This value is initialized to the [=current high resolution time=].
 
 Implementations also configure <dfn>attribution activation duration</dfn>
-as an an [=implementation-defined=] [=duration=].
+as an [=implementation-defined=] [=duration=].
 This should be no less than the [=transient activation duration=],
 though a larger value
 might be advisable to ensure that delays from [=navigate|navigation=]
-do not cause the attribution API to become inaccessible.
+do not cause the Attribution API to become inaccessible.
 
 <div algorithm="attribution activation">
 When a user interaction causes firing of an [=activation triggering input event=]
