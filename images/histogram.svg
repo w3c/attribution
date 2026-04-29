@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="192" width="264" viewBox="0 0 264 192" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="192" width="264" viewBox="0 0 264 192" class="aasvg">
+<style>
+:root { color-scheme: light dark; --aasvg-b: light-dark(black, white); --aasvg-w: light-dark(white, black); }
+* { fill: none; stroke: var(--aasvg-b); stroke-linecap: round; }
+.dashed { stroke-dasharray: 3,6; }
+text { font: 13px monospace; text-anchor: middle; fill: var(--aasvg-b); stroke: none; }
+</style>
 <text class="ascii" display="none"><![CDATA[
 |
 +------+
@@ -12,16 +18,16 @@
 +-+
 |
 ]]></text>
-<path d="M 8,16 L 8,176" fill="none" stroke="black"/>
-<path d="M 24,128 L 24,160" fill="none" stroke="black"/>
-<path d="M 64,32 L 64,64" fill="none" stroke="black"/>
-<path d="M 88,96 L 88,128" fill="none" stroke="black"/>
-<path d="M 152,64 L 152,96" fill="none" stroke="black"/>
-<path d="M 8,32 L 64,32" fill="none" stroke="black"/>
-<path d="M 8,64 L 152,64" fill="none" stroke="black"/>
-<path d="M 8,96 L 152,96" fill="none" stroke="black"/>
-<path d="M 8,128 L 88,128" fill="none" stroke="black"/>
-<path d="M 8,160 L 24,160" fill="none" stroke="black"/>
+<path d="M 8,16L 8,176"/>
+<path d="M 24,128L 24,160"/>
+<path d="M 64,32L 64,64"/>
+<path d="M 88,96L 88,128"/>
+<path d="M 152,64L 152,96"/>
+<path d="M 8,32L 64,32"/>
+<path d="M 8,64L 152,64"/>
+<path d="M 8,96L 152,96"/>
+<path d="M 8,128L 88,128"/>
+<path d="M 8,160L 24,160"/>
 <g class="text">
 <text x="120" y="52">example.com</text>
 <text x="212" y="84">news.example</text>

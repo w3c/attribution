@@ -1,4 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="192" width="496" viewBox="0 0 496 192" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="192" width="496" viewBox="0 0 496 192" class="aasvg">
+<style>
+:root { color-scheme: light dark; --aasvg-b: light-dark(black, white); --aasvg-w: light-dark(white, black); }
+* { fill: none; stroke: var(--aasvg-b); stroke-linecap: round; }
+.dashed { stroke-dasharray: 3,6; }
+text { font: 13px monospace; text-anchor: middle; fill: var(--aasvg-b); stroke: none; }
+.dot.closed { fill: var(--aasvg-b); }
+.dot:is(.open, .xor) { fill: var(--aasvg-w); }
+.dot.dotted { fill: var(--aasvg-w); stroke-dasharray: 0,1.8; }
+.dot.shaded { fill: #666; }
+</style>
 <text class="ascii" display="none"><![CDATA[
         |         |         |         |         |   ║
 Site A  |       o |         |         |        o|   ║
@@ -12,51 +22,51 @@ Site E  |         |         |         |*        | * ║
              |         |         |         |        |
           week 1     week 2   week 3   week 4      now
 ]]></text>
-<path d="M 72,16 L 72,128" fill="none" stroke="black"/>
-<path d="M 152,16 L 152,128" fill="none" stroke="black"/>
-<path d="M 232,16 L 232,128" fill="none" stroke="black"/>
-<path d="M 312,16 L 312,128" fill="none" stroke="black"/>
-<path d="M 392,16 L 392,128" fill="none" stroke="black"/>
-<path d="M 426,16 L 426,128" fill="none" stroke="black"/><path d="M 422,16 L 422,128" fill="none" stroke="black"/>
-<path d="M 424,136 L 424,160" fill="none" stroke="black"/>
-<path d="M 40,128 L 448,128" fill="none" stroke="black"/>
-<path d="M 88,144 L 96,144" fill="none" stroke="black"/>
-<path d="M 128,144 L 136,144" fill="none" stroke="black"/>
-<path d="M 168,144 L 176,144" fill="none" stroke="black"/>
-<path d="M 208,144 L 216,144" fill="none" stroke="black"/>
-<path d="M 248,144 L 256,144" fill="none" stroke="black"/>
-<path d="M 288,144 L 296,144" fill="none" stroke="black"/>
-<path d="M 328,144 L 336,144" fill="none" stroke="black"/>
-<path d="M 368,144 L 376,144" fill="none" stroke="black"/>
-<path d="M 88,144 C 79.16936,144 72,136.83064 72,128" fill="none" stroke="black"/>
-<path d="M 96,144 C 104.83064,144 112,151.16936 112,160" fill="none" stroke="black"/>
-<path d="M 128,144 C 119.16936,144 112,151.16936 112,160" fill="none" stroke="black"/>
-<path d="M 136,144 C 144.83064,144 152,136.83064 152,128" fill="none" stroke="black"/>
-<path d="M 168,144 C 159.16936,144 152,136.83064 152,128" fill="none" stroke="black"/>
-<path d="M 176,144 C 184.83064,144 192,151.16936 192,160" fill="none" stroke="black"/>
-<path d="M 208,144 C 199.16936,144 192,151.16936 192,160" fill="none" stroke="black"/>
-<path d="M 216,144 C 224.83064,144 232,136.83064 232,128" fill="none" stroke="black"/>
-<path d="M 248,144 C 239.16936,144 232,136.83064 232,128" fill="none" stroke="black"/>
-<path d="M 256,144 C 264.83064,144 272,151.16936 272,160" fill="none" stroke="black"/>
-<path d="M 288,144 C 279.16936,144 272,151.16936 272,160" fill="none" stroke="black"/>
-<path d="M 296,144 C 304.83064,144 312,136.83064 312,128" fill="none" stroke="black"/>
-<path d="M 328,144 C 319.16936,144 312,136.83064 312,128" fill="none" stroke="black"/>
-<path d="M 336,144 C 344.83064,144 352,151.16936 352,160" fill="none" stroke="black"/>
-<path d="M 368,144 C 359.16936,144 352,151.16936 352,160" fill="none" stroke="black"/>
-<path d="M 376,144 C 384.83064,144 392,136.83064 392,128" fill="none" stroke="black"/>
-<polygon class="arrowhead" points="456,128 444,122.4 444,133.6" fill="black" transform="rotate(0,448,128)"/>
-<polygon class="arrowhead" points="432,136 420,130.4 420,141.6" fill="black" transform="rotate(270,424,136)"/>
-<circle cx="96" cy="64" r="6" class="opendot" fill="white" stroke="black"/>
-<circle cx="112" cy="64" r="6" class="closeddot" fill="black"/>
-<circle cx="136" cy="32" r="6" class="opendot" fill="white" stroke="black"/>
-<circle cx="216" cy="48" r="6" class="opendot" fill="white" stroke="black"/>
-<circle cx="240" cy="48" r="6" class="closeddot" fill="black"/>
-<circle cx="240" cy="64" r="6" class="opendot" fill="white" stroke="black"/>
-<circle cx="256" cy="48" r="6" class="closeddot" fill="black"/>
-<circle cx="320" cy="96" r="6" class="closeddot" fill="black"/>
-<circle cx="328" cy="48" r="6" class="opendot" fill="white" stroke="black"/>
-<circle cx="384" cy="32" r="6" class="opendot" fill="white" stroke="black"/>
-<circle cx="408" cy="96" r="6" class="closeddot" fill="black"/>
+<path d="M 72,16L 72,128"/>
+<path d="M 152,16L 152,128"/>
+<path d="M 232,16L 232,128"/>
+<path d="M 312,16L 312,128"/>
+<path d="M 392,16L 392,128"/>
+<path d="M 426,16L 426,128"/><path d="M 422,16L 422,128"/>
+<path d="M 424,129.18235L 424,160"/>
+<path d="M 40,128L 454.81765,128"/>
+<path d="M 88,144L 96,144"/>
+<path d="M 128,144L 136,144"/>
+<path d="M 168,144L 176,144"/>
+<path d="M 208,144L 216,144"/>
+<path d="M 248,144L 256,144"/>
+<path d="M 288,144L 296,144"/>
+<path d="M 328,144L 336,144"/>
+<path d="M 368,144L 376,144"/>
+<path d="M 88,144C 79.16936,144 72,136.83064 72,128"/>
+<path d="M 96,144C 104.83064,144 112,151.16936 112,160"/>
+<path d="M 128,144C 119.16936,144 112,151.16936 112,160"/>
+<path d="M 136,144C 144.83064,144 152,136.83064 152,128"/>
+<path d="M 168,144C 159.16936,144 152,136.83064 152,128"/>
+<path d="M 176,144C 184.83064,144 192,151.16936 192,160"/>
+<path d="M 208,144C 199.16936,144 192,151.16936 192,160"/>
+<path d="M 216,144C 224.83064,144 232,136.83064 232,128"/>
+<path d="M 248,144C 239.16936,144 232,136.83064 232,128"/>
+<path d="M 256,144C 264.83064,144 272,151.16936 272,160"/>
+<path d="M 288,144C 279.16936,144 272,151.16936 272,160"/>
+<path d="M 296,144C 304.83064,144 312,136.83064 312,128"/>
+<path d="M 328,144C 319.16936,144 312,136.83064 312,128"/>
+<path d="M 336,144C 344.83064,144 352,151.16936 352,160"/>
+<path d="M 368,144C 359.16936,144 352,151.16936 352,160"/>
+<path d="M 376,144C 384.83064,144 392,136.83064 392,128"/>
+<path class="arrowhead" d="M 443.78856,122.85309 L 454.81765,128 L 443.78856,133.14691"/>
+<path class="arrowhead" d="M 418.85309,140.21144 L 424,129.18235 L 429.14691,140.21144"/>
+<circle cx="96" cy="64" r="7" class="dot open"/>
+<circle cx="112" cy="64" r="7" class="dot closed"/>
+<circle cx="136" cy="32" r="7" class="dot open"/>
+<circle cx="216" cy="48" r="7" class="dot open"/>
+<circle cx="240" cy="48" r="7" class="dot closed"/>
+<circle cx="240" cy="64" r="7" class="dot open"/>
+<circle cx="256" cy="48" r="7" class="dot closed"/>
+<circle cx="320" cy="96" r="7" class="dot closed"/>
+<circle cx="328" cy="48" r="7" class="dot open"/>
+<circle cx="384" cy="32" r="7" class="dot open"/>
+<circle cx="408" cy="96" r="7" class="dot closed"/>
 <g class="text">
 <text x="28" y="36">Site A</text>
 <text x="28" y="52">Site B</text>

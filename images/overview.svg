@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="592" width="616" viewBox="0 0 616 592" class="diagram" text-anchor="middle" font-family="monospace" font-size="13px" stroke-linecap="round">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="592" width="616" viewBox="0 0 616 592" class="aasvg">
+<style>
+:root { color-scheme: light dark; --aasvg-b: light-dark(black, white); --aasvg-w: light-dark(white, black); }
+* { fill: none; stroke: var(--aasvg-b); stroke-linecap: round; }
+.dashed { stroke-dasharray: 3,6; }
+text { font: 13px monospace; text-anchor: middle; fill: var(--aasvg-b); stroke: none; }
+</style>
 <text class="ascii" display="none"><![CDATA[
                                                   Conversion
                                  +--------------+ Reports    +-------------+
@@ -37,63 +43,63 @@ saveImpression |     measureConversion |   | Conversion
                       |             |
                        '-----------'
 ]]></text>
-<path d="M 48,368 L 48,432" fill="none" stroke="black"/>
-<path d="M 72,208 L 72,288" fill="none" stroke="black"/>
-<path d="M 128,288 L 128,360" fill="none" stroke="black"/>
-<path d="M 184,208 L 184,288" fill="none" stroke="black"/>
-<path d="M 184,512 L 184,560" fill="none" stroke="black"/>
-<path d="M 200,208 L 200,288" fill="none" stroke="black"/>
-<path d="M 216,208 L 216,288" fill="none" stroke="black"/>
-<path d="M 240,440 L 240,488" fill="none" stroke="black"/>
-<path d="M 272,32 L 272,112" fill="none" stroke="black"/>
-<path d="M 272,208 L 272,288" fill="none" stroke="black"/>
-<path d="M 296,512 L 296,560" fill="none" stroke="black"/>
-<path d="M 320,288 L 320,360" fill="none" stroke="black"/>
-<path d="M 352,120 L 352,208" fill="none" stroke="black"/>
-<path d="M 352,296 L 352,368" fill="none" stroke="black"/>
-<path d="M 368,120 L 368,160" fill="none" stroke="black"/>
-<path d="M 384,120 L 384,144" fill="none" stroke="black"/>
-<path d="M 392,32 L 392,112" fill="none" stroke="black"/>
-<path d="M 392,208 L 392,288" fill="none" stroke="black"/>
-<path d="M 432,368 L 432,432" fill="none" stroke="black"/>
-<path d="M 480,192 L 480,208" fill="none" stroke="black"/>
-<path d="M 496,32 L 496,112" fill="none" stroke="black"/>
-<path d="M 496,176 L 496,208" fill="none" stroke="black"/>
-<path d="M 608,32 L 608,112" fill="none" stroke="black"/>
-<path d="M 272,32 L 392,32" fill="none" stroke="black"/>
-<path d="M 496,32 L 608,32" fill="none" stroke="black"/>
-<path d="M 392,46 L 488,46" fill="none" stroke="black"/><path d="M 392,50 L 488,50" fill="none" stroke="black"/>
-<path d="M 400,96 L 496,96" fill="none" stroke="black"/>
-<path d="M 272,112 L 392,112" fill="none" stroke="black"/>
-<path d="M 496,112 L 608,112" fill="none" stroke="black"/>
-<path d="M 400,160 L 480,160" fill="none" stroke="black"/>
-<path d="M 384,176 L 464,176" fill="none" stroke="black"/>
-<path d="M 72,208 L 216,208" fill="none" stroke="black"/>
-<path d="M 272,208 L 392,208" fill="none" stroke="black"/>
-<path d="M 72,288 L 216,288" fill="none" stroke="black"/>
-<path d="M 272,288 L 392,288" fill="none" stroke="black"/>
-<path d="M 48,368 L 432,368" fill="none" stroke="black"/>
-<path d="M 48,432 L 432,432" fill="none" stroke="black"/>
-<path d="M 200,496 L 280,496" fill="none" stroke="black"/>
-<path d="M 200,576 L 280,576" fill="none" stroke="black"/>
-<path d="M 400,160 C 391.16936,160 384,152.83064 384,144" fill="none" stroke="black"/>
-<path d="M 480,160 C 488.83064,160 496,167.16936 496,176" fill="none" stroke="black"/>
-<path d="M 384,176 C 375.16936,176 368,168.83064 368,160" fill="none" stroke="black"/>
-<path d="M 464,176 C 472.83064,176 480,183.16936 480,192" fill="none" stroke="black"/>
-<path d="M 200,496 C 191.16936,496 184,503.16936 184,512" fill="none" stroke="black"/>
-<path d="M 280,496 C 288.83064,496 296,503.16936 296,512" fill="none" stroke="black"/>
-<path d="M 200,576 C 191.16936,576 184,568.83064 184,560" fill="none" stroke="black"/>
-<path d="M 280,576 C 288.83064,576 296,568.83064 296,560" fill="none" stroke="black"/>
-<polygon class="arrowhead" points="496,48 484,42.4 484,53.6" fill="black" transform="rotate(0,488,48)"/>
-<polygon class="arrowhead" points="408,96 396,90.4 396,101.6" fill="black" transform="rotate(180,400,96)"/>
-<polygon class="arrowhead" points="392,120 380,114.4 380,125.6" fill="black" transform="rotate(270,384,120)"/>
-<polygon class="arrowhead" points="376,120 364,114.4 364,125.6" fill="black" transform="rotate(270,368,120)"/>
-<polygon class="arrowhead" points="360,296 348,290.4 348,301.6" fill="black" transform="rotate(270,352,296)"/>
-<polygon class="arrowhead" points="360,120 348,114.4 348,125.6" fill="black" transform="rotate(270,352,120)"/>
-<polygon class="arrowhead" points="328,360 316,354.4 316,365.6" fill="black" transform="rotate(90,320,360)"/>
-<polygon class="arrowhead" points="248,488 236,482.4 236,493.6" fill="black" transform="rotate(90,240,488)"/>
-<polygon class="arrowhead" points="248,440 236,434.4 236,445.6" fill="black" transform="rotate(270,240,440)"/>
-<polygon class="arrowhead" points="136,360 124,354.4 124,365.6" fill="black" transform="rotate(90,128,360)"/>
+<path d="M 48,368L 48,432"/>
+<path d="M 72,208L 72,288"/>
+<path d="M 128,288L 128,366.81765"/>
+<path d="M 184,208L 184,288"/>
+<path d="M 184,512L 184,560"/>
+<path d="M 200,208L 200,288"/>
+<path d="M 216,208L 216,288"/>
+<path d="M 240,433.18235L 240,494.81765"/>
+<path d="M 272,32L 272,112"/>
+<path d="M 272,208L 272,288"/>
+<path d="M 296,512L 296,560"/>
+<path d="M 320,288L 320,366.81765"/>
+<path d="M 352,113.18235L 352,208"/>
+<path d="M 352,289.18235L 352,368"/>
+<path d="M 368,113.18235L 368,160"/>
+<path d="M 384,113.18235L 384,144"/>
+<path d="M 392,32L 392,112"/>
+<path d="M 392,208L 392,288"/>
+<path d="M 432,368L 432,432"/>
+<path d="M 480,192L 480,208"/>
+<path d="M 496,32L 496,112"/>
+<path d="M 496,176L 496,208"/>
+<path d="M 608,32L 608,112"/>
+<path d="M 272,32L 392,32"/>
+<path d="M 496,32L 608,32"/>
+<path d="M 392,46L 490.53193,46"/><path d="M 392,50L 490.53193,50"/>
+<path d="M 393.18235,96L 496,96"/>
+<path d="M 272,112L 392,112"/>
+<path d="M 496,112L 608,112"/>
+<path d="M 400,160L 480,160"/>
+<path d="M 384,176L 464,176"/>
+<path d="M 72,208L 216,208"/>
+<path d="M 272,208L 392,208"/>
+<path d="M 72,288L 216,288"/>
+<path d="M 272,288L 392,288"/>
+<path d="M 48,368L 432,368"/>
+<path d="M 48,432L 432,432"/>
+<path d="M 200,496L 280,496"/>
+<path d="M 200,576L 280,576"/>
+<path d="M 400,160C 391.16936,160 384,152.83064 384,144"/>
+<path d="M 480,160C 488.83064,160 496,167.16936 496,176"/>
+<path d="M 384,176C 375.16936,176 368,168.83064 368,160"/>
+<path d="M 464,176C 472.83064,176 480,183.16936 480,192"/>
+<path d="M 200,496C 191.16936,496 184,503.16936 184,512"/>
+<path d="M 280,496C 288.83064,496 296,503.16936 296,512"/>
+<path d="M 200,576C 191.16936,576 184,568.83064 184,560"/>
+<path d="M 280,576C 288.83064,576 296,568.83064 296,560"/>
+<path class="arrowhead" d="M 483.78856,42.85309 L 494.81765,48 L 483.78856,53.14691"/>
+<path class="arrowhead" d="M 404.21144,101.14691 L 393.18235,96 L 404.21144,90.85309"/>
+<path class="arrowhead" d="M 378.85309,124.21144 L 384,113.18235 L 389.14691,124.21144"/>
+<path class="arrowhead" d="M 362.85309,124.21144 L 368,113.18235 L 373.14691,124.21144"/>
+<path class="arrowhead" d="M 346.85309,300.21144 L 352,289.18235 L 357.14691,300.21144"/>
+<path class="arrowhead" d="M 346.85309,124.21144 L 352,113.18235 L 357.14691,124.21144"/>
+<path class="arrowhead" d="M 325.14691,355.78856 L 320,366.81765 L 314.85309,355.78856"/>
+<path class="arrowhead" d="M 245.14691,483.78856 L 240,494.81765 L 234.85309,483.78856"/>
+<path class="arrowhead" d="M 234.85309,444.21144 L 240,433.18235 L 245.14691,444.21144"/>
+<path class="arrowhead" d="M 133.14691,355.78856 L 128,366.81765 L 122.85309,355.78856"/>
 <g class="text">
 <text x="444" y="20">Conversion</text>
 <text x="432" y="36">Reports</text>

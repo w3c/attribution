@@ -30,7 +30,7 @@ images:
 	@echo "Regenerating images"
 	for i in $(IMAGES); do \
 	  tmp="$$(mktemp)"; \
-	  npx aasvg --extract --embed <"$$i" >"$$tmp" && mv "$$tmp" "$$i"; \
+	  npx aasvg extract embed arrow=line <"$$i" >"$$tmp" && mv "$$tmp" "$$i"; \
 	done
 
 simulator: build/simulator.html build/simulator.js
