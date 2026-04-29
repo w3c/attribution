@@ -1316,7 +1316,7 @@ in terms of how activation state is tracked.
 
 This is similar in effect to [=transient activation=].
 However, attribution activation uses separate state from [=transient activation=]
-and has the following additional differences:
+and has the following notable differences:
 
 *   Attribution activation state is tracked on the [=top-level traversable=],
     rather than affected {{Window}}s.
