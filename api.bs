@@ -20,23 +20,6 @@ Org: W3C
 Level: None
 </pre>
 
-<style>
-/* dark mode haxx for diagrams
-   No nesting, thanks to https://github.com/validator/validator/issues/1820 */
-svg.diagram :is([stroke="black"], [stroke^="#000"]) {
-  stroke: var(--text);
-}
-svg.diagram :is([stroke="white"], [stroke^="#fff"]) {
-  stroke: var(--bg);
-}
-svg.diagram :is([fill="black"], [fill^="#000"], :not([fill])) {
-  fill: var(--text);
-}
-svg.diagram :is([fill="white"], [fill^="#fff"]) {
-  fill: var(--bg);
-}
-</style>
-
 
 # Introduction # {#intro}
 
