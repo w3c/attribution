@@ -1210,7 +1210,11 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
     with |key|, |l1NormDeduction|, |valueDeduction|,
     |impressions|, and |isSingleEpoch|
-    is false, return false.
+    is false, perform the following steps:
+
+    1.  Set [=attribution budget lock=] to false.
+
+    1.  Return false.
 
 1.  All budget checks passed, so perform the deductions:
 
