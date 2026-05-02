@@ -3223,7 +3223,7 @@ The shared global state
 in the [=global privacy budget store=],
 the [=impression site quota store=],
 and [=epoch start time=]
-are less of risk
+are less of a risk
 as those values never directly affect algorithm run time.
 Implementations still need to ensure that any global state
 does not contribute to a [=fingerprint=]
