@@ -3190,10 +3190,10 @@ of harmful information flow through the impression store:
     <a dict-member for=AttributionImpressionOptions>lifetimeDays</a>.
 
 
-## API Implementation ## {#security-api-implementation}
+## Side Channel Risks in Implementation ## {#security-api-implementation}
 
-The Attribution APIs must be implemented carefully
-to maintain the required security and privacy properties.
+The Attribution APIs must be implemented with care
+for maintaining the required security and privacy properties.
 A site calling the APIs cannot learn:
 
 *   Whether the Attribution APIs are [[#opt-out|enabled]].
@@ -3203,6 +3203,7 @@ A site calling the APIs cannot learn:
     [=conversion value=].
 *   Which <a dict-member for=AttributionImpressionOptions>histogramIndex</a>
     is assigned the [=conversion value=].
+*   The [=epoch start time|time=] that [=epochs=] start.
 
 Note that explicit return values or thrown exceptions
 are not the only way that a site can learn from
@@ -3211,8 +3212,39 @@ It may be possible to infer sensitive information from
 <dfn>side channels</dfn> like:
 
 *   Variation in the time it takes for the APIs to complete.
-*   Consumption of memory or storage by the API, if that
-    consumption is somehow observable by the site.
+*   Consumption of shared resources by the API,
+    such as memory, storage, network, and CPU.
+    This includes any enforcement of any limits on that consumption,
+    if that could be observed by the site.
+
+Variation in the execution time
+of the functions in the API
+is the primary consideration for maintaining guarantees.
+There are two factors of particular concern for execution time:
+
+*   The number of impressions that
+    <a method for=Attribution>measureConversion()</a> handles.
+    Because sites control how many impressions are saved
+    and the logic for selecting them,
+    this creates a significant exposure to sites
+    creating cross-site timing side channels.
+
+*   Access to shared global state.
+    Concurrent access to the API is governed
+    by a single [=attribution budget lock=]
+    to safeguard against correctness errors.
+    That lock creates a means of information leakage
+    between sites that concurrently access the API.
+
+The shared global state
+in the [=global privacy budget store=],
+the [=impression site quota store=],
+and [=epoch start time=]
+are less of a risk
+as those values never directly affect algorithm run time.
+Implementations still need to ensure that any global state
+does not contribute to a [=fingerprint=]
+or other information leakage.
 
 While complete elimination of all side channels is impractical,
 implementations must make reasonable efforts to prevent
@@ -3226,6 +3258,7 @@ Strategies to prevent leakage include:
     should always go through the full process of constructing
     a conversion report, even when the [=conversion value=] to be
     reported is zero.
+*   Setting a fixed running time for certain operations.
 
 
 ## Aggregation Services ## {#security-aggregation-services}
