@@ -1064,13 +1064,6 @@ that are used to manage the expenditure of [=privacy budgets=]:
 *   The [=privacy budget store=] records the state
     of the per-[=site=] and per-[=epoch=] [=privacy budgets=].
 
-*   The [=epoch start time=] records when the first [=epoch=] starts.
-    This value is initialized as a side effect
-    of invoking <a method for=Attribution>measureConversion()</a>.
-
-*   A singular [=last browsing history clear=] value
-    that tracks when the browsing activity for a [=site=] was last cleared.
-
 *   The [=global privacy budget store=] records the state
     of the per-[=epoch=] global [=privacy budget=]
     that applies across all [=sites=].
@@ -1078,9 +1071,20 @@ that are used to manage the expenditure of [=privacy budgets=]:
 *   The [=impression site quota store=] records the state
     of per-[=impression site=] and per-[=epoch=] quota for comsuming from the [=global privacy budget store=].
 
-*   The [=privacy budget store=], [=global privacy budget store=],
-    and [=impression site quota store=] are updated by [=deduct privacy and safety budgets=].
+*   The [=epoch start time=] is used to determine when [=epochs=] start.
+    This value is initialized as a side effect
+    of invoking <a method for=Attribution>measureConversion()</a>.
 
+*   A singular [=last browsing history clear=] value
+    that tracks when the browsing activity for a [=site=] was last cleared.
+
+*   A singular <dfn>attribution budget lock</dfn> is a boolean flag
+    that is used to prevent concurrent operations
+    on privacy budget stores,
+    which might otherwise lead to overexpenditure of budgets.
+
+The [=privacy budget store=], [=global privacy budget store=],
+and [=impression site quota store=] are updated by [=deduct privacy and safety budgets=].
 
 <p class=note>
 Like the [=impression store=],
@@ -1089,10 +1093,13 @@ These stores have some additional constraints
 on how information is cleared;
 see [[#clear-budget-store]] for details.
 
-<p class=issue>
-Some references to clearing
-the [=impression store=] may need to be
-updated to refer to the [=privacy budget store=] as well.
+<p class=note>
+The choice to define the [=attribution budget lock=] as a boolean flag
+is a matter of specification expediency.
+Implementations might be better served by an alternative construct.
+Implementations might be able to partition this value,
+such as by [=epoch=],
+to reduce the scope of any contention.
 
 
 ### Privacy Budget Store ### {#s-privacy-budget-store}
@@ -1179,10 +1186,18 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
 1.  Let |valueDeduction| be |valueDeductionFp| * 1000000, rounded towards positive Infinity.
 
+1.  If [=attribution budget lock=] is true,
+    wait until the value becomes false,
+    then set the value to true.
+
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
     with |key|, |l1NormDeduction|, |valueDeduction|,
     |impressions|, and |isSingleEpoch|
-    is false, return false.
+    is false, perform the following steps:
+
+    1.  Set [=attribution budget lock=] to false.
+
+    1.  Return false.
 
 1.  All budget checks passed, so perform the deductions:
 
@@ -1222,6 +1237,8 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
             1.  [=map/set|Set=] the value of [=impression site quota per epoch=]\[|impressionQuotaKey|\]
                 to |currentImpressionQuotaValue| − |valueDeduction|.
+
+1.  Set [=attribution budget lock=] to false.
 
 1.  Return true.
 
