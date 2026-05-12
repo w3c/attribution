@@ -1294,6 +1294,11 @@ in terms of how activation state is tracked.
 *   Any [=activation triggering input event|user activation=]
     makes the Attribution API available for a short period.
 
+*   Additionally, when [=navigate|navigation=] is initiated
+    by a user
+    (that is, where the [=user navigation involvement=] is "browser UI"),
+    the Attribution API is available for a short period.
+
 *   The first attempt to access the API by invoking
     either <a for=Attribution>saveImpression()</a>
     or <a for=Attribution>measureConversion()</a>
@@ -1365,13 +1370,24 @@ do not cause the Attribution API to become inaccessible.
 <div algorithm="attribution activation">
 When a user interaction causes firing of an [=activation triggering input event=]
 in a {{Document}} |document|,
-the user agent [=must=] perform the following steps--
+the user agent [=must=] perform the steps below--
 in addition to the [=activation notification=] steps--
-before dispatching the event:
+before dispatching the event.
+In this case, set [=navigable=] |navigable| to null.
 
-1.  Let |t| be the result of getting |document|'s [=node navigable=].
+Alternatively, when [=navigate|navigation starts=],
+and the [=user navigation involvement=] is `"browser UI"`,
+perform the steps below
+setting |navigable| is set to the affected [=navigable=]
+and setting |document| to null.
 
-1.  Let |top| be the result of getting |t|'s [=top-level traversable=].
+The steps are:
+
+1.  If |navigable| is not null, let |n| be |navigable|.
+
+1.  Otherwise, let |n| be the result of getting |document|'s [=node navigable=].
+
+1.  Let |top| be the result of getting |n|'s [=top-level traversable=].
 
 1.  Set |top|'s [=attribution activation timestamp=]
     to the [=current high resolution time=].
