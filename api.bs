@@ -1306,6 +1306,7 @@ in terms of how activation state is tracked.
 *   When activation is consumed,
     the API is enabled for use by all [=descendent navigables=]
     of the [=top-level traversable=]'s [=active document=]
+    (that is, all frames on the current page)
     until the next cross-site navigation.
 
 *   Any [=navigate|navigation=] of the [=top-level traversable=]
