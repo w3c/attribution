@@ -1367,6 +1367,16 @@ though a larger value
 might be advisable to ensure that delays from [=navigate|navigation=]
 do not cause the Attribution API to become inaccessible.
 
+<p class=note>
+Implementations might choose to extend the time allowed
+to account for the delays involved in page loading time.
+A fixed value might not account for performance differences
+in devices or in the network they use.
+Implementations could extend the value of [=attribution activation duration=]
+based on an understanding of performance chararacteristics.
+Alternatively, an implementation might suspend any timer
+during page load.
+
 <div algorithm="attribution activation">
 When a user interaction causes firing of an [=activation triggering input event=]
 in a {{Document}} |document|,
