@@ -29,7 +29,7 @@ const siteTable: readonly SiteTableEntry[] = [
 function setupImpressions(config?: TestConfig): Backend {
   const backend = makeBackend(config);
   for (const entry of siteTable) {
-    backend.saveImpression(entry.impression, undefined, {
+    backend.saveImpression(/*top=*/ undefined, entry.impression, undefined, {
       histogramIndex: 1,
       conversionSites: entry.conversion,
     });
@@ -45,11 +45,16 @@ void test("clear-site-state", () => {
   assert.throws(() => backend.clearState([], false));
 
   // Run one query with the affected site.
-  const before = backend.measureConversion("conv-one.example", undefined, {
-    aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
-    histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
-  });
+  const before = backend.measureConversion(
+    /*top=*/ undefined,
+    "conv-one.example",
+    undefined,
+    {
+      aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
+      histogramSize: defaultConfig.maxHistogramSize,
+      epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
+    },
+  );
   assert.ok(before.unencryptedHistogram!.some((v) => v > 0));
 
   backend.clearState(["conv-one.example"], false);
@@ -66,11 +71,16 @@ void test("clear-site-state", () => {
   );
 
   // Re-run a query and it should return an all zero result.
-  const after = backend.measureConversion("conv-one.example", undefined, {
-    aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
-    histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
-  });
+  const after = backend.measureConversion(
+    /*top=*/ undefined,
+    "conv-one.example",
+    undefined,
+    {
+      aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
+      histogramSize: defaultConfig.maxHistogramSize,
+      epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
+    },
+  );
   assert.ok(after.unencryptedHistogram!.every((v) => v === 0));
 
   // And all entries in the privacy budget table are for the cleared site.
@@ -111,11 +121,16 @@ void test("forget-one-site-conversions", () => {
   const now = Temporal.Instant.from("2025-01-01T00:00Z");
   const backend = setupImpressions({ now, ...defaultConfig });
 
-  const before = backend.measureConversion("conv-one.example", undefined, {
-    aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
-    histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
-  });
+  const before = backend.measureConversion(
+    /*top=*/ undefined,
+    "conv-one.example",
+    undefined,
+    {
+      aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
+      histogramSize: defaultConfig.maxHistogramSize,
+      epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
+    },
+  );
   assert.ok(before.unencryptedHistogram!.some((v) => v > 0));
 
   assert.ok(backend.privacyBudgetEntries.length > 0);
@@ -128,11 +143,16 @@ void test("forget-one-site-conversions", () => {
   assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 
   // Re-run a query and it should return an all zero result.
-  const after = backend.measureConversion("conv-one.example", undefined, {
-    aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
-    histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
-  });
+  const after = backend.measureConversion(
+    /*top=*/ undefined,
+    "conv-one.example",
+    undefined,
+    {
+      aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
+      histogramSize: defaultConfig.maxHistogramSize,
+      epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
+    },
+  );
   assert.ok(after.unencryptedHistogram!.every((v) => v === 0));
 
   // Privacy budget entries aren't added; this epoch is off-limits.

@@ -16,6 +16,7 @@ const backend = new Backend({
   includeUnencryptedHistogram: true,
 
   // TODO: Allow these values to be configured in the UI.
+  activationDuration: Temporal.Duration.from({ seconds: 1000 }),
   globalPrivacyBudgetPerEpoch: 1000000,
   impressionSiteQuotaPerEpoch: 1000000,
   maxConversionSitesPerImpression: 10,
@@ -242,7 +243,11 @@ function updateBudgetAndEpochTables() {
     const li = document.createElement("li");
 
     try {
-      backend.saveImpression(...sites(site, intermediary), opts);
+      backend.saveImpression(
+        /*top=*/ undefined,
+        ...sites(site, intermediary),
+        opts,
+      );
       li.innerText = "Success";
     } catch (e) {
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
@@ -334,6 +339,7 @@ function updateBudgetAndEpochTables() {
     const li = document.createElement("li");
     try {
       const result = backend.measureConversion(
+        /*top=*/ undefined,
         ...sites(site, intermediary),
         opts,
       );

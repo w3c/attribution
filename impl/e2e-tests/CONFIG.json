@@ -3,6 +3,7 @@
     "Values here do not meet minimums in the spec.",
     "Values are kept small so tests for limits can be small."
   ],
+  "activationSeconds": 1000,
   "aggregationServices": {
     "https://agg-service.example": "dap-15-histogram"
   },

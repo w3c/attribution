@@ -1,0 +1,61 @@
+{
+  "events": [
+    {
+      "seconds": 1,
+      "event": "updateActivationTimestamp",
+      "topLevelTraversable": "a"
+    },
+    {
+      "seconds": 1002,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "topLevelTraversable": "a",
+      "options": { "histogramIndex": 1 },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 1003,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "topLevelTraversable": "a",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3,
+        "value": 5,
+        "maxValue": 10
+      },
+      "expected": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 1004,
+      "event": "updateActivationTimestamp",
+      "topLevelTraversable": "b"
+    },
+    {
+      "seconds": 2004,
+      "site": "publisher.example",
+      "event": "saveImpression",
+      "topLevelTraversable": "b",
+      "options": { "histogramIndex": 1 }
+    },
+    {
+      "seconds": 2005,
+      "site": "advertiser.example",
+      "event": "measureConversion",
+      "topLevelTraversable": "b",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 3,
+        "value": 5,
+        "maxValue": 10
+      },
+      "expected": [0, 5, 0]
+    }
+  ]
+}
