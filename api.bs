@@ -2155,13 +2155,13 @@ it is not [=implementation-defined=].
 
 ### Privacy and Safety Limit Parameter Configuration ### {#safety-limits-configuration}
 
-<p class=issue> Deciding on a value for differential privacy parameters
-is hard and therefore TBD.
-
 [=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
 for the following:
 
-*   The <dfn>per-site privacy budget</dfn> (&epsilon;<sub>site</sub>) within the range of: TBD
+*   The <dfn>per-site privacy budget</dfn> (&epsilon;<sub>site</sub>) is [=implementation defined=].
+    Experiments with differentially private aggregates has shown
+    that reasonable performance can be achieved with values in the range
+    between 1 (more private) and 10 (more performance).
 
 *   The <dfn>global privacy budget per epoch</dfn> (&epsilon;<sub>global</sub>) which is
     the maximum privacy budget available across all [=sites=] per [=epoch=],
