@@ -1388,7 +1388,7 @@ In this case, set [=navigable=] |navigable| to null.
 Alternatively, when [=navigate|navigation starts=],
 and the [=user navigation involvement=] is `"browser UI"`,
 perform the steps below
-setting |navigable| is set to the affected [=navigable=]
+setting |navigable| to the affected [=navigable=]
 and setting |document| to null.
 
 The steps are:
