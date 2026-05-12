@@ -4,7 +4,7 @@
     "Values are kept small so tests for limits can be small."
   ],
   "aggregationServices": {
-    "https://agg-service.example": "dap-15-histogram"
+    "https://agg-service.example": "dap-18-histogram"
   },
   "epochStart": 0.5,
   "fairlyAllocateCreditFraction": 0.5,
