@@ -1287,63 +1287,161 @@ integer |valueDeduction|,
 
 ### Attribution API Activation ### {#s-api-activation}
 
-<p class=issue>The following text is not completely accurate.
-See https://github.com/w3c/attribution/issues/378 for details.
+The Attribution API is like a [=transient activation-consuming API=],
+with a number of differences
+in terms of how activation state is tracked.
 
-The Attribution API is like a [=transient activation-consuming API=].
-The web platform uses <a href="https://html.spec.whatwg.org/#tracking-user-activation">transient activation</a> to limit the amount of time that a
-user activation remains available for calling certain user activation-gated APIs.
-The Attribution API can be activated by transient activation,
-and within the time window of a user action, the site can redirect to another site
-that will be able to use the transient activation if the first site has not consumed it.
+*   Any [=activation triggering input event|user activation=]
+    makes the Attribution API available for a short period.
 
-A couple of notes:
+*   Additionally, when [=navigate|navigation=] is initiated
+    by a user
+    (that is, where the [=user navigation involvement=] is "browser UI"),
+    the Attribution API is available for a short period.
 
-1.  Since calling the Attribution API consumes a user activation, the site would no longer have this
-    particular user activation to use for other APIs (e.g., opening popups).
+*   The first attempt to access the API by invoking
+    either <a for=Attribution>saveImpression()</a>
+    or <a for=Attribution>measureConversion()</a>
+    within an [=implementation-defined=] duration of the last activation,
+    enables the API.
 
-1.  One common web pattern related to web advertising is for an advertiser site to have the user
-    click on a purchase button and be taken to a separate payment processor page. In such a scenario,
-    both sites will be able to use the API if the first site has used a different, earlier user action
-    to activate the API for that site (setting the window's [=global attribution API flag=] to true)
-    and then the second site uses the transient activation from the click to activate the API for
-    its use. But no further sites will be able to use the API without further user action in order
-    to prevent abuse.
+*   Like [=transient activation=],
+    using the API consumes the activation.
 
-A <dfn>global attribution API flag</dfn> is associated with each {{Window}} object.
-The [=global attribution API flag=] is enabled whenever the API is successfully invoked.
-This flag is initially false.
+*   When activation is consumed,
+    the API is enabled for use by all [=descendent navigables=]
+    of the [=top-level traversable=]'s [=active document=]
+    (that is, all frames on the current page)
+    until the next cross-site navigation.
 
-The API can be invoked if either:
-1.  The [=global attribution API flag=] for the current {{Window}} is true, or
-1.  The current {{Window}} has [=transient activation=] that can be [=consume user activation|consumed=].
+*   Any [=navigate|navigation=] of the [=top-level traversable=]
+    to a different [=site=] disables the API.
+    However, any [=activation triggering input event|activation=],
+    which might include the action that initiated the navigation,
+    could make the API available again.
 
-<p class=note>This approach allows a single user action
-to enable multiple API invocations within the same session,
-while only making the API available to one site
-per <a href="https://html.spec.whatwg.org/#activation-triggering-input-event">activation</a>.
+This is similar in effect to [=transient activation=].
+However, attribution activation uses separate state from [=transient activation=]
+and has the following notable differences:
 
-<div algorithm>
+*   Attribution activation state is tracked on the [=top-level traversable=],
+    rather than affected {{Window}}s.
+
+*   Attribution activation persists through [=navigate|navigations=],
+    enabling use of the API for a short period
+    after loading a new page
+    in the case where the activation leads to navigation.
+
+Having separate state ensures that
+attribution activation does not interact with other [=transient activation-consuming APIs=].
+An API that [=consume user activation|consumes activation=]
+will not prevent the Attribution API from being available;
+similarly, using the Attribution API will not prevent
+a [=transient activation-consuming API=] from being available.
+
+Separate state tracking ensures that user actions
+that [=consume user activation=] can be independently measured
+with the Attribution API.
+
+Retaining activation across navigations enables common patterns in advertising.
+Sites can use the Attribution API to examine actions
+either from the site where an interaction occurred
+or on subsequent sites.
+
+To implement this,
+each [=top-level traversable=] tracks two pieces of state
+for the Attribution API:
+
+1.  The <dfn>attribution enabled flag</dfn> is a boolean value
+    that tracks whether the API is enabled.
+    This value is initialized to false.
+
+1.  The <dfn>attribution activation timestamp</dfn> is a [=moment=]
+    that tracks the last [=activation triggering input event|user activation=].
+    This value is initialized to the [=current high resolution time=].
+
+Implementations also configure <dfn>attribution activation duration</dfn>
+as an [=implementation-defined=] [=duration=].
+This should be no less than the [=transient activation duration=],
+though a larger value
+might be advisable to ensure that delays from [=navigate|navigation=]
+do not cause the Attribution API to become inaccessible.
+
+<p class=note>
+Implementations might choose to extend the time allowed
+to account for the delays involved in page loading time.
+A fixed value might not account for performance differences
+in devices or in the network they use.
+Implementations could extend the value of [=attribution activation duration=]
+based on an understanding of performance chararacteristics.
+Alternatively, an implementation might suspend any timer
+during page load.
+
+<div algorithm="attribution activation">
+When a user interaction causes firing of an [=activation triggering input event=]
+in a {{Document}} |document|,
+the user agent [=must=] perform the steps below--
+in addition to the [=activation notification=] steps--
+before dispatching the event.
+In this case, set [=navigable=] |navigable| to null.
+
+Alternatively, when [=navigate|navigation starts=],
+and the [=user navigation involvement=] is `"browser UI"`,
+perform the steps below
+setting |navigable| to the affected [=navigable=]
+and setting |document| to null.
+
+The steps are:
+
+1.  If |navigable| is not null, let |n| be |navigable|.
+
+1.  Otherwise, let |n| be the result of getting |document|'s [=node navigable=].
+
+1.  Let |top| be the result of getting |n|'s [=top-level traversable=].
+
+1.  Set |top|'s [=attribution activation timestamp=]
+    to the [=current high resolution time=].
+
+</div>
+
+<div algorithm="attribution navigation">
+When a [=top-level traversable=], |top|, is [=navigate|navigated=],
+as part of the [=navigate=] algorithm,
+after the [=document state=], |documentState|, is finalized,
+and the [=origin=] of the [=response=], |responseOrigin|, is known,
+perform the following steps:
+
+1.  If |documentState|'s [=initiator origin=]
+    is [=same site=] with |responseOrigin|, return.
+
+1.  Set |top|'s [=attribution enabled flag=] to false.
+
+</div>
+
+<div algorithm="check attribution API activation">
 To <dfn>check attribution API activation</dfn>,
-given a {{Window}} |window|,
+given a {{Document}} |document|,
 throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 
-1.  If |window|'s [=global attribution API flag=] is true, return.
+1.  Let |n| be the result of getting |document|'s [=node navigable=].
 
-1.  If |window| has [=transient activation=]:
+1.  Let |top| be the result of getting |n|'s [=top-level traversable=].
 
-    1.  [=Consume user activation=] given |window|.
+1.  If |top|'s [=attribution enabled flag=] is true, return.
 
-    1.  Set |window|'s [=global attribution API flag=] to true.
+1.  Let |lastActivation| be |top|'s [=attribution activation timestamp=].
 
-    1.  Return.
+1.  If |lastActivation| plus the [=attribution activation duration=]
+    is less than the [=current high resolution time=],
+    throw a {{"NotAllowedError"}} {{DOMException}}.
 
-1.  Throw a {{"NotAllowedError"}} {{DOMException}}.
+1.  Set |top|'s [=attribution enabled flag=] to true.
 
 </div>
 
 
 ### Epoch Start Time ### {#s-epoch-start}
+
 A <dfn local-lt=epoch>privacy budget epoch</dfn> (or [=epoch=])
 identifies a period of time.
 The length of an [=epoch=] is fixed at one week or 7 [=days=],
@@ -1602,9 +1700,8 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/save-impression}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
-1.  Let |window| be |document|'s [=relevant global object=].
 1.  [=check attribution API activation|Check attribution API activation=]
-    given |window|, returning [=a promise rejected with=] any thrown reason.
+    given |document|, returning [=a promise rejected with=] any thrown reason.
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -3696,7 +3793,13 @@ urlPrefix: https://fetch.spec.whatwg.org/; spec: html; type: dfn
     text: request origin; url: #concept-request-origin
     text: HTTP-network fetch; url: #concept-http-network-fetch
 urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
+    text: active document; url: #nav-document
+    text: activation notification
+    text: activation triggering input event
+    text: descendent navigables
+    text: document state
     text: host; url: #concept-origin-host
+    text: initiator origin; url: #document-state-initiator-origin
     text: obtain a site
     text: origin; url: #concept-origin
     text: relevant settings object
@@ -3705,6 +3808,8 @@ urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
     text: scheme-and-host
     text: site
     text: top-level origin; url: #concept-environment-top-level-origin
+    text: top-level traversable; url: #nav-top
+    text: transient activation duration
     text: iframe; url: #child-navigable
 urlPrefix: https://infra.spec.whatwg.org/; spec: infra; type: dfn;
     text: set; url: #sets
