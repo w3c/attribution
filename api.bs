@@ -2159,7 +2159,7 @@ it is not [=implementation-defined=].
 for the following:
 
 *   The <dfn>per-site privacy budget</dfn> (&epsilon;<sub>site</sub>) is [=implementation-defined=].
-    Experiments with differentially private aggregates has shown
+    Experiments with differentially private aggregates have shown
     that reasonable performance can be achieved with values in the range
     between 1 (more private) and 10 (more performance).
 
