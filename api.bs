@@ -1413,9 +1413,9 @@ To <dfn>check attribution API activation</dfn>,
 given a {{Document}} |document|,
 throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
 
-1.  Let |t| be the result of getting |document|'s [=node navigable=].
+1.  Let |n| be the result of getting |document|'s [=node navigable=].
 
-1.  Let |top| be the result of getting |t|'s [=top-level traversable=].
+1.  Let |top| be the result of getting |n|'s [=top-level traversable=].
 
 1.  If |top|'s [=attribution enabled flag=] is true, return.
 
