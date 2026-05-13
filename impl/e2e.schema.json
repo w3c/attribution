@@ -11,7 +11,7 @@
         "aggregationServices": {
           "type": "object",
           "additionalProperties": {
-            "enum": ["dap-15-histogram"]
+            "enum": ["dap-18-histogram"]
           },
           "propertyNames": {
             "format": "uri"

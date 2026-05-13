@@ -12,7 +12,7 @@ import { Temporal } from "temporal-polyfill";
 let now = new Temporal.Instant(0n);
 
 const backend = new Backend({
-  aggregationServices: new Map([["", { protocol: "dap-15-histogram" }]]),
+  aggregationServices: new Map([["", { protocol: "dap-18-histogram" }]]),
   includeUnencryptedHistogram: true,
 
   // TODO: Allow these values to be configured in the UI.

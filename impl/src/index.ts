@@ -1,4 +1,4 @@
-export type AttributionProtocol = "dap-15-histogram";
+export type AttributionProtocol = "dap-18-histogram";
 
 export interface AttributionAggregationService {
   protocol: AttributionProtocol;
