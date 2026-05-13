@@ -1,0 +1,72 @@
+{
+  "events": [
+    {
+      "seconds": 1,
+      "site": "localhost",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1
+      },
+      "expected": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 2,
+      "site": "foo.localhost",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1
+      },
+      "expected": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 3,
+      "site": "a.example",
+      "intermediarySite": "localhost",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1
+      },
+      "expected": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 4,
+      "site": "a.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1,
+        "impressionSites": ["localhost"]
+      },
+      "expected": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 5,
+      "site": "a.example",
+      "event": "measureConversion",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "histogramSize": 1,
+        "impressionCallers": ["localhost"]
+      },
+      "expected": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    }
+  ]
+}
