@@ -1829,9 +1829,8 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
-1.  Let |window| be |document|'s [=relevant global object=].
 1.  [=check attribution API activation|Check attribution API activation=]
-    given |window|, returning [=a promise rejected with=] any thrown reason.
+    given |document|, returning [=a promise rejected with=] any thrown reason.
 1.  Let |validatedOptions| be the result of
     [=validate AttributionConversionOptions|validating=] |options|,
     returning [=a promise rejected with=] any thrown reason.
