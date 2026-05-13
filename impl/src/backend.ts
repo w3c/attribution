@@ -11,7 +11,7 @@ import * as index from "./index";
 
 import { Temporal } from "temporal-polyfill";
 
-import * as psl from "psl";
+import { getDomain } from "tldts";
 
 interface Impression {
   matchValue: number;
@@ -47,6 +47,8 @@ interface ValidatedConversionOptions {
   maxValue: number;
 }
 
+const UNIX_EPOCH = new Temporal.Instant(0n);
+
 export function days(days: number): Temporal.Duration {
   // We use `hours: X` here instead of `days` because days are considered to be
   // "calendar" units, making them incapable of being used in calculations
@@ -55,21 +57,28 @@ export function days(days: number): Temporal.Duration {
 }
 
 function parseSite(input: string): string {
-  const site = psl.get(input);
+  const site = getDomain(input, { allowPrivateDomains: true });
   if (site === null) {
     throw new DOMException(`invalid site ${input}`, "SyntaxError");
   }
   return site;
 }
 
-function validateSite(input: string): void {
-  if (parseSite(input) !== input) {
-    throw new TypeError("input must already be a valid site");
-  }
+function isValidSite(input: string): boolean {
+  return parseSite(input) === input;
 }
 
-function parseSites(input: readonly string[]): Set<string> {
+function parseSites(
+  input: readonly string[],
+  label: string,
+  limit: number,
+): Set<string> {
   const parsed = new Set<string>();
+  if (input.length > limit) {
+    throw new RangeError(
+      `number of values in ${label} exceeds limit of ${limit}`,
+    );
+  }
   for (const site of input) {
     parsed.add(parseSite(site));
   }
@@ -80,13 +89,26 @@ export interface Delegate {
   readonly aggregationServices: AttributionAggregationServices;
   readonly includeUnencryptedHistogram?: boolean;
 
+  /// The maximum number of conversion sites per impression.
   readonly maxConversionSitesPerImpression: number;
+  /// The maximum number of conversion callers per impression.
   readonly maxConversionCallersPerImpression: number;
+  /// The maximum number of impression sites for conversion.
+  readonly maxImpressionSitesForConversion: number;
+  /// The maximum number of impression callers for conversion.
+  readonly maxImpressionCallersForConversion: number;
+  /// The maximum number of credit values.
   readonly maxCreditSize: number;
+  /// The maximum number of match values.
+  readonly maxMatchValues: number;
+  /// The maximum lookback in days.
   readonly maxLookbackDays: number;
+  /// The maximum size of histograms.
   readonly maxHistogramSize: number;
-  readonly privacyBudgetMicroEpsilons: number;
+  readonly perSitePrivacyBudget: number;
   readonly privacyBudgetEpoch: Temporal.Duration;
+  readonly impressionSiteQuotaPerEpoch: number;
+  readonly globalPrivacyBudgetPerEpoch: number;
 
   now(): Temporal.Instant;
   fairlyAllocateCreditFraction(): number;
@@ -97,22 +119,61 @@ function allZeroHistogram(size: number): number[] {
   return new Array<number>(size).fill(0);
 }
 
+function assert(condition: boolean): void {
+  if (!condition) {
+    throw new Error("invalid assertion");
+  }
+}
+
+function isUnsignedLong(v: number): boolean {
+  return Number.isInteger(v) && v >= 0 && v <= 4294967295;
+}
+
+function isLong(v: number): boolean {
+  return Number.isInteger(v) && v >= -2147483648 && v <= 2147483647;
+}
+
+function isDouble(v: number): boolean {
+  return Number.isFinite(v);
+}
+
+function getEntry<E extends Readonly<PrivacyBudgetKey>>(
+  store: E[],
+  key: Readonly<PrivacyBudgetKey>,
+): E | undefined {
+  return store.find((e) => e.epoch === key.epoch && e.site === key.site);
+}
+
+function getOrInsertEntry(
+  store: PrivacyBudgetStoreEntry[],
+  key: Readonly<PrivacyBudgetKey>,
+  defaultValue: number,
+): PrivacyBudgetStoreEntry {
+  let entry = getEntry(store, key);
+  if (entry === undefined) {
+    entry = { value: defaultValue, ...key };
+    store.push(entry);
+  }
+  return entry;
+}
+
 export class Backend {
   enabled: boolean = true;
 
   readonly #delegate: Delegate;
   #impressions: Readonly<Impression>[] = [];
-  readonly #epochStartStore: Map<string, Temporal.Instant> = new Map();
+  #epochStartTime: Temporal.Instant | null = null;
+  #globalPrivacyBudgetStore: Map<number, number> = new Map();
   #privacyBudgetStore: PrivacyBudgetStoreEntry[] = [];
-
+  #impressionSiteQuotaStore: PrivacyBudgetStoreEntry[] = [];
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
 
   constructor(delegate: Delegate) {
     this.#delegate = delegate;
   }
 
-  get epochStarts(): ReadonlyMap<string, Temporal.Instant> {
-    return this.#epochStartStore;
+  get epochStartTime(): Temporal.Instant | null {
+    return this.#epochStartTime;
   }
 
   get privacyBudgetEntries(): ReadonlyArray<Readonly<PrivacyBudgetStoreEntry>> {
@@ -143,51 +204,39 @@ export class Backend {
       priority = index.DEFAULT_IMPRESSION_PRIORITY,
     }: AttributionImpressionOptions,
   ): AttributionImpressionResult {
-    validateSite(impressionSite);
-    if (intermediarySite !== undefined) {
-      validateSite(intermediarySite);
-    }
+    assert(isValidSite(impressionSite));
+    assert(intermediarySite === undefined || isValidSite(intermediarySite));
+
+    // Corresponds to WebIDL conversions.
+    assert(isUnsignedLong(histogramIndex));
+    assert(isUnsignedLong(matchValue));
+    assert(isUnsignedLong(lifetimeDays));
+    assert(isLong(priority));
 
     const timestamp = this.#delegate.now();
 
-    if (
-      histogramIndex < 0 ||
-      histogramIndex >= this.#delegate.maxHistogramSize ||
-      !Number.isInteger(histogramIndex)
-    ) {
-      throw new RangeError("histogramIndex must be a non-negative integer");
+    const maxHistogramSize = this.#delegate.maxHistogramSize;
+    if (histogramIndex >= maxHistogramSize) {
+      throw new RangeError(
+        `histogramIndex must be less than maximum histogram size (${maxHistogramSize})`,
+      );
     }
 
-    if (lifetimeDays <= 0 || !Number.isInteger(lifetimeDays)) {
-      throw new RangeError("lifetimeDays must be a positive integer");
+    if (lifetimeDays === 0) {
+      throw new RangeError("lifetimeDays must be positive");
     }
     lifetimeDays = Math.min(lifetimeDays, this.#delegate.maxLookbackDays);
 
-    const maxConversionSitesPerImpression =
-      this.#delegate.maxConversionSitesPerImpression;
-    if (conversionSites.length > maxConversionSitesPerImpression) {
-      throw new RangeError(
-        `conversionSites.length must be <= ${maxConversionSitesPerImpression}`,
-      );
-    }
-    const parsedConversionSites = parseSites(conversionSites);
-
-    const maxConversionCallersPerImpression =
-      this.#delegate.maxConversionCallersPerImpression;
-    if (conversionCallers.length > maxConversionCallersPerImpression) {
-      throw new RangeError(
-        `conversionCallers.length must be <= ${maxConversionCallersPerImpression}`,
-      );
-    }
-    const parsedConversionCallers = parseSites(conversionCallers);
-
-    if (matchValue < 0 || !Number.isInteger(matchValue)) {
-      throw new RangeError("matchValue must be a non-negative integer");
-    }
-
-    if (!Number.isInteger(priority)) {
-      throw new RangeError("priority must be an integer");
-    }
+    const parsedConversionSites = parseSites(
+      conversionSites,
+      "conversionSites",
+      this.#delegate.maxConversionSitesPerImpression,
+    );
+    const parsedConversionCallers = parseSites(
+      conversionCallers,
+      "conversionCallers",
+      this.#delegate.maxConversionCallersPerImpression,
+    );
 
     if (!this.enabled) {
       return {};
@@ -220,6 +269,15 @@ export class Backend {
     matchValues = [],
     value = index.DEFAULT_CONVERSION_VALUE,
   }: AttributionConversionOptions): ValidatedConversionOptions {
+    // Corresponds to WebIDL conversions.
+    assert(isDouble(epsilon));
+    assert(isUnsignedLong(histogramSize));
+    assert(isUnsignedLong(lookbackDays));
+    assert(credit.every(isDouble));
+    assert(isUnsignedLong(maxValue));
+    assert(matchValues.every(isUnsignedLong));
+    assert(isUnsignedLong(value));
+
     const aggregationServiceEntry =
       this.aggregationServices.get(aggregationService);
     if (aggregationServiceEntry === undefined) {
@@ -233,22 +291,16 @@ export class Backend {
     }
 
     const maxHistogramSize = this.#delegate.maxHistogramSize;
-    if (
-      histogramSize < 1 ||
-      histogramSize > maxHistogramSize ||
-      !Number.isInteger(histogramSize)
-    ) {
+    if (histogramSize < 1 || histogramSize > maxHistogramSize) {
       throw new RangeError(
-        `histogramSize must be an integer in the range [1, ${maxHistogramSize}]`,
+        `histogramSize must be in the range [1, ${maxHistogramSize}]`,
       );
     }
 
-    if (value <= 0 || !Number.isInteger(value)) {
-      throw new RangeError("value must be a positive integer");
+    if (value === 0) {
+      throw new RangeError("value must be positive");
     }
-    if (maxValue <= 0 || !Number.isInteger(value)) {
-      throw new RangeError("maxValue must be a positive integer");
-    }
+
     if (value > maxValue) {
       throw new RangeError("value must be <= maxValue");
     }
@@ -259,33 +311,41 @@ export class Backend {
         `credit size must be in the range [1, ${maxCreditSize}]`,
       );
     }
-    for (const c of credit) {
-      if (c <= 0 || !Number.isFinite(value)) {
-        throw new RangeError("credit must be positive and finite");
-      }
+    if (credit.some((c) => c <= 0)) {
+      throw new RangeError("credit must be positive");
     }
 
-    if (lookbackDays <= 0 || !Number.isInteger(lookbackDays)) {
-      throw new RangeError("lookbackDays must be a positive integer");
-    }
     lookbackDays = Math.min(lookbackDays, this.#delegate.maxLookbackDays);
-
-    const matchValueSet = new Set<number>();
-    for (const value of matchValues) {
-      if (value < 0 || !Number.isInteger(value)) {
-        throw new RangeError("match value must be a non-negative integer");
-      }
-      matchValueSet.add(value);
+    if (lookbackDays === 0) {
+      throw new RangeError("lookbackDays must be positive");
     }
+
+    const maxMatchValues = this.#delegate.maxMatchValues;
+    if (matchValues.length > maxMatchValues) {
+      throw new RangeError(
+        `number of values in matchValues exceeds limit of ${maxMatchValues}`,
+      );
+    }
+
+    const parsedImpressionSites = parseSites(
+      impressionSites,
+      "impressionSites",
+      this.#delegate.maxImpressionSitesForConversion,
+    );
+    const parsedImpressionCallers = parseSites(
+      impressionCallers,
+      "impressionCallers",
+      this.#delegate.maxImpressionCallersForConversion,
+    );
 
     return {
       aggregationService: aggregationServiceEntry,
       epsilon,
       histogramSize,
       lookback: days(lookbackDays),
-      matchValues: matchValueSet,
-      impressionSites: parseSites(impressionSites),
-      impressionCallers: parseSites(impressionCallers),
+      matchValues: new Set(matchValues),
+      impressionSites: parsedImpressionSites,
+      impressionCallers: parsedImpressionCallers,
       credit,
       value,
       maxValue,
@@ -297,10 +357,8 @@ export class Backend {
     intermediarySite: string | undefined,
     options: AttributionConversionOptions,
   ): AttributionConversionResult {
-    validateSite(topLevelSite);
-    if (intermediarySite !== undefined) {
-      validateSite(intermediarySite);
-    }
+    assert(isValidSite(topLevelSite));
+    assert(intermediarySite === undefined || isValidSite(intermediarySite));
 
     const now = this.#delegate.now();
 
@@ -339,10 +397,7 @@ export class Backend {
     const matching = new Set<Impression>();
 
     for (const impression of this.#impressions) {
-      const impressionEpoch = this.#getCurrentEpoch(
-        topLevelSite,
-        impression.timestamp,
-      );
+      const impressionEpoch = this.#getCurrentEpoch(impression.timestamp);
       if (impressionEpoch !== epoch) {
         continue;
       }
@@ -401,46 +456,61 @@ export class Backend {
     now: Temporal.Instant,
     options: ValidatedConversionOptions,
   ): number[] {
-    let matchedImpressions;
-    const currentEpoch = this.#getCurrentEpoch(topLevelSite, now);
-    const startEpoch = this.#getStartEpoch(topLevelSite, now);
-    const earliestEpoch = this.#getCurrentEpoch(
-      topLevelSite,
-      now.subtract(options.lookback),
-    );
-    const singleEpoch = currentEpoch === earliestEpoch;
+    const currentEpoch = this.#getCurrentEpoch(now);
+    const startEpoch = this.#getStartEpoch(now);
+    const earliestEpoch = this.#getCurrentEpoch(now.subtract(options.lookback));
+    const isSingleEpoch = currentEpoch === earliestEpoch;
+    let l1Norm = 0;
 
-    if (singleEpoch) {
-      matchedImpressions = this.#commonMatchingLogic(
+    if (isSingleEpoch) {
+      const impressions = this.#commonMatchingLogic(
         topLevelSite,
         intermediarySite,
         currentEpoch,
         now,
         options,
       );
-    } else {
-      matchedImpressions = new Set<Impression>();
-      for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
-        const impressions = this.#commonMatchingLogic(
-          topLevelSite,
-          intermediarySite,
-          epoch,
-          now,
-          options,
+      if (impressions.size === 0) {
+        return allZeroHistogram(options.histogramSize);
+      }
+      const histogram = this.#fillHistogramWithLastNTouchAttribution(
+        impressions,
+        options.histogramSize,
+        options.value,
+        options.credit,
+      );
+      l1Norm = histogram.reduce((a, b) => a + b, 0);
+      assert(l1Norm <= options.value);
+    }
+
+    const matchedImpressions = new Set<Impression>();
+    const deductedImpressionQuotas: PrivacyBudgetKey[] = [];
+    const deductedGlobalBudgets = new Set<number>();
+
+    for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
+      const impressions = this.#commonMatchingLogic(
+        topLevelSite,
+        intermediarySite,
+        epoch,
+        now,
+        options,
+      );
+      if (impressions.size > 0) {
+        const key = { epoch, site: topLevelSite };
+        const budgetAndSafetyOk = this.#deductPrivacyAndSafetyBudgets(
+          key,
+          impressions,
+          options.epsilon,
+          options.value,
+          options.maxValue,
+          isSingleEpoch,
+          l1Norm,
+          deductedImpressionQuotas,
+          deductedGlobalBudgets,
         );
-        if (impressions.size > 0) {
-          const key = { epoch, site: topLevelSite };
-          const budgetOk = this.#deductPrivacyBudget(
-            key,
-            options.epsilon,
-            options.value,
-            options.maxValue,
-            /*l1Norm=*/ null,
-          );
-          if (budgetOk) {
-            for (const i of impressions) {
-              matchedImpressions.add(i);
-            }
+        if (budgetAndSafetyOk) {
+          for (const i of impressions) {
+            matchedImpressions.add(i);
           }
         }
       }
@@ -450,73 +520,108 @@ export class Backend {
       return allZeroHistogram(options.histogramSize);
     }
 
-    let histogram = this.#fillHistogramWithLastNTouchAttribution(
+    const histogram = this.#fillHistogramWithLastNTouchAttribution(
       matchedImpressions,
       options.histogramSize,
       options.value,
       options.credit,
     );
 
-    if (singleEpoch) {
-      const l1Norm = histogram.reduce((a, b) => a + b);
-      if (l1Norm > options.value) {
-        throw new DOMException(
-          "l1Norm must be less than or equal to options.value",
-          "InvalidStateError",
-        );
-      }
-
-      const key = {
-        site: topLevelSite,
-        epoch: currentEpoch,
-      };
-
-      const budgetOk = this.#deductPrivacyBudget(
-        key,
-        options.epsilon,
-        options.value,
-        options.maxValue,
-        l1Norm,
-      );
-
-      if (!budgetOk) {
-        histogram = allZeroHistogram(options.histogramSize);
-      }
-    }
-
     return histogram;
   }
 
-  #deductPrivacyBudget(
+  #deductPrivacyAndSafetyBudgets(
     key: PrivacyBudgetKey,
+    impressions: ReadonlySet<Impression>,
     epsilon: number,
     value: number,
     maxValue: number,
-    l1Norm: number | null,
+    isSingleEpoch: boolean,
+    l1Norm: number,
+    deductedImpressionQuotas: PrivacyBudgetKey[],
+    deductedGlobalBudgets: Set<number>,
   ): boolean {
-    let entry = this.#privacyBudgetStore.find(
-      (e) => e.epoch === key.epoch && e.site === key.site,
-    );
-    if (entry === undefined) {
-      entry = {
-        value: this.#delegate.privacyBudgetMicroEpsilons + 1000,
-        ...key,
-      };
-      this.#privacyBudgetStore.push(entry);
-    }
-    const sensitivity = l1Norm ?? 2 * value;
+    const l1NormSensitivity = isSingleEpoch ? l1Norm : 2 * value;
+    const valueSensitivity = 2 * value;
     const noiseScale = (2 * maxValue) / epsilon;
-    const deductionFp = sensitivity / noiseScale;
-    if (deductionFp < 0 || deductionFp > index.MAX_CONVERSION_EPSILON) {
-      entry.value = 0;
+    const l1NormDeductionFp = l1NormSensitivity / noiseScale;
+    const valueDeductionFp = valueSensitivity / noiseScale;
+    const l1NormDeduction = Math.ceil(l1NormDeductionFp * 1000000);
+    const valueDeduction = Math.ceil(valueDeductionFp * 1000000);
+    if (
+      !this.#checkForAvailablePrivacyBudget(
+        key,
+        l1NormDeduction,
+        valueDeduction,
+        impressions,
+        isSingleEpoch,
+      )
+    ) {
       return false;
     }
-    const deduction = Math.ceil(deductionFp * 1000000);
-    if (deduction > entry.value) {
-      entry.value = 0;
+    const entry = getOrInsertEntry(
+      this.#privacyBudgetStore,
+      key,
+      this.#delegate.perSitePrivacyBudget,
+    );
+    const deduction = isSingleEpoch ? l1NormDeduction : valueDeduction;
+    const currentValue = entry.value;
+    entry.value = currentValue - deduction;
+    const epoch = key.epoch;
+    if (!deductedGlobalBudgets.has(epoch)) {
+      deductedGlobalBudgets.add(epoch);
+      const value = this.#globalPrivacyBudgetStore.get(epoch)!;
+      this.#globalPrivacyBudgetStore.set(epoch, value - valueDeduction);
+    }
+    for (const impression of impressions) {
+      const impressionSite = impression.impressionSite;
+      const impressionQuotaKey = { site: impressionSite, epoch };
+      const entryI = getOrInsertEntry(
+        this.#impressionSiteQuotaStore,
+        impressionQuotaKey,
+        this.#delegate.impressionSiteQuotaPerEpoch,
+      );
+      if (
+        getEntry(deductedImpressionQuotas, impressionQuotaKey) === undefined
+      ) {
+        deductedImpressionQuotas.push(impressionQuotaKey);
+        entryI.value -= valueDeduction;
+      }
+    }
+    return true;
+  }
+
+  #checkForAvailablePrivacyBudget(
+    key: PrivacyBudgetKey,
+    l1NormDeduction: number,
+    valueDeduction: number,
+    impressions: ReadonlySet<Impression>,
+    isSingleEpoch: boolean,
+  ): boolean {
+    const deduction = isSingleEpoch ? l1NormDeduction : valueDeduction;
+    const currentValue =
+      getEntry(this.#privacyBudgetStore, key)?.value ??
+      this.#delegate.perSitePrivacyBudget;
+    if (deduction > currentValue) {
       return false;
     }
-    entry.value -= deduction;
+    const epoch = key.epoch;
+    const currentGlobalValue =
+      this.#globalPrivacyBudgetStore.get(epoch) ??
+      this.#delegate.globalPrivacyBudgetPerEpoch;
+    if (valueDeduction > currentGlobalValue) {
+      return false;
+    }
+    for (const impression of impressions) {
+      const impressionSite = impression.impressionSite;
+      const impressionQuotaKey = { site: impressionSite, epoch };
+      const currentImpressionQuotaValue =
+        getEntry(this.#impressionSiteQuotaStore, impressionQuotaKey)?.value ??
+        this.#delegate.impressionSiteQuotaPerEpoch;
+      if (valueDeduction > currentImpressionQuotaValue) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -526,12 +631,7 @@ export class Backend {
     value: number,
     credit: readonly number[],
   ): number[] {
-    if (matchedImpressions.size === 0) {
-      throw new DOMException(
-        "matchedImpressions must not be empty",
-        "InvalidStateError",
-      );
-    }
+    assert(matchedImpressions.size > 0);
 
     const sortedImpressions = Array.from(matchedImpressions).toSorted(
       (a, b) => {
@@ -572,33 +672,30 @@ export class Backend {
     return new Uint8Array(0); // TODO
   }
 
-  #getCurrentEpoch(site: string, t: Temporal.Instant): number {
+  #getCurrentEpoch(t: Temporal.Instant): number {
     const period = this.#delegate.privacyBudgetEpoch.total("seconds");
-    let start = this.#epochStartStore.get(site);
-    if (start === undefined) {
-      const p = checkRandom(this.#delegate.epochStart());
-      const dur = Temporal.Duration.from({
-        seconds: p * period,
-      });
-      start = t.subtract(dur);
-      this.#epochStartStore.set(site, start);
+    if (this.#epochStartTime === null) {
+      const rand = t.subtract(
+        Temporal.Duration.from({
+          seconds: checkRandom(this.#delegate.epochStart()) * period,
+        }),
+      );
+      const hours = Math.floor(rand.since(UNIX_EPOCH).total("hours"));
+      this.#epochStartTime = UNIX_EPOCH.add(Temporal.Duration.from({ hours }));
     }
+    const start = this.#epochStartTime;
     const elapsed = t.since(start).total("seconds") / period;
     return Math.floor(elapsed);
   }
 
-  #getStartEpoch(site: string, now: Temporal.Instant): number {
+  #getStartEpoch(now: Temporal.Instant): number {
     const earliestEpochIndex = this.#getCurrentEpoch(
-      site,
       now.subtract(days(this.#delegate.maxLookbackDays)),
     );
     const startEpoch = earliestEpochIndex;
     if (this.#lastBrowsingHistoryClear) {
-      let clearEpoch = this.#getCurrentEpoch(
-        site,
-        this.#lastBrowsingHistoryClear,
-      );
-      clearEpoch += 2;
+      let clearEpoch = this.#getCurrentEpoch(this.#lastBrowsingHistoryClear);
+      clearEpoch += 1;
       if (clearEpoch > startEpoch) {
         return clearEpoch;
       }
@@ -635,34 +732,26 @@ export class Backend {
   }
 
   #zeroBudgetForSites(sites: ReadonlySet<string>): void {
-    if (sites.size === 0) {
-      throw new RangeError("need to specify at least one site when forgetting");
-    }
+    assert(sites.size > 0);
 
     const now = this.#delegate.now();
 
     for (const site of sites) {
-      const startEpoch = this.#getStartEpoch(site, now);
-      const currentEpoch = this.#getCurrentEpoch(site, now);
+      const startEpoch = this.#getStartEpoch(now);
+      const currentEpoch = this.#getCurrentEpoch(now);
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
-        const entry = this.#privacyBudgetStore.find(
-          (e) => e.epoch === epoch && e.site === site,
+        const entry = getOrInsertEntry(
+          this.#privacyBudgetStore,
+          { epoch, site },
+          0,
         );
-        if (entry === undefined) {
-          this.#privacyBudgetStore.push({
-            site,
-            epoch,
-            value: 0,
-          });
-        } else {
-          entry.value = 0;
-        }
+        entry.value = 0;
       }
     }
   }
 
   clearState(sites: readonly string[], forgetVisits: boolean): void {
-    const parsedSites = parseSites(sites);
+    const parsedSites = parseSites(sites, "sites", Infinity);
     if (!forgetVisits) {
       this.#zeroBudgetForSites(parsedSites);
       return;
@@ -671,17 +760,18 @@ export class Backend {
     if (parsedSites.size === 0) {
       this.#impressions = [];
       this.#privacyBudgetStore = [];
-      this.#epochStartStore.clear();
+      this.#impressionSiteQuotaStore = [];
+      this.#globalPrivacyBudgetStore.clear();
     } else {
-      this.#impressions = this.#impressions.filter((e) => {
-        return !parsedSites.has(e.impressionSite);
-      });
-      this.#privacyBudgetStore = this.#privacyBudgetStore.filter((e) => {
-        return !parsedSites.has(e.site);
-      });
-      for (const site of parsedSites) {
-        this.#epochStartStore.delete(site);
-      }
+      this.#impressions = this.#impressions.filter(
+        (e) => !parsedSites.has(e.impressionSite),
+      );
+      this.#privacyBudgetStore = this.#privacyBudgetStore.filter(
+        (e) => !parsedSites.has(e.site),
+      );
+      this.#impressionSiteQuotaStore = this.#impressionSiteQuotaStore.filter(
+        (e) => !parsedSites.has(e.site),
+      );
     }
 
     this.#lastBrowsingHistoryClear = this.#delegate.now();
@@ -702,9 +792,7 @@ export class Backend {
 }
 
 function checkRandom(p: number): number {
-  if (!(p >= 0 && p < 1)) {
-    throw new RangeError("random must be in the range [0, 1)");
-  }
+  assert(p >= 0 && p < 1);
   return p;
 }
 

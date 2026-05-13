@@ -32,3 +32,4 @@ jobs:
           npm run pretty
           git diff --exit-code
       - run: npm run lint
+      - run: npm run validate-e2e

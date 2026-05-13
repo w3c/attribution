@@ -8,6 +8,7 @@ Group: patwg
 TR: https://www.w3.org/TR/attribution/
 Editor: Andrew Paseltiner, w3cid 131329, Google https://www.google.com/, apaseltiner@chromium.org
 Editor: Andy Leiserson, w3cid 147715, Mozilla https://mozilla.org/, aleiserson@mozilla.com
+Editor: Benjamin Case, w3cid 128082, Meta https://www.meta.com/, bmcase@meta.com
 Editor: Benjamin Savage, w3cid 114877, Meta https://www.meta.com/, btsavage@meta.com
 Editor: Charlie Harrison, w3cid 110615, Google https://www.google.com/, csharrison@chromium.org
 Editor: Martin Thomson, w3cid 68503, Mozilla https://mozilla.org/, mt@mozilla.com
@@ -19,30 +20,13 @@ Org: W3C
 Level: None
 </pre>
 
-<style>
-/* dark mode haxx for diagrams
-   No nesting, thanks to https://github.com/validator/validator/issues/1820 */
-svg.diagram :is([stroke="black"], [stroke^="#000"]) {
-  stroke: var(--text);
-}
-svg.diagram :is([stroke="white"], [stroke^="#fff"]) {
-  stroke: var(--bg);
-}
-svg.diagram :is([fill="black"], [fill^="#000"], :not([fill])) {
-  fill: var(--text);
-}
-svg.diagram :is([fill="white"], [fill^="#fff"]) {
-  fill: var(--bg);
-}
-</style>
-
 
 # Introduction # {#intro}
 
 This document defines a simple API for browsers
 that enables the collection of aggregated, differentially-private metrics.
 
-The primary goal of this API is to enable attribution for advertising.
+The goal of this API is to enable attribution for advertising.
 
 
 ## Attribution ## {#s-attribution}
@@ -385,6 +369,7 @@ Upon receiving a set of encrypted histograms from a site, the aggregation servic
 
 3.  returns the aggregate to the site.
 
+We refer to the final output as an <dfn>attribution result</dfn>.
 
 
 # API Usage # {#api}
@@ -506,7 +491,7 @@ and impressions are not scoped to a single aggregation service.
 </div>
 
 <xmp class=idl>
-enum AttributionAggregationProtocol { "dap-15-histogram" };
+enum AttributionAggregationProtocol { "dap-18-histogram" };
 
 dictionary AttributionAggregationService {
   required AttributionAggregationProtocol protocol;
@@ -546,7 +531,7 @@ The <dfn enum>AttributionAggregationProtocol</dfn> describes the submission prot
 used by different [=aggregation services=]. This document defines two protocols:
 
 <dl dfn-for=AttributionAggregationProtocol dfn-type=enum-value>
-  <dt><dfn>dap-15-histogram</dfn></dt>
+  <dt><dfn>dap-18-histogram</dfn></dt>
   <dd>A DAP-based protocol [[DAP]] that uses [=MPC=]; see [[#s-mpc]].</dd>
 </dl>
 
@@ -812,8 +797,7 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dt><dfn>value</dfn></dt>
   <dd>
     The [=conversion value=]. If an attribution is made and [[#dp|privacy]]
-    restrictions are satisfied, this value will be encoded into the [=conversion
-    report=].
+    restrictions are satisfied, this value will be encoded into the [=conversion report=].
   </dd>
   <dt><dfn>maxValue</dfn></dt>
   <dd>
@@ -1062,6 +1046,9 @@ run these steps:
 
 1.  If |site| is null, return failure.
 
+1.  If |site| is "`localhost`" or if |site| [=code unit suffix|ends with=] "`.localhost`",
+    return failure.
+
 1.  Return a [=scheme-and-host=] tuple of ("`https`", |site|).
 
 <p class=note>
@@ -1070,41 +1057,76 @@ that contain more [=domain labels=] than the [=registrable domain=].
 For example, "`extra.example.com`" is parsed as "`example.com`".
 </p>
 
+<p class=note>
+This algorithm does not accept localhost domains [[RFC6761]],
+which results in any algorithm that depends on extracting a site name
+failing when a localhost domain is mentioned
+or when the current site (top-level or framed) is a localhost domain.
+This can make using local servers for testing and development challenging.
+Implementations could offer a configuration that disables the localhost check
+to aid in testing and development.
+</p>
+
 </div>
 
 ## State For Privacy Budget Management ## {#privacy-state}
 
-[=User agents=] maintain three pieces of state
+[=User agents=] maintain several pieces of state
 that are used to manage the expenditure of [=privacy budgets=]:
 
 *   The [=privacy budget store=] records the state
     of the per-[=site=] and per-[=epoch=] [=privacy budgets=].
-    It is updated by [=deduct privacy budget=].
 
+*   The [=global privacy budget store=] records the state
+    of the per-[=epoch=] global [=privacy budget=]
+    that applies across all [=sites=].
 
-*   The [=epoch start store=] records when each [=epoch=] starts
-    for [=conversion sites=].
-    This store is initialized as a side effect
+*   The [=impression site quota store=] records the state
+    of per-[=impression site=] and per-[=epoch=] quota for comsuming from the [=global privacy budget store=].
+
+*   The [=epoch start time=] is used to determine when [=epochs=] start.
+    This value is initialized as a side effect
     of invoking <a method for=Attribution>measureConversion()</a>.
 
-*   A singleton [=last browsing history clear=] value
+*   A singular [=last browsing history clear=] value
     that tracks when the browsing activity for a [=site=] was last cleared.
+
+*   A singular <dfn>attribution budget lock</dfn> is a boolean flag
+    that is used to prevent concurrent operations
+    on privacy budget stores,
+    which might otherwise lead to overexpenditure of budgets.
+
+The [=privacy budget store=], [=global privacy budget store=],
+and [=impression site quota store=] are updated by [=deduct privacy and safety budgets=].
 
 <p class=note>
 Like the [=impression store=],
-the [=privacy budget store=] does not use a [=storage key=].
+the [=privacy budget store=] and related stores do not use a [=storage key=].
 These stores have some additional constraints
 on how information is cleared;
 see [[#clear-budget-store]] for details.
 
-<p class=issue>
-The [=safety limits=] need to be described in more detail.
-Some references to clearing
-the [=impression store=] may need to be
-updated to refer to the [=privacy budget store=] as well.
+<p class=note>
+The choice to define the [=attribution budget lock=] as a boolean flag
+is a matter of specification expediency.
+Implementations might be better served by an alternative construct.
+Implementations might be able to partition this value,
+such as by [=epoch=],
+to reduce the scope of any contention.
 
 
 ### Privacy Budget Store ### {#s-privacy-budget-store}
+
+A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items:
+
+<dl dfn-for="privacy budget key">
+: <dfn ignore>epoch index</dfn>
+:: An [=epoch index=]
+: <dfn ignore>site</dfn>
+:: A [=site=]
+
+</dl>
+
 
 The <dfn>privacy budget store</dfn> is a [=map=] whose keys are
 [=privacy budget keys=] and whose values are [=32-bit unsigned integers=].
@@ -1117,45 +1139,55 @@ used in differential privacy [[DP]].
 be less than or equal to the <dfn>maximum epsilon</dfn> of 4294.
 This <span class=allow-2119>should</span> be more than sufficient for implementations.
 
-A <dfn>privacy budget key</dfn> is a [=tuple=] consisting of the following items:
+The <dfn>global privacy budget store</dfn> is a [=map=] whose keys are
+[=epoch indices=] and whose values are [=32-bit unsigned integers=]
+in units of [=microepsilons=].
 
-<dl dfn-for="privacy budget key">
-: <dfn ignore>epoch index</dfn>
-:: An [=epoch index=]
-: <dfn ignore>site</dfn>
-:: A [=site=]
+The [=global privacy budget store=] tracks expenditure of a single [=privacy budget=]
+that applies across all [=sites=]
+and refreshes each [=epoch=].
+This provides a [=safety limit=] against adversaries
+that can correlate activity for the same person across multiple [=sites=].
 
-</dl>
+<p class=note>Unlike the per-[=site=] [=privacy budget store=],
+the [=global privacy budget store=] is keyed only by [=epoch index=],
+not by [=site=].
+
+The <dfn>impression site quota store</dfn> is a [=map=] whose keys are
+[=privacy budget keys=] and whose values are [=32-bit unsigned integers=]
+in units of [=microepsilons=].
+
+The [=impression site quota store=] limits the amount of "stock"
+(privacy budget related to [=impressions=])
+that any single [=impression site=] can contribute in an [=epoch=].
+This prevents a single [=impression site=]
+from consuming excessive amounts
+from the [=global privacy budget store|global limit=]
+that could be maliciously triggered.
 
 <div algorithm>
-To <dfn>deduct privacy budget</dfn>
+To <dfn>deduct privacy and safety budgets</dfn>
 given a [=privacy budget key=] |key|,
+[=set=] of [=impressions=] |impressions|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
-integer |maxValue|, and
-nullable integer |l1Norm|:
+integer |maxValue|,
+boolean |isSingleEpoch|,
+integer |l1Norm|,
+[=set=] of [=privacy budget keys=] |deductedImpressionQuotas|
+and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
-1.  If the [=privacy budget store=] does not [=map/contain=] |key|, [=map/set=]
-    its value of |key| to be a [=user agent=]-defined value,
-    plus 1000.
+1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
 
-    <p class=note>The addition of 1000 to this value
-    ensures that the rounding errors added by this algorithm do not cause
-    the budget to be exceeded unnecessarily after multiple invocations.
-    The privacy loss from the additional one-thousandth of an epsilon is trivial.
-
-1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
-    in the [=privacy budget store=].
-
-1.  Let |sensitivity| be |l1Norm| if |l1Norm| is non-null, 2 * |value| otherwise.
+1.  Let |valueSensitivity| be 2 * |value|.
 
 1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
 
-1.  Let |deductionFp| be |sensitivity| / |noiseScale|.
+1.  Let |l1NormDeductionFp| be |l1NormSensitivity| / |noiseScale|.
 
+1.  Let |valueDeductionFp| be |valueSensitivity| / |noiseScale|.
 
-    <p class=note>Single epoch attributions &mdash;
-    the only case that |l1Norm| is non-null &mdash;
+    <p class=note>Single-epoch attributions
     do not cause any cascading effects across epochs.
     Attribution that involves multiple epochs consumes double the budget
     because of the potential for one change to affect attribution across epochs.
@@ -1163,53 +1195,293 @@ nullable integer |l1Norm|:
     proportional to |maxValue| / |epsilon|
     is added to the aggregated histogram.
 
-1.  If |deductionFp| is negative or greater than [=maximum epsilon=],
-    [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
-    and return false.
+1.  Let |l1NormDeduction| be |l1NormDeductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  Let |deduction| be |deductionFp| * 1000000, rounded towards positive Infinity.
+1.  Let |valueDeduction| be |valueDeductionFp| * 1000000, rounded towards positive Infinity.
 
-1.  If |deduction| is greater than |currentValue|,
-    [=map/set|set=] the value of |key| in the [=privacy budget store=] to 0
-    and return false.
+1.  If [=attribution budget lock=] is true,
+    wait until the value becomes false,
+    then set the value to true.
 
-1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
-    to |currentValue| − |deduction|
-    and return true.
+1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
+    with |key|, |l1NormDeduction|, |valueDeduction|,
+    |impressions|, and |isSingleEpoch|
+    is false, perform the following steps:
+
+    1.  Set [=attribution budget lock=] to false.
+
+    1.  Return false.
+
+1.  All budget checks passed, so perform the deductions:
+
+    1.  If |isSingleEpoch| let |deduction| be |l1NormDeduction| else let |deduction| be |valueDeduction|.
+
+    1.  Let |currentValue| be the result of [=map/get|getting the value=] of |key|
+        in the [=privacy budget store=]
+        with a default of the [=per-site privacy budget=].
+
+    1.  [=map/set|Set=] the value of |key| in the [=privacy budget store=]
+        to |currentValue| − |deduction|.
+
+    1.  Let |epoch| be the [=epoch index=] component of |key|.
+
+    1.  If |deductedGlobalBudgets| does not [=set/contain=] |epoch|,
+        [=set/append=] |deductedGlobalBudgets| with |epoch|
+        and decrement [=global privacy budget store=]\[|epoch|] by |valueDeduction|.
+
+    1.  [=list/iterate|For each=] |impression| in |impressions|:
+
+        1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
+
+        1.  Let |impressionQuotaKey| be an [=privacy budget key=]
+            whose items are |epoch| and |impressionSite|.
+
+            <p class=note>The below ensures that we do not deduct budget
+            more than once from the same impression site quota
+            when there are multiple impressions for the site.
+
+        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|:
+
+            1.  [=set/Append=] |deductedImpressionQuotas| with |impressionQuotaKey|.
+
+            1.  Let |currentImpressionQuotaValue| be the result of [=map/get|getting the value=] of |impressionQuotaKey|
+                in the [=impression site quota per epoch=]
+                with a default of the [=impression site quota per epoch=].
+
+            1.  [=map/set|Set=] the value of [=impression site quota per epoch=]\[|impressionQuotaKey|\]
+                to |currentImpressionQuotaValue| − |valueDeduction|.
+
+1.  Set [=attribution budget lock=] to false.
+
+1.  Return true.
 
 </div>
 
-### Epoch Start Store ### {#s-epoch-start}
+<div algorithm>
+To <dfn>check for available privacy budget</dfn>
+given a [=privacy budget key=] |key|, integer |l1NormDeduction|,
+integer |valueDeduction|,
+[=set=] of [=impressions=] |impressions| and boolean |isSingleEpoch|:
 
-An [=epoch=] starts at a randomly-selected time
-for each [=conversion site=].
-This ensures that any bias in aggregates
-that arises from a [=privacy budget=] reaching zero
-is averaged across all the contributions from all [=users=].
+1.  If |isSingleEpoch| let |deduction| be |l1NormDeduction| else let |deduction| be |valueDeduction|.
 
-The <dfn>epoch start store</dfn> is a [=map=] keyed by [=site=]
-and contains values that are [=moments=]
-from the [=wall clock=].
+1.  Let |currentValue| be set to the value of [=map/get|getting the value=] of |key|
+    from [=privacy budget store=],
+    with a default of the [=per-site privacy budget=].
+
+1.  If |deduction| is greater than |currentValue|, return false.
+
+1.  Let |epoch| be the [=epoch index=] component of |key|.
+
+1.  Let |currentGlobalValue| be set to the value of [=map/get|getting the value=]
+    of |epoch| from the [=global privacy budget store=],
+    with a default of the [=global privacy budget
+    per epoch=].
+
+1. If |valueDeduction| is greater than |currentGlobalValue|, return false.
+
+1.  [=list/iterate|For each=] |impression| in |impressions|:
+
+    1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
+
+    1.  Let |impressionQuotaKey| be an [=privacy budget key=]
+        whose items are |epoch| and |impressionSite|.
+
+    1.  Let |currentImpressionQuotaValue| be set to the value of [=map/get|getting the value=]
+        of |impressionQuotaKey| from the [=impression site quota store=], with a default of
+        the [=impression site quota per epoch=].
+
+    1. If |valueDeduction| is greater than |currentImpressionQuotaValue|, return false.
+
+1.  Return true.
+
+</div>
+
+
+### Attribution API Activation ### {#s-api-activation}
+
+The Attribution API is like a [=transient activation-consuming API=],
+with a number of differences
+in terms of how activation state is tracked.
+
+*   Any [=activation triggering input event|user activation=]
+    makes the Attribution API available for a short period.
+
+*   Additionally, when [=navigate|navigation=] is initiated
+    by a user
+    (that is, where the [=user navigation involvement=] is "browser UI"),
+    the Attribution API is available for a short period.
+
+*   The first attempt to access the API by invoking
+    either <a for=Attribution>saveImpression()</a>
+    or <a for=Attribution>measureConversion()</a>
+    within an [=implementation-defined=] duration of the last activation,
+    enables the API.
+
+*   Like [=transient activation=],
+    using the API consumes the activation.
+
+*   When activation is consumed,
+    the API is enabled for use by all [=descendent navigables=]
+    of the [=top-level traversable=]'s [=active document=]
+    (that is, all frames on the current page)
+    until the next cross-site navigation.
+
+*   Any [=navigate|navigation=] of the [=top-level traversable=]
+    to a different [=site=] disables the API.
+    However, any [=activation triggering input event|activation=],
+    which might include the action that initiated the navigation,
+    could make the API available again.
+
+This is similar in effect to [=transient activation=].
+However, attribution activation uses separate state from [=transient activation=]
+and has the following notable differences:
+
+*   Attribution activation state is tracked on the [=top-level traversable=],
+    rather than affected {{Window}}s.
+
+*   Attribution activation persists through [=navigate|navigations=],
+    enabling use of the API for a short period
+    after loading a new page
+    in the case where the activation leads to navigation.
+
+Having separate state ensures that
+attribution activation does not interact with other [=transient activation-consuming APIs=].
+An API that [=consume user activation|consumes activation=]
+will not prevent the Attribution API from being available;
+similarly, using the Attribution API will not prevent
+a [=transient activation-consuming API=] from being available.
+
+Separate state tracking ensures that user actions
+that [=consume user activation=] can be independently measured
+with the Attribution API.
+
+Retaining activation across navigations enables common patterns in advertising.
+Sites can use the Attribution API to examine actions
+either from the site where an interaction occurred
+or on subsequent sites.
+
+To implement this,
+each [=top-level traversable=] tracks two pieces of state
+for the Attribution API:
+
+1.  The <dfn>attribution enabled flag</dfn> is a boolean value
+    that tracks whether the API is enabled.
+    This value is initialized to false.
+
+1.  The <dfn>attribution activation timestamp</dfn> is a [=moment=]
+    that tracks the last [=activation triggering input event|user activation=].
+    This value is initialized to the [=current high resolution time=].
+
+Implementations also configure <dfn>attribution activation duration</dfn>
+as an [=implementation-defined=] [=duration=].
+This should be no less than the [=transient activation duration=],
+though a larger value
+might be advisable to ensure that delays from [=navigate|navigation=]
+do not cause the Attribution API to become inaccessible.
+
+<p class=note>
+Implementations might choose to extend the time allowed
+to account for the delays involved in page loading time.
+A fixed value might not account for performance differences
+in devices or in the network they use.
+Implementations could extend the value of [=attribution activation duration=]
+based on an understanding of performance chararacteristics.
+Alternatively, an implementation might suspend any timer
+during page load.
+
+<div algorithm="attribution activation">
+When a user interaction causes firing of an [=activation triggering input event=]
+in a {{Document}} |document|,
+the user agent [=must=] perform the steps below--
+in addition to the [=activation notification=] steps--
+before dispatching the event.
+In this case, set [=navigable=] |navigable| to null.
+
+Alternatively, when [=navigate|navigation starts=],
+and the [=user navigation involvement=] is `"browser UI"`,
+perform the steps below
+setting |navigable| to the affected [=navigable=]
+and setting |document| to null.
+
+The steps are:
+
+1.  If |navigable| is not null, let |n| be |navigable|.
+
+1.  Otherwise, let |n| be the result of getting |document|'s [=node navigable=].
+
+1.  Let |top| be the result of getting |n|'s [=top-level traversable=].
+
+1.  Set |top|'s [=attribution activation timestamp=]
+    to the [=current high resolution time=].
+
+</div>
+
+<div algorithm="attribution navigation">
+When a [=top-level traversable=], |top|, is [=navigate|navigated=],
+as part of the [=navigate=] algorithm,
+after the [=document state=], |documentState|, is finalized,
+and the [=origin=] of the [=response=], |responseOrigin|, is known,
+perform the following steps:
+
+1.  If |documentState|'s [=initiator origin=]
+    is [=same site=] with |responseOrigin|, return.
+
+1.  Set |top|'s [=attribution enabled flag=] to false.
+
+</div>
+
+<div algorithm="check attribution API activation">
+To <dfn>check attribution API activation</dfn>,
+given a {{Document}} |document|,
+throwing a {{"NotAllowedError"}} {{DOMException}} on failure:
+
+1.  Let |n| be the result of getting |document|'s [=node navigable=].
+
+1.  Let |top| be the result of getting |n|'s [=top-level traversable=].
+
+1.  If |top|'s [=attribution enabled flag=] is true, return.
+
+1.  Let |lastActivation| be |top|'s [=attribution activation timestamp=].
+
+1.  If |lastActivation| plus the [=attribution activation duration=]
+    is less than the [=current high resolution time=],
+    throw a {{"NotAllowedError"}} {{DOMException}}.
+
+1.  Set |top|'s [=attribution enabled flag=] to true.
+
+</div>
+
+
+### Epoch Start Time ### {#s-epoch-start}
 
 A <dfn local-lt=epoch>privacy budget epoch</dfn> (or [=epoch=])
 identifies a period of time.
 The length of an [=epoch=] is fixed at one week or 7 [=days=],
 where a <dfn>day</dfn> is defined as 86400 seconds.
 
-The exact time span for an [=epoch=] is different
-for each combination of [=user agent=] and [=site=].
-The start time for a given pair of [=user agent=] and [=site=]
+The <dfn>epoch start time</dfn> is a [=moment=]
+from the [=wall clock=].
+An [=epoch=] starts at a randomly-selected hour of the week
+for each [=user agent=].
+This ensures that any bias in aggregates
+that arises from a [=privacy budget=] reaching zero
+is averaged across all the contributions from all [=users=].
+
+<div class=note>On the same device,
+all privacy budgets and quotas
+refresh at the same time based on the epoch start time.
+</div>
+
+The start time
 is chosen randomly by the [=user agent=] when an epoch is first needed--
 as a side effect of invoking the [=get the current epoch=] algorithm.
-The [=epochs=] for a given [=site=] will change
-if the [=user agent=] clears browsing history;
-see [[#clear-browsing-history]].
 
 An <dfn local-lt="epoch indices">epoch index</dfn> is an integer
 that refers to a given [=epoch=].
 An [=epoch index=] is used to access
 the [=impression store|impression=]
-and [=epoch start store|epoch start=] stores.
+and [=epoch start time=].
 
 <div class=note>
 In the same way that a [=moment=] is an abstract concept
@@ -1220,7 +1492,7 @@ relative to another [=moment=],
 [=Epoch indices=] are stored as integers
 relative to a set reference point.
 The [=epoch indices=] in this specification
-use the values from the [=epoch start store=]
+use the [=epoch start time=]
 as a reference point.
 A [=user agent=] could choose to use a different [=moment=]
 to indicate a "zero" or reference [=epoch=].
@@ -1234,25 +1506,38 @@ using the [=get the current epoch=] algorithm.
 
 <div algorithm>
 To <dfn>get the current epoch</dfn>
-given a [=site=] |site|,
-and [=moment=] |t|,
+given a [=moment=] |t|,
 returning an [=epoch index=]:
 
 1.  Let |period| be the [=duration=] of one [=epoch=].
 
-1.  If the [=epoch start store=] does not [=map/contain=] |site|, [=map/set=]
-    its value to |t|, minus a [=duration=]
-    that is randomly selected
-    from between 0 (inclusive) and |period| (exclusive).
+1.  If the [=epoch start time=] is not set,
+    set it to a randomly selected hour within the last [=epoch=]
+    as follows:
 
-1.  Let |start| be the result of [=map/get|getting the value=] of |site|
-    from the [=epoch start store=].
+    1.  Let |rand| be |t| minus a [=duration=]
+        that is randomly selected
+        from between 0 (inclusive) and |period| (exclusive).
+
+    1.  Let |ms| be the number of milliseconds in
+        the [=duration from=] the [=Unix epoch=] to |rand|.
+
+    1.  Let |hour| be |ms| divided by 3600000
+        (one hour in milliseconds)
+        rounded towards zero
+        then multiplied by 3600000.
+
+    1.  Set the [=epoch start time=] to the [=Unix epoch=]
+        plus |hour| as a [=duration=].
+
+1.  Let |start| be the [=epoch start time=].
 
 1.  Let |elapsed| be (|t| − |start|) / |period|.
 
 1.  Return |elapsed| as an integer, rounded towards negative Infinity.
 
 </div>
+
 
 ### Last Browsing History Clear Time ### {#last-clear}
 
@@ -1273,7 +1558,7 @@ all of the following are true:
     that have other uncleared interactions.
 *   All cleared interactions occurring during [=epochs=]
     where other interactions with the same [=site=] were retained.
-*   All affected [=sites=] have a value in the [=epoch start store=].
+*   The [=epoch start time=] is set.
 
 If all three conditions are true,
 the [=last browsing history clear=] does not need to be updated.
@@ -1296,11 +1581,11 @@ is exposed.
 
 <div algorithm="get the starting epoch for attribution">
 To <dfn>get the starting epoch for attribution</dfn>
-given [=site=] |site| and [=moment=] |now|,
+given [=moment=] |now|,
 returning an [=epoch index=]:
 
 1.  Let |earliestEpochIndex| be the result of [=get the current epoch=]
-    with |site| and |now| − the [=maximum lookback=] [=days=].
+    with |now| − the [=maximum lookback=] [=days=].
 
     <p class=note>
     This ensures that all possible [=impressions=] can be queried.
@@ -1311,22 +1596,20 @@ returning an [=epoch index=]:
     perform the following steps:
 
     1.  Let |clearEpoch| be the result of [=get the current epoch=]
-        with |site| and the value of [=last browsing history clear=].
+        with the value of [=last browsing history clear=].
 
         <p class=note>
         This use of [=get the current epoch=]
         can return a negative value.
-        This is because the value in [=epoch start store=]
+        This is because the [=epoch start time=]
         is likely to be set to a time after history was last cleared.
 
-    1.  Set |clearEpoch| to |clearEpoch| + 2.
+    1.  Set |clearEpoch| to |clearEpoch| + 1.
 
         <p class=note>
-        Adding <em>two</em> is necessary so that the [=epoch=]
+        Adding <em>one</em> is necessary so that the [=epoch=] range for attribution
         does not overlap with an [=epoch=]
-        before browsing history--
-        and the [=epoch start store=]--
-        was cleared.
+        before browsing history was cleared.
 
     1.  If |clearEpoch| is greater than |startEpoch|,
         return |clearEpoch|.
@@ -1349,11 +1632,11 @@ and a [=moment=] |now|:
 
         1.  Let |startingEpoch| be the result of
             invoking [=get the starting epoch for attribution=]
-            given |site| and |now|.
+            given |now|.
 
         1.  Let |currentEpoch| be the result of
             invoking [=get the current epoch=]
-            given |site| and |now|.
+            given |now|.
 
         1.  [=set/iterate|For each=] |epoch| in [=the inclusive range=]
             from |startingEpoch| to |currentEpoch|:
@@ -1371,7 +1654,9 @@ and a [=moment=] |now|:
 
     1.  [=map/clear|Clear=] the [=privacy budget store=].
 
-    1.  [=map/clear|Clear=] the [=epoch start store=].
+    1.  [=map/clear|Clear=] the [=impression site quota store=].
+
+    1.  [=map/clear|Clear=] the [=global privacy budget store=].
 
 1.  If |sites| [=set/is empty|is not empty=]:
 
@@ -1379,13 +1664,20 @@ and a [=moment=] |now|:
         if |sites| [=set/contains=] |impression|'s [=impression/impression site=],
         [=set/remove=] |impression| from the [=impression store=].
 
-    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=privacy budget store=],
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=]
+        of the [=privacy budget store=],
         if |sites| [=set/contains=] the [=site=] component of |key|,
         [=map/remove=] [=privacy budget store=]\[|key|].
 
-    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=] of the [=epoch start store=],
-        if |sites| [=set/contains=] |key|,
-        [=map/remove=] [=epoch start store=]\[|key|].
+    1.  [=set/iterate|For each=] |key| in the [=map/getting the keys|keys=]
+        of the [=impression site quota store=],
+        if |sites| [=set/contains=] the [=site=] component of |key|,
+        [=map/remove=] [=impression site quota store=]\[|key|].
+
+        <p class=note>
+        This process does not touch the [=global privacy budget store=].
+        Primarily, this is to ensure that [=privacy budget=],
+        once expended, is not forgotten.
 
 1.  Set the [=last browsing history clear=] to |now|.
 
@@ -1393,8 +1685,13 @@ and a [=moment=] |now|:
     while only clearing state for some sites
     (that is, when |sites| [=set/is empty|is not empty=])
     will make some impressions unreachable for sites that are not present in that set.
+    Implementations could also remove any unusable impressions
+    and any budget records
+    (such as those in the [=global privacy budget store=])
+    that cannot be used as a result.
 
 </div>
+
 
 ## Save Impression Algorithm ## {#save-impression-api-operation}
 
@@ -1416,6 +1713,8 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/save-impression}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
+1.  [=check attribution API activation|Check attribution API activation=]
+    given |document|, returning [=a promise rejected with=] any thrown reason.
 1.  Validate the page-supplied API inputs:
     1.  If |options|.{{AttributionImpressionOptions/histogramIndex}} is
         greater than or equal to the [=implementation-defined=] [=maximum histogram size=],
@@ -1426,8 +1725,9 @@ and [=implicit API inputs=] |implicitInputs|:
         the [=maximum lookback=].
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionSites}} is
-        greater than an [=implementation-defined=] maximum value, return
-        [=a promise rejected with=] a {{RangeError}} in |realm|.
+        greater than the [=implementation-defined=]
+        [=maximum number of conversion sites per impression=],
+        return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Let |conversionSites| be the [=set=] that is the result
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionSites}}.
@@ -1435,8 +1735,9 @@ and [=implicit API inputs=] |implicitInputs|:
         [=a promise rejected with=] a {{"SyntaxError"}} {{DOMException}} in |realm|.
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionCallers}} is
-        greater than an [=implementation-defined=] maximum value, return
-        [=a promise rejected with=] a {{RangeError}} in |realm|.
+        greater than the [=implementation-defined=]
+        [=maximum number of conversion callers per impression=],
+        return [=a promise rejected with=] a {{RangeError}} in |realm|.
     1.  Let |conversionCallers| be the [=set=] that is the result
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionCallers}}.
@@ -1463,7 +1764,8 @@ and [=implicit API inputs=] |implicitInputs|:
          :   [=impression/Priority=]
          ::  |options|.{{AttributionImpressionOptions/priority}}
      1.  If the Attribution API is [[#opt-out|enabled]],
-         save |impression| to the [=impression store=].
+        save |impression| to the [=impression store=].
+
 1.  Let |result| be a new {{AttributionImpressionResult}}.
 1.  Return [=a promise resolved with=] |result| in |realm|.
 
@@ -1540,6 +1842,8 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  If |document| is not [=allowed to use=] the [=policy-controlled feature=] named
     "{{PermissionPolicy/measure-conversion}}", return [=a promise rejected with=]
     a {{"NotAllowedError"}} {{DOMException}} in |realm|.
+1.  [=check attribution API activation|Check attribution API activation=]
+    given |document|, returning [=a promise rejected with=] any thrown reason.
 1.  Let |validatedOptions| be the result of
     [=validate AttributionConversionOptions|validating=] |options|,
     returning [=a promise rejected with=] any thrown reason.
@@ -1547,19 +1851,21 @@ and [=implicit API inputs=] |implicitInputs|:
 1.  Run the following steps [=in parallel=]:
      1.  Let |report| be the result of invoking [=create an all-zero histogram=] with
          |validatedOptions|' [=validated conversion options/histogram size=].
-     1.  If the Attribution API is [[#opt-out|enabled]], set |report| to the
-         result of [=do attribution and fill a histogram=] with |validatedOptions|,
+     1.  If the Attribution API is [[#opt-out|enabled]],
+         set |report| to the result of [=do attribution and fill a histogram=] with
+         |validatedOptions|,
          |implicitInputs|' [=implicit API inputs/top-level site=],
          |implicitInputs|' [=implicit API inputs/intermediary site=], and
          |implicitInputs|' [=implicit API inputs/timestamp=].
      1.  Let |aggregationService| be |validatedOptions|'s [=validated conversion options/aggregation service=].
      1.  Switch on the value of |aggregationService|.{{AttributionAggregationService/protocol}}:
          <dl class="switch">
-            :   <a enum-value for=AttributionAggregationProtocol>`dap-15-histogram`</a>
+            :   <a enum-value for=AttributionAggregationProtocol>`dap-18-histogram`</a>
             ::  Perform the following steps:
                 1.  Let |encryptedReport| be the result of invoking <a>construct a DAP report</a>,
                     given |validatedOptions|,
                     |implicitInputs|' [=implicit API inputs/top-level site=],
+                    |implicitInputs|' [=implicit API inputs/intermediary site=],
                     |implicitInputs|' [=implicit API inputs/timestamp=], and |report|.
          </dl>
      1.  Let |result| be a {{AttributionConversionResult}} with the following items:
@@ -1606,8 +1912,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     is less than or equal to 0 or is greater than [=maximum epsilon=],
     throw a {{RangeError}}.
 1.  If |options|.{{AttributionConversionOptions/histogramSize}}
-    is 0 or greater than the [=implementation-defined=] <dfn>maximum histogram size</dfn>,
-    or is greater than the <dfn ignore>maximum aggregation-service histogram size</dfn>,
+    is 0 or greater than the [=implementation-defined=] [=maximum histogram size=],
+    or is greater than the [=maximum aggregation-service histogram size=],
     if any, for |options|.{{AttributionConversionOptions/aggregationService}},
     throw a {{RangeError}}.
 1.  If |options|.{{AttributionConversionOptions/value}} is 0,
@@ -1618,7 +1924,8 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  Let |credit| be |options|.{{AttributionConversionOptions/credit}} if it [=map/exists=], «1» otherwise.
 1.  If |credit| [=list/is empty=], throw a {{RangeError}}.
 1.  If any of the [=list/items=] of |credit| are less than or equal to 0, throw a {{RangeError}}.
-1.  If the [=list/size=] of |credit| exceeds an [=implementation-defined=] maximum, throw a {{RangeError}}.
+1.  If the [=list/size=] of |credit| exceeds the [=implementation-defined=]
+    [=maximum number of credit values=], throw a {{RangeError}}.
 1.  Let |lookback| be |options|.{{AttributionConversionOptions/lookbackDays}} [=days=]
     if it [=map/exists=], the [=maximum lookback=] [=days=] otherwise.
 1.  Set |lookback| to the [=maximum lookback=] [=days=]
@@ -1626,19 +1933,22 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  If |lookback| is 0 [=days=], throw a {{RangeError}}.
 1.  If the [=list/size=] of
     |options|.{{AttributionConversionOptions/matchValues}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    greater than the [=implementation-defined=] [=maximum number of match values=],
+    throw a {{RangeError}}.
 1.  Let |matchValues| be the result of running [=set/create|creating a set=] with
     |options|.{{AttributionConversionOptions/matchValues}}.
 1.  If the [=list/size=] of
-    |options|.{{AttributionConversionOptions/impressionSites}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    |options|.{{AttributionConversionOptions/impressionSites}} is greater than
+    the [=implementation-defined=] [=maximum number of impression sites for conversion=],
+    throw a {{RangeError}}.
 1.  Let |impressionSites| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionSites}}.
 1.  If any result in |impressionSites| is failure, throw a {{"SyntaxError"}} {{DOMException}}.
 1.  If the [=list/size=] of
-    |options|.{{AttributionConversionOptions/impressionCallers}} is
-    greater than an [=implementation-defined=] maximum value, throw a {{RangeError}}.
+    |options|.{{AttributionConversionOptions/impressionCallers}} is greater than
+    the [=implementation-defined=] [=maximum number of impression callers for conversion=],
+    throw a {{RangeError}}.
 1.  Let |impressionCallers| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionCallers}}.
@@ -1676,69 +1986,75 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 To <dfn>do attribution and fill a histogram</dfn>, given
   [=validated conversion options=] |options|,
   [=site=] |topLevelSite|,
-  [=site=] or `undefined` |intermediarySite|,
-  and [=moment=] |now|:
+  [=site=] or `undefined` |intermediarySite|, and
+  [=moment=] |now|:
+
+1.  Let |currentEpoch| be the result of [=get the current epoch=]
+    with |now|.
+
+1.  Let |startEpoch| be the result of [=get the starting epoch for attribution=]
+    with |now|.
+
+1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
+    passing (|now| − |options|' [=validated conversion options/lookback=]).
+
+1.  Let |isSingleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
+
+1.  Let |l1Norm| be 0.
+
+1.  If |isSingleEpoch| is true:
+    1.  Let |impressions| be the result of invoking [=common matching logic=]
+        with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
+
+    1.  If |impressions| [=set/is empty=], return the result of invoking
+          [=create an all-zero histogram=] with
+          |options|' [=validated conversion options/histogram size=].
+
+    1.  Let |histogram| be the result of [=fill a histogram with last-n-touch attribution=] with |impressions|,
+        |options|' [=validated conversion options/histogram size=],
+        |options|' [=validated conversion options/value=], and
+        |options|' [=validated conversion options/credit=].
+
+    1.  Set |l1Norm| be the sum of the [=list/items=] in |histogram|.
+
+    1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
+
+1.  Let |deductedImpressionQuotas| be a new [=set=].
+
+1.  Let |deductedGlobalBudgets| be a new [=set=].
 
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
-1.  Let |currentEpoch| be the result of [=get the current epoch=]
-    with |topLevelSite| and |now|.
+1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
 
-1.  Let |startEpoch| be the result of [=get the starting epoch for attribution=]
-    with |topLevelSite| and |now|.
+    1.  Let |impressions| be the result of invoking [=common matching logic=]
+        with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
 
-1.  Let |earliestEpoch| be the result of calling [=get the current epoch=],
-    passing |topLevelSite| and (|now| − |options|' [=validated conversion options/lookback=]).
+        <p class=note>In the single-epoch case, this is recomputing |matchedImpressions|.
+        Implementations will want to avoid doing that work twice.
 
-1.  Let |singleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
+    1.  If |impressions| [=set/is empty|is not empty=]:
 
-1.  If |singleEpoch| is true:
-    1.  Set |matchedImpressions| to the result of invoking [=common matching logic=]
-        with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
+        1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
 
-1.  If |singleEpoch| is false:
+        1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
+            with |key|, |impressions|,
+            |options|' [=validated conversion options/epsilon=],
+            |options|' [=validated conversion options/value=],
+            |options|'s [=validated conversion options/max value=],
+            |isSingleEpoch|, |l1Norm|, |deductedImpressionQuotas|, and |deductedGlobalBudgets|.
 
-    1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
-
-        1.  Let |impressions| be the result of invoking [=common matching logic=]
-            with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
-
-        1.  If |impressions| [=set/is empty|is not empty=]:
-
-            1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
-
-            1.  Let |budgetOk| be the result of invoking [=deduct privacy budget=]
-                with |key|, |options|' [=validated conversion options/epsilon=],
-                |options|' [=validated conversion options/value=],
-                |options|'s [=validated conversion options/max value=],
-                and null.
-
-            1.  If |budgetOk| is true, [=set/extend=] |matchedImpressions| with |impressions|.
+        1.  If |budgetAndSafetyOk| is true,
+            [=set/extend=] |matchedImpressions| with |impressions|.
 
 1.  If |matchedImpressions| [=set/is empty=], return the result of invoking
     [=create an all-zero histogram=] with
     |options|' [=validated conversion options/histogram size=].
 
-1.  Set |histogram| to the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
+1.  Let |histogram| be the result of [=fill a histogram with last-n-touch attribution=] with |matchedImpressions|,
     |options|' [=validated conversion options/histogram size=],
     |options|' [=validated conversion options/value=], and
     |options|' [=validated conversion options/credit=].
-
-1.  If |singleEpoch| is true:
-    1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
-
-    1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
-
-    1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
-
-    1.  Let |budgetOk| be the result of [=deduct privacy budget=]
-        with |key|, |options|' [=validated conversion options/epsilon=],
-        |options|' [=validated conversion options/value=]
-        |options|'s [=validated conversion options/max value=],
-        and |l1Norm|.
-
-    1.  If |budgetOk| is false, set |histogram| to the result of invoking
-        [=create an all-zero histogram=] with |options|' [=validated conversion options/histogram size=].
 
 1.  Return |histogram|.
 
@@ -1765,7 +2081,7 @@ To perform <dfn>common matching logic</dfn>, given
 1.  [=set/iterate|For each=] |impression| in the [=impression store=]:
 
     1.  Let |impressionEpoch| be the result of calling [=get the current epoch=],
-        passing |topLevelSite| and |impression|'s [=impression/timestamp=].
+        passing |impression|'s [=impression/timestamp=].
 
     1.  If |impressionEpoch| is not equal to |epoch|, [=iteration/continue=].
 
@@ -1888,39 +2204,101 @@ regarding how to best set those values.
 
 An implementation sets an [=implementation-defined=] <dfn>maximum lookback</dfn>
 for {{AttributionImpressionOptions/lifetimeDays}} and
-{{AttributionConversionOptions/lookbackDays}}. It is a positive integer number of [=days=].
+{{AttributionConversionOptions/lookbackDays}}.
+[=Maximum lookback=] is a positive integer number of [=days=].
 There is no point to having different maximum values for
 these values as the smaller of the two values
 will determine which saved [=impressions=] are available for conversions.
 
-Deciding on a value for differential privacy parameters
-is hard and therefore TBD.
+Implementations [=must=] set a [=maximum lookback=] of at least 30 days.
+Within this period, implementations [=should=] attempt to retain
+at least 1000 impressions per [=impression site=].
 
+Implementations [=should=] retain impressions
+beyond these recommended limits on time and number where possible.
+Available capacity for storing impressions depends on both
+the storage necessary to retain impression data
+and the processing time needed to [=measure a conversion|produce a conversion report=].
+An implementation [=may=] discard impressions before these limits are reached
+if a site requests storage of impressions in excess of available capacity,
+if requested by a user (see [[#opt-out]]),
+or for [=implementation-defined=] reasons.
 
-## User Control and Visibility ## {#user-control}
+<p class=note>One possible reason an implementation might choose not to retain impressions
+is that the site has not received sufficient user engagement.
 
-<p class=issue>
-Consider merging this section with [[#privacy-opt-out]].
+An [=implementation-defined=] value is chosen for the lists of sites
+passed to <a method for=Attribution>saveImpression()</a>
+and <a method for=Attribution>measureConversion()</a>.
+The <dfn>maximum number of conversion sites per impression</dfn>
+is a limit on the number of values for {{AttributionImpressionOptions/conversionSites}};
+implementations [=must=] set this value to at least 5.
+The <dfn>maximum number of conversion callers per impression</dfn>
+and <dfn>maximum number of impression callers for conversion</dfn>
+are limits on the number of values for {{AttributionImpressionOptions/conversionCallers}}
+and {{AttributionConversionOptions/impressionCallers}} respectively;
+implementations [=must=] set each of these values to at least 10.
+The <dfn>maximum number of impression sites for conversion</dfn>
+is a limit on the number of values for {{AttributionConversionOptions/impressionSites}};
+implementations [=must=] set this value to at least 30.
 
-### Optional Participation ### {#opt-out}
+An [=implementation-defined=] value is chosen for
+the <dfn>maximum number of credit values</dfn>,
+which is a limit on the number of values for {{AttributionConversionOptions/credit}};
+implementations [=must=] set this value to at least 10.
+An [=implementation-defined=] value is chosen for
+the <dfn>maximum number of match values</dfn>,
+which is a limit on the number of values for {{AttributionConversionOptions/matchValues}};
+implementations [=must=] set this value to at least 30.
 
+The size of histograms
+produced by <a method for=Attribution>measureConversion()</a>
+is subject to both an [=implementation-define=] <dfn>maximum histogram size</dfn>
+and <dfn>maximum aggregation-service histogram size</dfn>.
+No minimum value for the [=maximum histogram size=] is set
+as the expectation is that the choice of aggregation technology
+will set a limit.
+The [=maximum aggregation-service histogram size=]
+will be a fixed value that is determined
+by the choice of technology used by the [=aggregation service=];
+it is not [=implementation-defined=].
 
-* Users should be able to opt out. Opt out should be undetectable.
+### Privacy and Safety Limit Parameter Configuration ### {#safety-limits-configuration}
 
-This mechanism may be a dedicated control
-for the Attribution API,
-or it may be a consolidated privacy control
-that applies to multiple features,
-including Attribution.
-Further, user agent developers should consider interaction
-of other privacy modes with the Attribution API.
-For example, attribution might be disabled in a private browsing mode,
-or it might be disabled
-if the user has opted out of collection of diagnostic data.
+[=User agents=] configure the [=privacy budget=] and [=safety limits=] by defining values
+for the following:
 
-### Visibility ### {#visibility}
+*   The <dfn>per-site privacy budget</dfn> (&epsilon;<sub>site</sub>) is [=implementation-defined=].
+    Experiments with differentially private aggregates have shown
+    that reasonable performance can be achieved with values in the range
+    between 1 (more private) and 10 (more performance).
 
-* User ability to view the impression store and past report submissions.
+*   The <dfn>global privacy budget per epoch</dfn> (&epsilon;<sub>global</sub>) which is
+    the maximum privacy budget available across all [=sites=] per [=epoch=],
+    specified in [=microepsilons=].
+    Implementations [=should=] set this value as a multiple of
+    the per-[=site=] [=privacy budget=] per [=epoch=].
+
+*   The <dfn>impression site quota per epoch</dfn> (&epsilon;<sub>imp-quota</sub>) which is
+    the maximum privacy budget that a single [=impression site=]
+    can enable to be consumed from the [=global privacy budget store|global privacy budget=] per [=epoch=],
+    specified in [=microepsilons=].
+    Implementations [=should=] set this value as a multiple of
+    the per-[=site=] [=privacy budget=] per [=epoch=].
+
+<p class=note> Configuring [=safety limits=] as multiples of the per-[=site=] budget determines
+how the API can be used by multiple sites.
+In setting this multiple,
+implementations need to consider what they expect to be
+the number of sites that might use their budget,
+maybe adjusted downward to allow for sites
+that do not fully use their budget.
+
+<p class=note>Setting [=safety limits=] as multiples of the per-[=site=] budget
+ensures that exhausting shared limits requires coordination by many sites,
+making them primarily useful as a means of protecting against abuse
+rather than as a primary privacy mechanism.
+
 
 
 # HTTP API # {#http-api}
@@ -2183,9 +2561,6 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
      1.  Set |opts|.{{AttributionConversionOptions/maxValue}} to |maxValue|.
 1.  Return (|opts|, |reportUrl|).
 
-Issue: Should we allow `http` for |reportUrl|'s [=url/scheme=]?
-Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
-
 </div>
 
 <div algorithm>
@@ -2199,7 +2574,7 @@ a [=URL=] |url|, and an [=environment settings object=] |settings|:
     "<code>[[DAP#name-application-dap-report-medi|application/dap-report]]</code>".
 
     Note: This will need to be updated if {{AttributionAggregationProtocol}}
-    ever gains a value other than {{AttributionAggregationProtocol/dap-15-histogram}}.
+    ever gains a value other than {{AttributionAggregationProtocol/dap-18-histogram}}.
 1.  Let |request| be a new [=request=] with the following properties:
     :   [=request/method=]
     ::  "`POST`"
@@ -2269,11 +2644,6 @@ and [=response=] |response|, run these steps:
             1.  [=Upon fulfillment=] of |reportPromise|, let |result| be the fulfilled value.
             1.  [=Send a report=] with |result|.{{AttributionConversionResult/report}}, |reportUrl|, and
                 |request|'s [=request/client=].
-
-Issue: Confirm the desired semantics of [:Save-Impression:] and [:Measure-Conversion:] in the same response.
-
-Issue: Should we allow `http` for |response|'s [=response/URL=]'s [=url/scheme=]?
-Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
 
 </div>
 
@@ -2361,7 +2731,7 @@ by either MPC operator.
 
 ### Prio and DAP ### {#prio}
 
-The <a enum-value for=AttributionAggregationProtocol>`dap-15-histogram`</a>
+The <a enum-value for=AttributionAggregationProtocol>`dap-18-histogram`</a>
 aggregation method uses Prio [[PRIO]]
 and the Distributed Aggregation Protocol (DAP) [[DAP]].
 Specifically, this aggregation method uses
@@ -2402,30 +2772,31 @@ as close to 2<sup><var>n</var></sup> − 1 as other constraints allow.
 
 ### DAP Extensions ### {#dap-extensions}
 
-Several extensions to DAP [[DAP-EXT]] are necessary for this application:
+Extensions to DAP [[DAP-ATTRIBUTION]] are necessary for this application:
 
-*   [[DAP-EXT#name-late-task-binding|Late task binding]]
-    (`late_binding`)
-    improves the ability of a site to collect reports
-    and aggregate them as needed.
+*   [[DAP-ATTRIBUTION#collector-id|Collector identity]]
+    (`collector_identity`)
+    identifies the entity that is responsible
+    for requesting aggregates.
+    The value for this extension encodes the identity of the API caller,
+    either an [=intermediary site=] or the [=conversion site=].
+    The collector identity extension applies to an entire DAP task.
 
-*   [[DAP-EXT#name-privacy-budget-consumption|Privacy budget]]
+*   [[DAP-ATTRIBUTION#budget-source|Budget source]]
+    (`budget_source`)
+    identifies the entity that has expended [=privacy budget=].
+    The value for this extension encodes the identity of the [=conversion site=].
+    The budget source extension applies to an entire DAP task.
+
+*   [[DAP-ATTRIBUTION#dp|Privacy budget]]
     (`privacy_budget`)
     ensures that the aggregation service does not aggregate reports
     that received less privacy budget
     than the aggregation task was configured with.
+    The privacy budget extension applies to each report.
 
-*   [[DAP-EXT#name-requester-website-identity|Requester identity]]
-    (`requester_identity`)
-    is critical to ensure
-    that differential privacy protections are effective.
-    This prevents a malicious actor
-    that is able to correlate user identity across multiple sites
-    from exceeding the sensitivity bounds for that user
-    by aggregating reports from multiple sites together.
-
-User agents include all of these extensions
-in reports that they generate.
+User agents use these extensions to construct
+the reports that they generate.
 
 
 ### Report Encryption For DAP ### {#encrypt-dap}
@@ -2435,110 +2806,152 @@ To <dfn>construct a DAP report</dfn>,
 producing a [=byte sequence=] |report|,
 given [=validated conversion options=] |options|,
 [=site=] |topLevelSite|,
+[=site=] or `undefined` |intermediarySite|,
 [=moment=] |now|,
 and a [=list=] of [=integers=] |histogram|:
 
 1.  Let |field| be Field128,
-    as defined in [Section 6.1.3](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-15#section-6.1.3)
+    as defined in [Section 6.1.3](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-18#section-6.1.3)
     of [[VDAF]].
 
 1.  Let |length| be the [=list/size=] of |histogram|.
 
-1.  Let |bits| be the base-2 logarithm
-    of |options|.[=validated conversion options/max value=],
-    rounded toward positive Infinity.
+1.  Let |maxValue| be |options|.[=validated conversion options/max value=].
 
-1.  Let |chunkLength| be the square root of (|bits| + 1) * |length|,
+1.  Let |chunkLength| be the square root of ([Math.ceil](https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-math.ceil)([log2](https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-math.log2)(|maxValue| + 1)) + 1) * |length|,
     rounded to the nearest integer.
 
 1.  Let |vdaf| be a new PrioL1BoundSum VDAF [[PRIO-L1]] instance,
-    passing |field|, |length|, |bits|, and |chunkLength|.
+    passing |field|, |length|, |maxValue|, and |chunkLength|.
 
-1.  Let |taskID| be the [=byte sequence=]
-    from the hex string `b13e8440f1cdb4da51eed3967e0a2652d27f5005bc35f751daf188b4b746708b`
-    [[DAP-EXT]].
+1.  Let |microEpsilon| be |options|.[=validated conversion options/epsilon=]
+    multiplied by 1,000,000, then rounded toward positive Infinity.
+
+1.  Let |caller| be |intermediarySite|,
+    if |intermediarySite| is not `undefined`,
+    otherwise |topLevelSite|.
+
+1.  Let |taskConfig| be the [=byte sequences=] produced by encoding a `TaskConfiguration` instance
+    as defined in [Section 4.2](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.2)
+    of [[DAP]], with the following values:
+
+    1.  An empty `task_info`.
+
+    1.  A `leader_aggregator_endpoint` set to the URL of the DAP Leader,
+        taken from the [=implementation-defined=] definition
+        of the selected [=aggregation service=]
+        in |options|.[=validated conversion options/Aggregation Service=].
+        The encoded value is produced by invoking the [=URL serializer=]
+        with the configured URL and `false` (for [=URL serializer/exclude fragment=]).
+
+    1.  A `helper_aggregator_endpoint` set to the URL of the DAP Helper,
+        taken from the [=implementation-defined=] definition
+        of the selected [=aggregation service=]
+        in |options|.[=validated conversion options/Aggregation Service=],
+        produced using the same process as the `leader_aggregator_endpoint` value.
+
+    1.  A `time_precision` value of 5.
+
+    1.  A `min_batch_size` value of 20.
+
+    1.  A `batch_mode` value of TBD (see [[DAP-ATTRIBUTION#batch-mode]]).
+
+    1.  An empty `batch_config`.
+
+    1.  A `vdaf_type` value of 7 (see [[PRIO-L1#dap]]).
+
+    1.  A `vdaf_configuration` encoded according to PrioL1BoundSum [[PRIO-L1#dap]],
+        with |length|, |maxValue|, and |chunkLength|.
+
+    1.  A set of task extensions, `extensions`,
+        a [=map=] of [=16-bit unsigned integers=] to [=byte sequences=]:
+
+        *   The extension codepoint for [[DAP-ATTRIBUTION#collector-id|Collector identity]],
+            mapped to the [=host serializer|serialized=] [=host=] component of |caller|.
+
+        *   The extension codepoint for [[DAP-ATTRIBUTION#budget-source|privacy budget source]],
+            mapped to the [=host serializer|serialized=] [=host=] component of |topLevelSite|.
+
+1.  Let |taskID| be the [=byte sequence=] produced by the process described in [[DAP-TASKPROV#task-id]],
+    passing |taskConfig|.
 
 1.  Let |ctx| be the [=byte sequence=] formed by concatenating
-    the [=isomorphic encode|encoded=] string `dap-15`
+    the [=isomorphic encode|encoded=] string `dap-18`
     and |taskID|,
-    as defined in [Section 4.5.2](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.2)
+    as defined in [Section 4.4.2.1](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#client-behavior)
     of [[DAP]].
 
 1.  Let |reportID| be 16 bytes sampled from a cryptographically-secure random source [[RFC4086]].
 
 1.  Let |rand| be 128 bytes sampled from a cryptographically-secure random source [[RFC4086]].
 
-1.  Let |publicShare|, |inputShares| be the result of invoking |vdaf|.[`shard()`](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf#section-4.1),
-    as defined in [Section 4.1](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-15#section-4.1)
+1.  Let |publicShare|, |inputShares| be the result of invoking |vdaf|.[`shard()`](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-18#sec-def-shard),
+    as defined in [Section 4.1](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-18#section-4.1)
     of [[VDAF]],
     with |ctx|, |histogram|, |reportID| (as the VDAF "nonce" parameter), and |rand|.
 
-1.  Let |time| be |now| as a [=duration=] since the [=Unix epoch=],
-    divided by a [=duration=] of 5 seconds.
-    <!-- TODO: confirm fixed time resolution -->
+1.  Let |time| be the integer resulting from dividing
+    the [=duration from=] the [=Unix epoch=] to |now|
+    by a [=duration=] of 5 seconds,
+    rounding towards negative Infinity.
 
 1.  Let |extensions| be a [=map=] of [=16-bit unsigned integers=] to [=byte sequences=],
     comprised of:
 
-    *   The extension codepoint for [[DAP-EXT#name-late-task-binding|late task binding]],
-        mapped to an [=list/is empty|empty=] [=byte sequence=].
+    *   The extension codepoint for [[DAP-ATTRIBUTION#dp|privacy budget]],
+        mapped to the value of |microEpsilon|,
+        encoded by invoking [`NumericToRawBytes`](https://tc39.es/ecma262/multipage/structured-data.html#sec-numerictorawbytes)
+        with [UINT32](https://tc39.es/ecma262/multipage/indexed-collections.html#table-the-typedarray-constructors),
+        the value |microEpsilon|,
+        and `false` (for `isLittleEndian`).
 
-    *   The extension codepoint for [[DAP-EXT#name-privacy-budget-consumption|privacy budget]],
-        mapped to the value of |encodedEpsilon|, derived as follows:
-
-        1.  Let |scaledEpsilon| be the [=32-bit unsigned integer=]
-            that is |options|.[=validated conversion options/epsilon=],
-            multiplied by 1,000,000, then rounded toward positive Infinity.
-
-        1.  Let |encodedEpsilon| be the result of invoking
-            [`NumericToRawBytes`](https://tc39.es/ecma262/multipage/structured-data.html#sec-numerictorawbytes)
-            with [UINT32](https://tc39.es/ecma262/multipage/indexed-collections.html#table-the-typedarray-constructors), |scaledEpsilon|, and `false` (for `isLittleEndian`).
-
-    *   The extension codepoint for [[DAP-EXT#name-requester-website-identity|requester identity]],
-        mapped to the [=isomorphic encode|encoded=] value of |topLevelSite|[1].
-
-1.  Let |reportMetadata| be encoded DAP [`ReportMetadata`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.2)
+1.  Let |reportMetadata| be encoded DAP [`ReportMetadata`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.4.2)
     generated from |reportID|, |time|, and |extensions|.
 
 1.  Let |encryptedInputShares| be an [=list/is empty|empty=] [=list=].
 
 1.  [=list/iterate|For each=] |share| of |inputShares|,
     follow the method for encrypting shares
-    described in [Section 4.5.2](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.2):
+    described in [Section 4.4.2.1](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.4.2.1):
 
     1.  Let |pkR| be the public key of the corresponding role from
-        the [=aggregation service=] [HPKE configuration](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.1)
+        the [=aggregation service=] [HPKE configuration](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.5.1)
         obtained for the [=aggregation service=]
         indicated by |options|.[=validated conversion options/Aggregation Service=].
 
-        <p class=note>The URL for <a enum-value for=AttributionAggregationProtocol>"dap-15-histogram"</a> is expected to identify the DAP Leader role.
+        <p class=note>The URL for <a enum-value for=AttributionAggregationProtocol>"dap-18-histogram"</a> is expected to identify the DAP Leader role.
         Implementations need to obtain HPKE configuration for both Aggregators statically.
-        The HPKE configuration <span class=allow-2119>must not</span> be fetched on demand, as the time that takes
-        will leak information to callers of <a method for=Attribution>measureConversion()</a>.
+        The HPKE configuration <span class=allow-2119>must not</span> be fetched on demand,
+        as the time that takes will leak information
+        to callers of {{Attribution/measureConversion()}}.
 
     1.  Let |serverRole| be 2 for the first item (the Leader)
-        and 3 for the second (the Helper role).
+        and 3 for the second (the Helper).
 
     1.  Let |info| be the [=byte sequence=] formed by concatenating:
-        the [=isomorphic encode|encoded=] value of the string `dap-15 input share`,
+        the [=isomorphic encode|encoded=] value of the string `dap-18 input share`,
         a byte with the value 0x01, and |serverRole|.
 
     1.  Let |inputShareAAD| be constructed from
-        |taskID|, |reportMetadata|, and |publicShare|,
-        following the structure for [`InputShareAad`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.2).
+        |taskID|, |reportMetadata|, |publicShare|, and |taskConfig|
+        following the structure for [`InputShareAad`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.4.2.1).
+
+    1.  Let |plaintextShare| be constructed from
+        an empty set (for `private_extensions`) and |share| (for `payload`),
+        following the structure for [`PlaintextInputShare`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.4.2.1).
 
     1.  Let |hpke| be an HPKE [[RFC9180]] configuration
-        that is based on the same [HPKE configuration](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.1).
+        that is based on the same [HPKE configuration](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.4.1).
 
     1.  Let |encryptedShare| be the result of invoking |hpke|.[`Seal<mode_base>()`](https://hpkewg.github.io/hpke/draft-ietf-hpke-hpke.html#section-6.1),
-        passing |pkR|, |info|, |inputShareAAD|, and |share|.
+        passing |pkR|, |info|, |inputShareAAD|, and |plaintextShare|.
 
     1.  [=list/Append=] |encryptedShare| to |encryptedInputShares|.
 
-1.  Let |report| be an encoded DAP [`Report`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.2)
+1.  Let |report| be an encoded DAP [`Report`](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.4.2)
     generated from |reportMetadata|, |publicShare|, |encryptedInputShares|
     (the two values being the leader and helper encrypted input shares respectively),
-    and [=aggregation service=] [HPKE configuration](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15#section-4.5.1)
+    and [=aggregation service=] [HPKE configuration](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-4.4.1)
     obtained from the DAP aggregators.
 
 1.  Return |report|.
@@ -2656,6 +3069,52 @@ for a number of reasons:
     Without allocating [=privacy budget=] for new data,
     sites could exhaust their budget forever.
 
+### Formal Analysis of Privacy Properties and Their Limitations ### {#formal-analysis}
+
+The privacy protections in Attribution are multi-layered:
+1.  Per-site budgets limit how much can be learned about a user by any one conversion site.
+1.  The global budget provides a backstop limit on how much can be learned about a user by all sites.
+1.  Impression-site quotas limit how much conversion sites can learn about a user’s activity on any one impression site.
+1.  A counter maintained after each user action limits how many sites can store data into or learn from API.
+
+The formal privacy analysis in this specification is based on two papers.
+The first [[PPA-DP]] establishes the theory
+for on-device Individual DP accounting. The second [[PPA-DP-2]] expands the analysis to
+the mathematical privacy guarantees afforded by per-site budgets and by the global budget.
+
+The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee.
+However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees:
+
+1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
+    and conversions) <span class=allow-2119>must</span> be generated independently of past DP [=attribution results=] from other sites.
+1.  *No leakage through cross-site shared limits.* Queries from one site <span class=allow-2119>must not</span> affect which
+    reports are emitted to others.
+
+In short, neither assumption can hold in practice.
+
+An assumption of no cross-site adaptivity is necessary because the system involves multiple sites that could interact
+with the same user over time.
+Sites will change the ads they show to the user based on each other’s DP measurements. For example, if one advertiser
+learns, from [=attribution results=], how to make better ads, some users could convert on their site
+rather than a competitor’s. In this case, what one site learns -- counted only against
+its own per-site budget -- alters the data (or absence of data) visible to their competitors, yet
+this is not accounted for in the per-site budget of those competitors.
+
+Any system that provides continuous measurement has this property, so the only conclusion can be to accept this limitation. That limitation is part of what justifies having a global DP budget and shared quotas, which lead to the second assumption.
+
+An assumption of no cross-site leakage is necessary when we have shared limits that span multiple sites. An example of
+such shared limits are the global safety limits that aim to provide a global DP guarantee.
+If <a method for=Attribution>measureConversion()</a> requests from some sites cause a shared limit
+to be reached, reports to other sites may be
+filtered. For instance, a site that knows it has impressions learns something about whether the shared limit has been reached. Though this information is aggregated and noisy, it is information about the site that exhausted its budget, in excess of the per-site budget for that site.
+
+Leakage through shared limits motivates using those limits only as a means of limiting abuse. Setting shared limits that are large multiples of the per-site budget makes it so that seeking to exploit shared limits requires coordination by at least that many sites. Larger multiples makes shared limits less useful as a privacy means of privacy protection and more suited as a means of protecting against denial of service or similar forms of abuse.
+
+By contrast, the analysis shows that *the global budget* can be implemented to deliver *sound global individual
+DP guarantees* without these limitations. However, to support the usage of the API by many sites, the global budget needs to be configured to be a significant multiple of the per-site budget.  This means that the DP guarantee it provides, while independent of any assumptions, cannot provide a meaningful DP protection alone. Therefore, per-site budgets provide the primary DP guarantee. The global budget can be viewed as a fallback in case of coordinated attack by malicious sites.
+
+A global DP budget also safeguards against sites that are able to link user identity across many sites to combine per-site budgets. Per-site models do not account for this possibility, though it is common for some sites to have this capability. Notably, this includes identity providers, sites that receive user identifiers (such as email addresses or phone numbers), sites that successfully use navigation tracking [[NAV-TRACKING-MITIGATIONS]], and sites that are able to use cross-site cookies for any reason [[WEB-WITHOUT-3P-COOKIES]].  Using Attribution across multiple sites can present a coordination challenge for such sites, but the potential for sites to have the capability to link activity to a single person cannot be disregarded in any holistic analysis of the privacy of the system.
+
 
 ### Browser Instances ### {#dp-instance}
 
@@ -2768,7 +3227,7 @@ If the [=privacy budget=] for that [=epoch=] is not sufficient,
 the impressions from that [=epoch=] are not used.
 
 Each time a [=conversion site=] invokes <a method for=Attribution>measureConversion()</a>
-the [=deduct privacy budget|privacy budget is deducted=]
+the [=deduct privacy and safety budgets|privacy budget is deducted=]
 for [=epochs=] from which the [=attribution logic=] selected [=impressions=].
 
 <div class=example id=ex-budget>
@@ -2788,7 +3247,7 @@ for [=epochs=] from which the [=attribution logic=] selected [=impressions=].
     corresponding to impressions from Sites B, C, and E.
 
     As a result, [=privacy budget=] for the [=conversion site=]
-    is [=deduct privacy budget|deducted=]
+    is [=deduct privacy and safety budgets|deducted=]
     from [=epochs=] 1, 3, 4, and 5.
     No impressions were recorded for [=epoch=] 2,
     so no [=privacy budget|budget=] is deducted from that [=epoch=].
@@ -2830,15 +3289,28 @@ whether their request for a [=conversion report=] has caused
 a safety limit to be exceeded.
 
 
-
-
-
-
 ## Differential Privacy Mechanisms ## {#dp-mechanism}
 
-The specific mechanisms that are used
-depend on the type of [=aggregation service=].
+The differential privacy mechanism--
+that is, the specific method by which noise is added--
+can be chosen by the [=aggregation service=].
 
+Adding Laplacian noise is expected to produce good results,
+balancing the overall magnitude of noise
+and the simplicity of implementation and analysis.
+The current design uses a DP sensitivity based on an L1 norm,
+which supports Laplace noise added in the aggregation.
+Supporting other noise mechanisms may require additional changes
+to how sensitivity is computed and signaled.
+
+The addition of noise in a central location,
+as defined for any of these aggregation services,
+ensures that the total amount of noise does not increase
+as the total number of reports increases.
+This provides a utility benefit over differential privacy designs
+that apply noise at the point that a report is generated
+(that is, a local differential privacy model)
+where noise increases in proportion to the total number of reports.
 
 
 # Security Considerations # {#security}
@@ -2876,11 +3348,11 @@ of harmful information flow through the impression store:
     <a dict-member for=AttributionImpressionOptions>lifetimeDays</a>.
 
 
-## API Implementation ## {#security-api-implementation}
+## Side Channel Risks in Implementation ## {#security-api-implementation}
 
-The Attribution APIs must be implemented carefully
-to maintain the required security and privacy properties.
-A site calling the APIs must not be able to learn:
+The Attribution APIs must be implemented with care
+for maintaining the required security and privacy properties.
+A site calling the APIs cannot learn:
 
 *   Whether the Attribution APIs are [[#opt-out|enabled]].
 *   Whether an attribution occurred.
@@ -2889,6 +3361,7 @@ A site calling the APIs must not be able to learn:
     [=conversion value=].
 *   Which <a dict-member for=AttributionImpressionOptions>histogramIndex</a>
     is assigned the [=conversion value=].
+*   The [=epoch start time|time=] that [=epochs=] start.
 
 Note that explicit return values or thrown exceptions
 are not the only way that a site can learn from
@@ -2897,8 +3370,39 @@ It may be possible to infer sensitive information from
 <dfn>side channels</dfn> like:
 
 *   Variation in the time it takes for the APIs to complete.
-*   Consumption of memory or storage by the API, if that
-    consumption is somehow observable by the site.
+*   Consumption of shared resources by the API,
+    such as memory, storage, network, and CPU.
+    This includes any enforcement of any limits on that consumption,
+    if that could be observed by the site.
+
+Variation in the execution time
+of the functions in the API
+is the primary consideration for maintaining guarantees.
+There are two factors of particular concern for execution time:
+
+*   The number of impressions that
+    <a method for=Attribution>measureConversion()</a> handles.
+    Because sites control how many impressions are saved
+    and the logic for selecting them,
+    this creates a significant exposure to sites
+    creating cross-site timing side channels.
+
+*   Access to shared global state.
+    Concurrent access to the API is governed
+    by a single [=attribution budget lock=]
+    to safeguard against correctness errors.
+    That lock creates a means of information leakage
+    between sites that concurrently access the API.
+
+The shared global state
+in the [=global privacy budget store=],
+the [=impression site quota store=],
+and [=epoch start time=]
+are less of a risk
+as those values never directly affect algorithm run time.
+Implementations still need to ensure that any global state
+does not contribute to a [=fingerprint=]
+or other information leakage.
 
 While complete elimination of all side channels is impractical,
 implementations must make reasonable efforts to prevent
@@ -2912,6 +3416,7 @@ Strategies to prevent leakage include:
     should always go through the full process of constructing
     a conversion report, even when the [=conversion value=] to be
     reported is zero.
+*   Setting a fixed running time for certain operations.
 
 
 ## Aggregation Services ## {#security-aggregation-services}
@@ -2945,11 +3450,6 @@ be released through attribution.
 [[#dp-safety]] discusses establishing additional cross-site
 privacy budgets to mitigate this possibility.
 
-<p class=issue>
-Rate limits on calls to the Attribution APIs
-could also be an effective mechanism to prevent
-harvesting information through overuse of the APIs.
-
 
 ## Ad Fraud ## {#security-ad-fraud}
 
@@ -2962,8 +3462,8 @@ is a particular concern with the Attribution API,
 because impressions are stored only on the device.
 It is not possible to apply server-side intelligence
 to identify fraudulent impressions and exclude them
-from attribution. Conversely, even though [=conversion
-reports=] are encrypted, because the reports are sent
+from attribution. Conversely, even though [=conversion reports=]
+are encrypted, because the reports are sent
 to a server, the server can make a determination that
 the conversion is likely fraudulent and exclude it from
 aggregation.
@@ -3024,17 +3524,11 @@ has an important role in preventing misuse of the API
 for mass data collection, and in making attempts
 at such misuse more visible.
 
-<p class=issue>
-It is unclear whether the [=privacy budget store=] should be cleared whenever
-the [=impression store=] is cleared. On one hand, it contains information about
-browsing activity, so it is desirable to include it when clearing browsing activity.
-On the other hand, it is only possible to strictly adhere to the requirements of
-the differential privacy mechanism if information about a fully- or partially-
-depleted privacy budget is maintained until that budget is no longer relevant
-(i.e. the end of the [=privacy budget epoch=]).
 
+## Disabling the Attribution API ## {#opt-out}
 
-## Disabling the Attribution API ## {#privacy-opt-out}
+User agents [=must=] provide controls
+for users to disable the Attribution API.
 
 The Attribution API
 is designed to reveal only aggregate information.
@@ -3043,22 +3537,45 @@ limits the chance of determining whether any particular user
 contributed to the aggregated output.
 However, some users may still prefer
 not to participate in attribution measurement.
-As discussed in [[#opt-out]], the user agent must provide
-a mechanism for the user to disable the Attribution API.
+
+Implementations can offer users a choice to opt out
+using a dedicated control for the Attribution API,
+or through a consolidated privacy control that applies to multiple features.
+
+User agent developers should consider interaction
+of other privacy modes with the Attribution API.
+For example, attribution might be disabled in a private browsing mode,
+or it might be disabled
+if the user has opted out of collection of diagnostic data.
+
+By design, whether a user has opted out is not detectable by websites.
 
 To minimize the risk of [=fingerprinting=],
 and to prevent discrimination
 against users who choose to disable the Attribution API,
-sites must not be able to detect that the API is disabled.
+sites <span class=allow-2119>must not</span> be able to detect that the API is disabled.
 Specifically, all calls to the Attribution API
 that are otherwise valid
-must complete successfully, even when the API is disabled.
+complete successfully, even when the API is disabled.
 The only difference in behavior
 is that [=conversion reports=] returned when the API is disabled
 will never report any [=conversion value=].
 Because the reports are encrypted,
 this difference cannot be detected
 by the site receiving the conversion report.
+
+
+## Visibility ## {#visibility}
+
+Implementations [=should=] offer users a way
+to view the status of the impression store
+and to review past report submissions.
+
+These interfaces might be limited to summary information that
+show aggregate use of the Attribution API by sites.
+Interfaces to examine the details of impressions and submitted reports
+could enable diagnosing the operation of the API
+by both users and web developers.
 
 
 ## Unconfigured Browsers ## {#unconfigured}
@@ -3087,7 +3604,7 @@ or changes in choice of algorithm.
 Detecting stale or absent configuration might be used
 to [=fingerprint=] the [=user agent=].
 
-A [=user agent=] <span class=allow-2119>should</span> therefore
+A [=user agent=] [=should=] therefore
 prioritize the acquisition of [=aggregation service=] configuration
 in a way that is not observable to sites.
 This might be achieved by obtaining configuration at startup,
@@ -3159,7 +3676,7 @@ Sites would then be able to gain more information
 from attribution.
 
 A [=user agent=] may clear data
-from the [=privacy budget store=] and [=epoch start store=]
+from the [=privacy budget store=] and [=epoch start time=]
 when the API is [[#opt-out|disabled]].
 In that case, if the API is re-enabled,
 there is no way to determine what budget was expended
@@ -3187,7 +3704,7 @@ When clearing site data at the request of a [=site=],
 through the use of the [:Clear-Site-Data:] header,
 a [=user agent=] only [=clear impressions for a site|removes impressions=],
 without altering either the [=privacy budget store=]
-or the [=epoch start store=] for affected [=sites=].
+or the [=epoch start time=].
 
 
 ### Clearing Browsing History ### {#clear-browsing-history}
@@ -3197,8 +3714,7 @@ when clearing browsing history.
 Retaining per-[=site=] information
 necessary to prevent privacy loss toward sites
 leaves information about visits to sites
-for other users of a computer to discover
-when removing browsing history.
+for other users of a computer to discover.
 
 A user agent that clears browsing history
 invokes [=clear browsing history for attribution=],
@@ -3209,30 +3725,25 @@ and the time that the operation was initiated.
 When clearing browsing history,
 [=user agents=] need to
 remove all per-[=site=] [=privacy budget=] information
-(that is, remove entries from both the [=privacy budget store=]
-and the [=epoch start store=]).
+(that is, remove entries from the [=privacy budget store=]).
 [=User agents=] also need to ensure that
 any subsequent [=privacy budget=] expenditure
 cannot cause privacy loss in excess of configured limits
 as a result of losing that information.
 
 This can be achieved by disabling attribution
-for a period between one and two [=epochs=]
-from the point that browsing history is discarded.
+for the [=epoch=]
+in which browsing history was discarded.
 Otherwise, a [=site=] that expends its budget
 immediately prior to the clearing of history
 would be able to learn more through the API
 than it could without the clearing of state.
 
 <p class=note>
-This disables the API for up to <em>two</em> [=epochs=]
+This disables the API for the remainder of the [=epoch=]
 for affected [=sites=].
-Because the [=epoch start store=] is cleared,
-the start of any newly-defined [=epoch=] for that [=site=]
-becomes unknown.
-Any new [=epoch=] will [start at a fresh randomly-selected time](#s-epoch-start),
-which cannot overlap with any [=epoch=] that might have been defined
-before history was cleared.
+Because the [=epoch start time=] is not cleared,
+the [=epoch=] timeline remains continuous.
 
 A [=user agent=] remembers when history was last cleared
 in the [=last browsing history clear=] value.
@@ -3329,7 +3840,13 @@ urlPrefix: https://fetch.spec.whatwg.org/; spec: html; type: dfn
     text: request origin; url: #concept-request-origin
     text: HTTP-network fetch; url: #concept-http-network-fetch
 urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
+    text: active document; url: #nav-document
+    text: activation notification
+    text: activation triggering input event
+    text: descendent navigables
+    text: document state
     text: host; url: #concept-origin-host
+    text: initiator origin; url: #document-state-initiator-origin
     text: obtain a site
     text: origin; url: #concept-origin
     text: relevant settings object
@@ -3338,6 +3855,8 @@ urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
     text: scheme-and-host
     text: site
     text: top-level origin; url: #concept-environment-top-level-origin
+    text: top-level traversable; url: #nav-top
+    text: transient activation duration
     text: iframe; url: #child-navigable
 urlPrefix: https://infra.spec.whatwg.org/; spec: infra; type: dfn;
     text: set; url: #sets
@@ -3348,6 +3867,7 @@ urlPrefix: https://storage.spec.whatwg.org/; spec: storage; type: dfn;
 urlPrefix: https://url.spec.whatwg.org/; spec: url; type: dfn;
     text: domain label
     text: host parser; url: #concept-host-parser
+    text: host serializer; url: #concept-host-serializer
     text: registrable domain; url: #host-registrable-domain
 urlPrefix: https://w3ctag.github.io/privacy-principles/; type: dfn;
     text: collective privacy
@@ -3397,17 +3917,26 @@ spec:css-2025; type:dfn; text:user
       "Christopher A. Wood"
     ],
     "date": "2024-04-29",
-    "href": "https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-15",
+    "href": "https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-16",
     "title": "Distributed Aggregation Protocol for Privacy Preserving Measurement",
     "publisher": "IETF"
   },
-  "dap-ext": {
+  "dap-attribution": {
     "authors": [
       "Martin Thomson"
     ],
-    "title": "Distributed Aggregation Protocol (DAP) Report Binding Extensions",
-    "date": "2025-07-04",
-    "href": "https://datatracker.ietf.org/doc/html/draft-thomson-ppm-dap-dp-ext-02"
+    "title": "Distributed Aggregation Protocol (DAP) Extensions for the Attribution API",
+    "date": "2025-01-15",
+    "href": "https://datatracker.ietf.org/doc/html/draft-thomson-ppm-dap-attribution-00"
+  },
+  "dap-taskprov": {
+    "authors": [
+      "Shan Wang",
+      "Christopher Patton"
+    ],
+    "title": "Task Binding and In-Band Provisioning for DAP",
+    "date": "2025-09-05",
+    "href": "https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-taskprov-03"
   },
   "dp": {
     "authors": [
@@ -3476,6 +4005,22 @@ spec:css-2025; type:dfn; text:user
     "title": "Cookie Monster: Efficient On-device Budgeting for Differentially-Private Ad-Measurement Systems",
     "publisher": "SOSP'24"
   },
+  "ppa-dp-2": {
+    "authors": [
+      "Pierre Tholoniat",
+      "Alison Caulfield",
+      "Giorgio Cavicchioli",
+      "Mark Chen",
+      "Nikos Goutzoulias",
+      "Benjamin Case",
+      "Asaf Cidon",
+      "Roxana Geambasu",
+      "Mathias Lécuyer",
+      "Martin Thomson"
+    ],
+    "href": "https://arxiv.org/abs/2506.05290",
+    "title": "Big Bird: Privacy Budget Management for W3C's Privacy-Preserving Attribution API"
+  },
   "prio": {
     "authors": [
       "Henry Corrigan-Gibbs",
@@ -3502,8 +4047,13 @@ spec:css-2025; type:dfn; text:user
       "Phillipp Schoppmann"
     ],
     "title": "Verifiable Distributed Aggregation Functions",
-    "date": "2025-06-17",
-    "href": "https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-15"
+    "date": "2026-01-30",
+    "href": "https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vdaf-18"
+  },
+  "WEB-WITHOUT-3P-COOKIES": {
+    "title": "A Web Without Third-Party Cookies",
+    "href": "https://www.w3.org/2001/tag/doc/web-without-3p-cookies/",
+    "publisher": "W3C TAG"
   }
 }
 </pre>

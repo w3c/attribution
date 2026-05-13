@@ -12,16 +12,21 @@ import { Temporal } from "temporal-polyfill";
 let now = new Temporal.Instant(0n);
 
 const backend = new Backend({
-  aggregationServices: new Map([["", { protocol: "dap-15-histogram" }]]),
+  aggregationServices: new Map([["", { protocol: "dap-18-histogram" }]]),
   includeUnencryptedHistogram: true,
 
   // TODO: Allow these values to be configured in the UI.
+  globalPrivacyBudgetPerEpoch: 1000000,
+  impressionSiteQuotaPerEpoch: 1000000,
   maxConversionSitesPerImpression: 10,
   maxConversionCallersPerImpression: 10,
+  maxImpressionSitesForConversion: 10,
+  maxImpressionCallersForConversion: 10,
   maxCreditSize: Infinity,
+  maxMatchValues: Infinity,
   maxLookbackDays: 30,
   maxHistogramSize: 100,
-  privacyBudgetMicroEpsilons: 1000000,
+  perSitePrivacyBudget: 1000000,
   privacyBudgetEpoch: days(7),
 
   now: () => now,
@@ -99,14 +104,11 @@ function updateImpressionsTable() {
 }
 
 function updateBudgetAndEpochTables() {
-  const epochStarts = document.querySelector<HTMLDListElement>("#epochStarts")!;
-  epochStarts.replaceChildren();
-  for (const [site, start] of backend.epochStarts) {
-    const dt = document.createElement("dt");
-    dt.innerText = site;
-    const dd = document.createElement("dd");
-    dd.innerText = start.toString();
-    epochStarts.append(dt, dd);
+  const container = document.querySelector<HTMLDListElement>("#epoch-start")!;
+  if (backend.epochStartTime !== null) {
+    container.style.display = "block";
+    const start = container.querySelector<HTMLTimeElement>("time")!;
+    start.innerText = backend.epochStartTime.toString();
   }
 
   const privacyBudgetEntries = document.querySelector<HTMLDListElement>(

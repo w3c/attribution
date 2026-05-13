@@ -26,22 +26,20 @@ const siteTable: readonly SiteTableEntry[] = [
   },
 ];
 
-async function setupImpressions(config?: TestConfig): Promise<Backend> {
+function setupImpressions(config?: TestConfig): Backend {
   const backend = makeBackend(config);
-  await Promise.all(
-    siteTable.map(({ impression, conversion: conversionSites }) =>
-      backend.saveImpression(impression, undefined, {
-        histogramIndex: 1,
-        conversionSites,
-      }),
-    ),
-  );
+  for (const entry of siteTable) {
+    backend.saveImpression(entry.impression, undefined, {
+      histogramIndex: 1,
+      conversionSites: entry.conversion,
+    });
+  }
   return backend;
 }
 
 // Clearing state for a given site only affects available privacy budget.
-void test("clear-site-state", async () => {
-  const backend = await setupImpressions();
+void test("clear-site-state", () => {
+  const backend = setupImpressions();
 
   // Check that this rejects correctly.
   assert.throws(() => backend.clearState([], false));
@@ -50,7 +48,7 @@ void test("clear-site-state", async () => {
   const before = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(before.unencryptedHistogram!.some((v) => v > 0));
 
@@ -71,7 +69,7 @@ void test("clear-site-state", async () => {
   const after = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(after.unencryptedHistogram!.every((v) => v === 0));
 
@@ -83,21 +81,20 @@ void test("clear-site-state", async () => {
 });
 
 // Forgetting all sites resets the entire thing, except the last reset time.
-void test("forget-all-sites", async () => {
+void test("forget-all-sites", () => {
   const now = Temporal.Instant.from("2025-01-01T00:00Z");
-  const backend = await setupImpressions({ now, ...defaultConfig });
+  const backend = setupImpressions({ now, ...defaultConfig });
   backend.clearState([], true);
 
   assert.deepEqual(backend.impressions, []);
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 });
 
 // Forgetting a site with impressions removes impressions.
-void test("forget-one-site-impressions", async () => {
+void test("forget-one-site-impressions", () => {
   const now = Temporal.Instant.from("2025-01-01T00:00Z");
-  const backend = await setupImpressions({ now, ...defaultConfig });
+  const backend = setupImpressions({ now, ...defaultConfig });
   backend.clearState(["imp-one.example"], true);
 
   assert.deepEqual(
@@ -106,43 +103,38 @@ void test("forget-one-site-impressions", async () => {
     "Impressions for the affected site are removed",
   );
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 });
 
 // Forgetting a site with conversion state removes those.
-void test("forget-one-site-conversions", async () => {
+void test("forget-one-site-conversions", () => {
   const now = Temporal.Instant.from("2025-01-01T00:00Z");
-  const backend = await setupImpressions({ now, ...defaultConfig });
+  const backend = setupImpressions({ now, ...defaultConfig });
 
   const before = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(before.unencryptedHistogram!.some((v) => v > 0));
 
   assert.ok(backend.privacyBudgetEntries.length > 0);
-  assert.equal(backend.epochStarts.size, 1);
 
   backend.clearState(["conv-one.example"], true);
 
   // Impressions are unaffected, and conversion state is gone.
   assert.equal(backend.impressions.length, siteTable.length);
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  assert.deepEqual(backend.epochStarts, new Map());
   assert.deepEqual(backend.lastBrowsingHistoryClear, now);
 
   // Re-run a query and it should return an all zero result.
   const after = backend.measureConversion("conv-one.example", undefined, {
     aggregationService: Object.keys(defaultConfig.aggregationServices)[0]!,
     histogramSize: defaultConfig.maxHistogramSize,
-    epsilon: defaultConfig.privacyBudgetMicroEpsilons / 1e6 / 10,
+    epsilon: defaultConfig.perSitePrivacyBudget / 1e6 / 10,
   });
   assert.ok(after.unencryptedHistogram!.every((v) => v === 0));
 
   // Privacy budget entries aren't added; this epoch is off-limits.
   assert.deepEqual(backend.privacyBudgetEntries, []);
-  // The epoch start will be initialized.
-  assert.equal(backend.epochStarts.size, 1);
 });

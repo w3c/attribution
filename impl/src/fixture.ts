@@ -8,15 +8,20 @@ export const defaultConfig = e2eConfig as Readonly<TestConfig>;
 export interface TestConfig {
   now?: Temporal.Instant;
   aggregationServices: Record<string, AttributionProtocol>;
+  globalPrivacyBudgetPerEpoch: number;
   maxConversionSitesPerImpression: number;
   maxConversionCallersPerImpression: number;
+  maxImpressionSitesForConversion: number;
+  maxImpressionCallersForConversion: number;
   maxCreditSize: number;
+  maxMatchValues: number;
   maxLookbackDays: number;
   maxHistogramSize: number;
-  privacyBudgetMicroEpsilons: number;
+  perSitePrivacyBudget: number;
   privacyBudgetEpochDays: number;
   epochStart: number;
   fairlyAllocateCreditFraction: number;
+  impressionSiteQuotaPerEpoch: number;
 }
 
 export function makeBackend(
@@ -33,12 +38,17 @@ export function makeBackend(
     ),
     includeUnencryptedHistogram: true,
 
+    globalPrivacyBudgetPerEpoch: config.globalPrivacyBudgetPerEpoch,
+    impressionSiteQuotaPerEpoch: config.impressionSiteQuotaPerEpoch,
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
+    maxImpressionSitesForConversion: config.maxImpressionSitesForConversion,
+    maxImpressionCallersForConversion: config.maxImpressionCallersForConversion,
     maxCreditSize: config.maxCreditSize,
+    maxMatchValues: config.maxMatchValues,
     maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
-    privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
+    perSitePrivacyBudget: config.perSitePrivacyBudget,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
 
     now: () => now,

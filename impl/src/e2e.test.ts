@@ -23,7 +23,9 @@ type Event =
   | SaveImpression
   | MeasureConversion
   | ClearImpressionsForSite
-  | ClearBrowsingHistoryForAttribution;
+  | ClearBrowsingHistoryForAttribution
+  | EnableAPI
+  | DisableAPI;
 
 type ExpectedError =
   | "RangeError"
@@ -64,6 +66,16 @@ interface ClearBrowsingHistoryForAttribution {
   forgetVisits: boolean;
 }
 
+interface EnableAPI {
+  event: "enableAPI";
+  seconds: number;
+}
+
+interface DisableAPI {
+  event: "disableAPI";
+  seconds: number;
+}
+
 function assertThrows(
   call: () => unknown,
   expectedError: ExpectedError,
@@ -98,12 +110,17 @@ function runTest(
     ),
     includeUnencryptedHistogram: true,
 
+    globalPrivacyBudgetPerEpoch: config.globalPrivacyBudgetPerEpoch,
+    impressionSiteQuotaPerEpoch: config.impressionSiteQuotaPerEpoch,
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
     maxConversionCallersPerImpression: config.maxConversionCallersPerImpression,
+    maxImpressionSitesForConversion: config.maxImpressionSitesForConversion,
+    maxImpressionCallersForConversion: config.maxImpressionCallersForConversion,
     maxCreditSize: config.maxCreditSize,
+    maxMatchValues: config.maxMatchValues,
     maxLookbackDays: config.maxLookbackDays,
     maxHistogramSize: config.maxHistogramSize,
-    privacyBudgetMicroEpsilons: config.privacyBudgetMicroEpsilons,
+    perSitePrivacyBudget: config.perSitePrivacyBudget,
     privacyBudgetEpoch: days(config.privacyBudgetEpochDays),
 
     now: () => now,
@@ -144,7 +161,6 @@ function runTest(
             event.intermediarySite,
             event.options,
           );
-
         if (Array.isArray(event.expected)) {
           assert.deepEqual(
             call().unencryptedHistogram,
@@ -162,6 +178,12 @@ function runTest(
         break;
       case "clearBrowsingHistoryForAttribution":
         backend.clearState(event.sites, event.forgetVisits);
+        break;
+      case "enableAPI":
+        backend.enabled = true;
+        break;
+      case "disableAPI":
+        backend.enabled = false;
         break;
     }
   }

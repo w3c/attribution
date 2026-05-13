@@ -30,7 +30,7 @@ images:
 	@echo "Regenerating images"
 	for i in $(IMAGES); do \
 	  tmp="$$(mktemp)"; \
-	  npx aasvg --extract --embed <"$$i" >"$$tmp" && mv "$$tmp" "$$i"; \
+	  npx aasvg extract embed arrow=line <"$$i" >"$$tmp" && mv "$$tmp" "$$i"; \
 	done
 
 simulator: build/simulator.html build/simulator.js
@@ -41,13 +41,16 @@ build/simulator.html: impl/dist/index.html build
 build/simulator.js: impl/dist/simulator.js build
 	cp $< $@
 
-impl/dist/index.html impl/dist/simulator.js: impl/index.html impl/package-lock.json impl/package.json impl/tsconfig.json impl/webpack.config.js impl/src/*.ts
-	@ npm ci --prefix ./impl
-	@ npm run pack --prefix ./impl
+impl/node_modules/.ci: impl/package.json impl/package-lock.json
+	npm ci --no-fund --no-audit --prefix ./impl
+	@touch $@
 
-check:
-	@ npm run --prefix ./impl pretty:check
-	@ npm run --prefix ./impl build
-	@ npm run --prefix ./impl lint
-	@ npm run --prefix ./impl validate-e2e
-	@ npm run --prefix ./impl test
+impl/dist/index.html impl/dist/simulator.js: impl/index.html impl/package-lock.json impl/package.json impl/tsconfig.json impl/webpack.config.js impl/src/*.ts impl/node_modules/.ci
+	npm run pack --prefix ./impl
+
+check: impl/node_modules/.ci
+	npm run --prefix ./impl pretty:check
+	npm run --prefix ./impl build
+	npm run --prefix ./impl lint
+	npm run --prefix ./impl validate-e2e
+	npm run --prefix ./impl test
