@@ -2548,9 +2548,6 @@ To <dfn noexport>parse a `Measure-Conversion` header</dfn> given a [=header valu
      1.  Set |opts|.{{AttributionConversionOptions/maxValue}} to |maxValue|.
 1.  Return (|opts|, |reportUrl|).
 
-Issue: Should we allow `http` for |reportUrl|'s [=url/scheme=]?
-Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
-
 </div>
 
 <div algorithm>
@@ -2634,11 +2631,6 @@ and [=response=] |response|, run these steps:
             1.  [=Upon fulfillment=] of |reportPromise|, let |result| be the fulfilled value.
             1.  [=Send a report=] with |result|.{{AttributionConversionResult/report}}, |reportUrl|, and
                 |request|'s [=request/client=].
-
-Issue: Confirm the desired semantics of [:Save-Impression:] and [:Measure-Conversion:] in the same response.
-
-Issue: Should we allow `http` for |response|'s [=response/URL=]'s [=url/scheme=]?
-Related to <a href="https://github.com/w3c/attribution/issues/146">issue 146</a>.
 
 </div>
 
@@ -3432,11 +3424,6 @@ be released through attribution.
 [[#dp-safety]] discusses establishing additional cross-site
 privacy budgets to mitigate this possibility.
 
-<p class=issue>
-Rate limits on calls to the Attribution APIs
-could also be an effective mechanism to prevent
-harvesting information through overuse of the APIs.
-
 
 ## Ad Fraud ## {#security-ad-fraud}
 
@@ -3510,15 +3497,6 @@ the possible [=conversion sites=] (and vice-versa)
 has an important role in preventing misuse of the API
 for mass data collection, and in making attempts
 at such misuse more visible.
-
-<p class=issue>
-It is unclear whether the [=privacy budget store=] should be cleared whenever
-the [=impression store=] is cleared. On one hand, it contains information about
-browsing activity, so it is desirable to include it when clearing browsing activity.
-On the other hand, it is only possible to strictly adhere to the requirements of
-the differential privacy mechanism if information about a fully- or partially-
-depleted privacy budget is maintained until that budget is no longer relevant
-(i.e. the end of the [=privacy budget epoch=]).
 
 
 ## Disabling the Attribution API ## {#opt-out}
