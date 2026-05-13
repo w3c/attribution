@@ -3290,10 +3290,11 @@ The differential privacy mechanism--
 that is, the specific method by which noise is added--
 can be chosen by the [=aggregation service=].
 
-Adding Laplacian or Gaussian noise is expected to produce good results,
+Adding Laplacian noise is expected to produce good results,
 balancing the overall magnitude of noise
 and the simplicity of implementation and analysis.
-A choice might depend on the size of the histogram.
+The current design only provides a bound on the L1 norm,
+which might make other mechanisms less feasible.
 
 The addition of noise in a central location,
 as defined for any of these aggregation services,
