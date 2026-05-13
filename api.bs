@@ -26,7 +26,7 @@ Level: None
 This document defines a simple API for browsers
 that enables the collection of aggregated, differentially-private metrics.
 
-The primary goal of this API is to enable attribution for advertising.
+The goal of this API is to enable attribution for advertising.
 
 
 ## Attribution ## {#s-attribution}
