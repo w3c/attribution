@@ -1046,12 +1046,25 @@ run these steps:
 
 1.  If |site| is null, return failure.
 
+1.  If |site| is "`localhost`" or if |site| [=code unit suffix|ends with=] "`.localhost`",
+    return failure.
+
 1.  Return a [=scheme-and-host=] tuple of ("`https`", |site|).
 
 <p class=note>
 This algorithm successfully produces a site from strings
 that contain more [=domain labels=] than the [=registrable domain=].
 For example, "`extra.example.com`" is parsed as "`example.com`".
+</p>
+
+<p class=note>
+This algorithm does not accept localhost domains [[RFC6761]],
+which results in any algorithm that depends on extracting a site name
+failing when a localhost domain is mentioned
+or when the current site (top-level or framed) is a localhost domain.
+This can make using local servers for testing and development challenging.
+Implementations could offer a configuration that disables the localhost check
+to aid in testing and development.
 </p>
 
 </div>
