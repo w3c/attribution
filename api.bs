@@ -1300,9 +1300,11 @@ integer |valueDeduction|,
 
 ### Attribution API Activation ### {#s-api-activation}
 
-The Attribution API is like a [=transient activation-consuming API=],
-with a number of differences
-in terms of how activation state is tracked.
+The Attribution API is roughly modeled on [=transient activation-consuming APIs=],
+where [=activation triggering input event|user activation=]
+is temporarily makes the API available.
+A number of differences distinguish this design
+from [=transient activation-consuming APIs=]:
 
 *   Any [=activation triggering input event|user activation=]
     makes the Attribution API available for a short period.
@@ -1316,12 +1318,16 @@ in terms of how activation state is tracked.
     either <a for=Attribution>saveImpression()</a>
     or <a for=Attribution>measureConversion()</a>
     within an [=implementation-defined=] duration of the last activation,
-    enables the API.
+    enables the API for that site.
 
-*   Like [=transient activation=],
-    using the API consumes the activation.
+*   Each activation makes the API available to at most one site.
+    Similar to [=transient activation=],
+    where [=transient activation-consuming API|consuming the activation=]
+    causes other similar APIs to be unavailable
+    until another activation occurs,
+    using the API on one site makes the API unavailable to other sites.
 
-*   When activation is consumed,
+*   When the API is successfully used,
     the API is enabled for use by all [=descendent navigables=]
     of the [=top-level traversable=]'s [=active document=]
     (that is, all frames on the current page)
@@ -1333,20 +1339,18 @@ in terms of how activation state is tracked.
     which might include the action that initiated the navigation,
     could make the API available again.
 
-This is similar in effect to [=transient activation=].
+This is broadly similar in effect to [=transient activation=].
 However, attribution activation uses separate state from [=transient activation=]
-and has the following notable differences:
-
-*   Attribution activation state is tracked on the [=top-level traversable=],
-    rather than affected {{Window}}s.
-
-*   Attribution activation persists through [=navigate|navigations=],
-    enabling use of the API for a short period
-    after loading a new page
-    in the case where the activation leads to navigation.
+and that state is tracked differently.
+Attribution activation state is tracked on the [=top-level traversable=],
+rather than affected {{Window}}s.
+As a result, attribution activation persists through [=navigate|navigations=],
+enabling use of the API for a short period
+after loading a new page
+in the case where the activation leads to navigation.
 
 Having separate state ensures that
-attribution activation does not interact with other [=transient activation-consuming APIs=].
+attribution activation does not interact with [=transient activation-consuming APIs=].
 An API that [=consume user activation|consumes activation=]
 will not prevent the Attribution API from being available;
 similarly, using the Attribution API will not prevent
@@ -1371,7 +1375,7 @@ for the Attribution API:
 
 1.  The <dfn>attribution activation timestamp</dfn> is a [=moment=]
     that tracks the last [=activation triggering input event|user activation=].
-    This value is initialized to the [=current high resolution time=].
+    This value is initialized to the [=unix epoch=].
 
 Implementations also configure <dfn>attribution activation duration</dfn>
 as an [=implementation-defined=] [=duration=].
