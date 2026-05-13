@@ -93,7 +93,7 @@ Strict limits are placed on the amount of information that each browser instance
 contributes to the aggregates for a given site.
 Differential privacy is used to provide additional privacy protection for each contribution.
 
-Details of aggregation service operation is included in [[#aggregation]].
+Details of aggregation service operation are included in [[#aggregation]].
 The differential privacy design used is outlined in [[#dp]].
 
 
