@@ -1,0 +1,67 @@
+{
+  "events": [
+    {
+      "seconds": 1,
+      "site": "localhost",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 2,
+      "site": "foo.localhost",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 3,
+      "site": "a.example",
+      "intermediarySite": "localhost",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 4,
+      "site": "a.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0,
+        "conversionSites": ["localhost"]
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    },
+    {
+      "seconds": 5,
+      "site": "a.example",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0,
+        "conversionCallers": ["localhost"]
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "SyntaxError"
+      }
+    }
+  ]
+}

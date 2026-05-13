@@ -58,7 +58,7 @@ export function days(days: number): Temporal.Duration {
 
 function parseSite(input: string): string {
   const site = getDomain(input, { allowPrivateDomains: true });
-  if (site === null) {
+  if (site === null || site === "localhost" || site.endsWith(".localhost")) {
     throw new DOMException(`invalid site ${input}`, "SyntaxError");
   }
   return site;
