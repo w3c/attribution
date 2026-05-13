@@ -3289,15 +3289,28 @@ whether their request for a [=conversion report=] has caused
 a safety limit to be exceeded.
 
 
-
-
-
-
 ## Differential Privacy Mechanisms ## {#dp-mechanism}
 
-The specific mechanisms that are used
-depend on the type of [=aggregation service=].
+The differential privacy mechanism--
+that is, the specific method by which noise is added--
+can be chosen by the [=aggregation service=].
 
+Adding Laplacian noise is expected to produce good results,
+balancing the overall magnitude of noise
+and the simplicity of implementation and analysis.
+The current design uses a DP sensitivity based on an L1 norm,
+which supports Laplace noise added in the aggregation.
+Supporting other noise mechanisms may require additional changes
+to how sensitivity is computed and signaled.
+
+The addition of noise in a central location,
+as defined for any of these aggregation services,
+ensures that the total amount of noise does not increase
+as the total number of reports increases.
+This provides a utility benefit over differential privacy designs
+that apply noise at the point that a report is generated
+(that is, a local differential privacy model)
+where noise increases in proportion to the total number of reports.
 
 
 # Security Considerations # {#security}
