@@ -23,7 +23,7 @@ Level: None
 
 # Introduction # {#intro}
 
-This document defines a simple API for browsers
+This document defines an API for browsers
 that enables the collection of aggregated, differentially-private metrics.
 
 The goal of this API is to enable attribution for advertising.
@@ -327,9 +327,9 @@ At [=conversion=] time, a [=conversion report=] is created.
 A <dfn>conversion report</dfn> is an encrypted histogram contribution
 that includes information from any [=impressions=] that the browser previously stored.
 
-The <a method for=Attribution>measureConversion()</a> method accepts a simple query that is used
+The <a method for=Attribution>measureConversion()</a> method accepts a limited query that is used
 to tell the browser how to construct a [=conversion report=].
-That includes a simple query that selects from the [=impressions=]
+That includes values that select from the [=impressions=]
 that the browser has stored,
 a [=conversion value=] that is allocated to the selected impression(s),
 and other information needed to construct the [=conversion report=].
