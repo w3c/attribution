@@ -1302,7 +1302,7 @@ integer |valueDeduction|,
 
 The Attribution API is roughly modeled on [=transient activation-consuming APIs=],
 where [=activation triggering input event|user activation=]
-is temporarily makes the API available.
+temporarily makes the API available.
 A number of differences distinguish this design
 from [=transient activation-consuming APIs=]:
 
