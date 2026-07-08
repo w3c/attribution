@@ -567,16 +567,15 @@ export class Backend {
     }
     const deductedImpressionQuotas = new Set<string>();
     for (const impression of impressions) {
-      const impressionSite = impression.impressionSite;
-      const impressionQuotaKey = { site: impressionSite, epoch };
-      const entryI = getOrInsertEntry(
-        this.#impressionSiteQuotaStore,
-        impressionQuotaKey,
-        this.#delegate.impressionSiteQuotaPerEpoch,
-      );
       const sizeBefore = deductedImpressionQuotas.size;
       deductedImpressionQuotas.add(impression.impressionSite);
       if (sizeBefore != deductedImpressionQuotas.size) {
+        const impressionQuotaKey = { site: impression.impressionSite, epoch };
+        const entryI = getOrInsertEntry(
+          this.#impressionSiteQuotaStore,
+          impressionQuotaKey,
+          this.#delegate.impressionSiteQuotaPerEpoch,
+        );
         entryI.value -= valueDeduction;
       }
     }
