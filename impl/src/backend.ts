@@ -57,9 +57,20 @@ export function days(days: number): Temporal.Duration {
 }
 
 function parseSite(input: string): string {
+  function endsInNumber(site: string): boolean {
+    const parts = site.split(".");
+    const last = parts.pop() || parts.pop();
+    return /^(?:\d+|0x[\da-f]*)$/i.test(last);
+  }
   const site = getDomain(input, { allowPrivateDomains: true });
-  if (site === null || site === "localhost" || site.endsWith(".localhost")) {
-    throw new DOMException(`invalid site ${input}`, "SyntaxError");
+  if (
+    site === null ||
+    site === "localhost" ||
+    site.endsWith(".localhost") ||
+    site.startsWith("[") ||
+    endsInNumber(site)
+  ) {
+    throw new DOMException(`invalid site ${input}`, "NotAllowed");
   }
   return site;
 }

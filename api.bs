@@ -1078,7 +1078,10 @@ run these steps:
 
 1.  If |site| is null, return failure.
 
-1.  If |site| is "`localhost`" or if |site| [=code unit suffix|ends with=] "`.localhost`",
+1.  If |site| is "`localhost`",
+    [=code unit suffix|ends with=] "`.localhost`",
+    [=code unit prefix|starts with=] U+005B ([) (it is an IPv6 address),
+    or [=ends in a number=] (it is an IPv4 address),
     return failure.
 
 1.  Return a [=scheme-and-host=] tuple of ("`https`", |site|).
@@ -1090,9 +1093,10 @@ For example, "`extra.example.com`" is parsed as "`example.com`".
 </p>
 
 <p class=note>
-This algorithm does not accept localhost domains [[RFC6761]],
-which results in any algorithm that depends on extracting a site name
-failing when a localhost domain is mentioned
+This algorithm does not accept hosts that are
+either localhost domains [[RFC6761]] or IP addresses.
+This results in any algorithm that depends on extracting a site name
+failing when a localhost domain or IP address is mentioned
 or when the current site (top-level or framed) is a localhost domain.
 This can make using local servers for testing and development challenging.
 Implementations could offer a configuration that disables the localhost check
@@ -1768,7 +1772,7 @@ and [=implicit API inputs=] |implicitInputs|:
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionSites}}.
     1.  If any result in |conversionSites| is failure, return
-        [=a promise rejected with=] a {{"SyntaxError"}} {{DOMException}} in |realm|.
+        [=a promise rejected with=] a {{"NotAllowed"}} {{DOMException}} in |realm|.
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionCallers}} is
         greater than the [=implementation-defined=]
@@ -1778,7 +1782,7 @@ and [=implicit API inputs=] |implicitInputs|:
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionCallers}}.
     1.  If any result in |conversionCallers| is failure, return
-        [=a promise rejected with=] a {{"SyntaxError"}} {{DOMException}} in |realm|.
+        [=a promise rejected with=] a {{"NotAllowed"}} {{DOMException}} in |realm|.
 1.  Run the following steps [=in parallel=]:
      1.  Construct |impression| as a [=impression|saved impression=] comprising:
          :   [=impression/Match Value=]
@@ -1838,11 +1842,12 @@ optional [=origin=] (default null):
 1.  Let |settings| be |realm|'s [=realm/settings object=].
 1.  Let |timestamp| be |settings|' [=environment settings object/current wall time=].
 1.  Let |topLevelOrigin| be |settings|' [=environment/top-level origin=].
+1.  Let |topLevelSite| be the result of [=obtain a compatible site|obtaining a compatible site=]
+    from |topLevelOrigin|.
 1.  If |origin| is null, set |origin| to |settings|' [=environment settings object/origin=].
-1.  Let |topLevelSite| be the result of [=obtain a site|obtaining a site=] from |topLevelOrigin|.
 1.  Let |intermediarySite| be:
     1.   a value of `undefined` if |origin| is [=same site=] with |topLevelOrigin|,
-    1.   otherwise, the result of [=obtain a site|obtaining a site=] from |origin|.
+    1.   otherwise, the result of [=obtain a compatible site|obtaining a compatible site=] from |origin|.
 1.  Return an [=implicit API inputs=] with the following fields:
     :   [=implicit API inputs/top-level site=]
     ::  |topLevelSite|
@@ -1852,6 +1857,27 @@ optional [=origin=] (default null):
     ::  |timestamp|
     :   [=implicit API inputs/associated document=]:
     ::  |window|'s [=associated document=]
+
+</div>
+
+<div algorithm>
+To <dfn>obtain a compatible site</dfn>,
+given [=origin=] |origin|,
+returning a [=site=]:
+
+1.  If |origin| is not a [=tuple origin=],
+    throw a  {{"NotAllowedError"}} {{DOMException}}.
+1.  Let |host| be the  [=host=] component of |origin|.
+1.  If |host| is "`localhost`",
+    if |host| [=code unit suffix|ends with=] "`.localhost`",
+    if |host| [=code unit prefix|starts with=] U+005B ([),
+    or if |host| [=ends in a number=],
+    throw a  {{"NotAllowedError"}} {{DOMException}}.
+1.  Return the result of [=obtain a site|obtaining a site=] from |origin|.
+
+
+<p class=note>See [[#site-name-algorithm]] for notes on the handling
+of localhost domains and IP address hosts.
 
 </div>
 
@@ -1983,7 +2009,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  Let |impressionSites| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionSites}}.
-1.  If any result in |impressionSites| is failure, throw a {{"SyntaxError"}} {{DOMException}}.
+1.  If any result in |impressionSites| is failure, throw a {{"NotAllowed"}} {{DOMException}}.
 1.  If the [=list/size=] of
     |options|.{{AttributionConversionOptions/impressionCallers}} is greater than
     the [=implementation-defined=] [=maximum number of impression callers for conversion=],
@@ -1991,7 +2017,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  Let |impressionCallers| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionCallers}}.
-1.  If any result in |impressionCallers| is failure, throw a {{"SyntaxError"}} {{DOMException}}.
+1.  If any result in |impressionCallers| is failure, throw a {{"NotAllowed"}} {{DOMException}}.
 1.  Return a [=validated conversion options=] with the following fields:
     : [=validated conversion options/Aggregation Service=]
     :: |aggregationService|
@@ -3930,6 +3956,7 @@ urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
     text: initiator origin; url: #document-state-initiator-origin
     text: obtain a site
     text: origin; url: #concept-origin
+    text: opaque origin; url: #concept-opaque-origin
     text: relevant settings object
     text: same site
     text: scheme; url: #concept-origin-scheme
@@ -3938,6 +3965,7 @@ urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
     text: top-level origin; url: #concept-environment-top-level-origin
     text: top-level traversable; url: #nav-top
     text: transient activation duration
+    text: tuple origin; url: #concept-tuple-origin
     text: iframe; url: #child-navigable
 urlPrefix: https://infra.spec.whatwg.org/; spec: infra; type: dfn;
     text: set; url: #sets
@@ -3947,6 +3975,7 @@ urlPrefix: https://storage.spec.whatwg.org/; spec: storage; type: dfn;
     text: storage key
 urlPrefix: https://url.spec.whatwg.org/; spec: url; type: dfn;
     text: domain label
+    text: ends in a number; url: #ends-in-a-number-checker
     text: host parser; url: #concept-host-parser
     text: host serializer; url: #concept-host-serializer
     text: registrable domain; url: #host-registrable-domain
