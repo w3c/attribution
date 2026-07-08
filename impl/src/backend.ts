@@ -460,7 +460,6 @@ export class Backend {
     const startEpoch = this.#getStartEpoch(now);
     const earliestEpoch = this.#getCurrentEpoch(now.subtract(options.lookback));
     const isSingleEpoch = currentEpoch === earliestEpoch;
-    let l1Norm = 0;
 
     if (isSingleEpoch) {
       const impressions = this.#commonMatchingLogic(
@@ -479,8 +478,21 @@ export class Backend {
         options.value,
         options.credit,
       );
-      l1Norm = histogram.reduce((a, b) => a + b, 0);
+      const l1Norm = histogram.reduce((a, b) => a + b, 0);
       assert(l1Norm <= options.value);
+
+      const key = { epoch: currentEpoch, site: topLevelSite };
+      const budgetAndSafetyOk = this.#deductPrivacyAndSafetyBudgets(
+        key,
+        impressions,
+        options.epsilon,
+        options.value,
+        options.maxValue,
+        l1Norm,
+      );
+      return budgetAndSafetyOk
+        ? histogram
+        : allZeroHistogram(options.histogramSize);
     }
 
     const matchedImpressions = new Set<Impression>();
@@ -501,8 +513,7 @@ export class Backend {
           options.epsilon,
           options.value,
           options.maxValue,
-          isSingleEpoch,
-          l1Norm,
+          /*singleEpochL1Norm=*/ null,
         );
         if (budgetAndSafetyOk) {
           for (const i of impressions) {
@@ -532,17 +543,18 @@ export class Backend {
     epsilon: number,
     value: number,
     maxValue: number,
-    isSingleEpoch: boolean,
-    l1Norm: number,
+    singleEpochL1Norm: number | null,
   ): boolean {
-    const l1NormSensitivity = isSingleEpoch ? l1Norm : 2 * value;
     const valueSensitivity = 2 * value;
     const noiseScale = (2 * maxValue) / epsilon;
-    const l1NormDeductionFp = l1NormSensitivity / noiseScale;
     const valueDeductionFp = valueSensitivity / noiseScale;
-    const l1NormDeduction = Math.ceil(l1NormDeductionFp * 1000000);
     const valueDeduction = Math.ceil(valueDeductionFp * 1000000);
-    const deduction = isSingleEpoch ? l1NormDeduction : valueDeduction;
+
+    const deduction =
+      singleEpochL1Norm === null
+        ? valueDeduction
+        : Math.ceil((singleEpochL1Norm / noiseScale) * 1000000);
+
     if (
       !this.#checkForAvailablePrivacyBudget(
         key,

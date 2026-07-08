@@ -1204,16 +1204,11 @@ given a [=privacy budget key=] |key|,
 [[WEBIDL#idl-double|double]] |epsilon|,
 integer |value|,
 integer |maxValue|,
-boolean |isSingleEpoch|,
-and an integer |l1Norm|:
-
-1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
+and an integer or null |singleEpochL1Norm|:
 
 1.  Let |valueSensitivity| be 2 * |value|.
 
 1.  Let |noiseScale| be 2 * |maxValue| / |epsilon|.
-
-1.  Let |l1NormDeductionFp| be |l1NormSensitivity| / |noiseScale|.
 
 1.  Let |valueDeductionFp| be |valueSensitivity| / |noiseScale|.
 
@@ -1225,15 +1220,21 @@ and an integer |l1Norm|:
     proportional to |maxValue| / |epsilon|
     is added to the aggregated histogram.
 
-1.  Let |l1NormDeduction| be |l1NormDeductionFp| * 1000000, rounded towards positive Infinity.
-
 1.  Let |valueDeduction| be |valueDeductionFp| * 1000000, rounded towards positive Infinity.
+
+1.  Let |deduction| be |valueDeduction|.
+
+1.  If |singleEpochL1Norm| is not null:
+
+    1.  Let |l1NormDeductionFp| be |singleEpochL1Norm| / |noiseScale|.
+
+    1.  Let |l1NormDeduction| be |l1NormDeductionFp| * 1000000, rounded towards positive Infinity.
+
+    1.  Set |deduction| to |l1NormDeduction|.
 
 1.  If [=attribution budget lock=] is true,
     wait until the value becomes false,
     then set the value to true.
-
-1.  Let |deduction| be |l1NormDeduction| if |isSingleEpoch| is true, |valueDeduction| otherwise.
 
 1.  If the result of invoking [=check for available privacy budget|checking for available privacy budget=]
     with |key|, |deduction|, |valueDeduction|, and |impressions|
@@ -2044,8 +2045,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
 1.  Let |isSingleEpoch| be true if |currentEpoch| is equal to |earliestEpoch|, false otherwise.
 
-1.  Let |l1Norm| be 0.
-
 1.  If |isSingleEpoch| is true:
     1.  Let |impressions| be the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |currentEpoch|, and |now|.
@@ -2059,9 +2058,23 @@ To <dfn>do attribution and fill a histogram</dfn>, given
         |options|' [=validated conversion options/value=], and
         |options|' [=validated conversion options/credit=].
 
-    1.  Set |l1Norm| to the sum of the [=list/items=] in |histogram|.
+    1.  Let |l1Norm| be the sum of the [=list/items=] in |histogram|.
 
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
+
+    1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
+
+    1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
+        with |key|, |impressions|,
+        |options|' [=validated conversion options/epsilon=],
+        |options|' [=validated conversion options/value=],
+        |options|'s [=validated conversion options/max value=],
+        and |l1Norm|.
+
+    1.  If |budgetAndSafetyOk| is true, return |histogram|.
+
+    1.  Return the result of invoking [=create an all-zero histogram=] with
+        |options|' [=validated conversion options/histogram size=].
 
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
@@ -2069,9 +2082,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
     1.  Let |impressions| be the result of invoking [=common matching logic=]
         with |options|, |topLevelSite|, |intermediarySite|, |epoch|, and |now|.
-
-        <p class=note>In the single-epoch case, this is recomputing |matchedImpressions|.
-        Implementations will want to avoid doing that work twice.
 
     1.  If |impressions| [=set/is empty|is not empty=]:
 
@@ -2082,7 +2092,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
             |options|' [=validated conversion options/epsilon=],
             |options|' [=validated conversion options/value=],
             |options|'s [=validated conversion options/max value=],
-            |isSingleEpoch|, and |l1Norm|.
+            and null.
 
         1.  If |budgetAndSafetyOk| is true,
             [=set/extend=] |matchedImpressions| with |impressions|.
