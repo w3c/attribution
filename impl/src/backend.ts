@@ -484,7 +484,6 @@ export class Backend {
     }
 
     const matchedImpressions = new Set<Impression>();
-    const deductedImpressionQuotas: PrivacyBudgetKey[] = [];
 
     for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
       const impressions = this.#commonMatchingLogic(
@@ -504,7 +503,6 @@ export class Backend {
           options.maxValue,
           isSingleEpoch,
           l1Norm,
-          deductedImpressionQuotas,
         );
         if (budgetAndSafetyOk) {
           for (const i of impressions) {
@@ -536,7 +534,6 @@ export class Backend {
     maxValue: number,
     isSingleEpoch: boolean,
     l1Norm: number,
-    deductedImpressionQuotas: PrivacyBudgetKey[],
   ): boolean {
     const l1NormSensitivity = isSingleEpoch ? l1Norm : 2 * value;
     const valueSensitivity = 2 * value;
@@ -568,6 +565,7 @@ export class Backend {
       const value = this.#globalPrivacyBudgetStore.get(epoch)!;
       this.#globalPrivacyBudgetStore.set(epoch, value - valueDeduction);
     }
+    const deductedImpressionQuotas = new Set<string>();
     for (const impression of impressions) {
       const impressionSite = impression.impressionSite;
       const impressionQuotaKey = { site: impressionSite, epoch };
@@ -576,10 +574,9 @@ export class Backend {
         impressionQuotaKey,
         this.#delegate.impressionSiteQuotaPerEpoch,
       );
-      if (
-        getEntry(deductedImpressionQuotas, impressionQuotaKey) === undefined
-      ) {
-        deductedImpressionQuotas.push(impressionQuotaKey);
+      const sizeBefore = deductedImpressionQuotas.size;
+      deductedImpressionQuotas.add(impression.impressionSite);
+      if (sizeBefore != deductedImpressionQuotas.size) {
         entryI.value -= valueDeduction;
       }
     }

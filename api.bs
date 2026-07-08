@@ -1205,8 +1205,7 @@ given a [=privacy budget key=] |key|,
 integer |value|,
 integer |maxValue|,
 boolean |isSingleEpoch|,
-integer |l1Norm|,
-and a [=set=] of [=privacy budget keys=] |deductedImpressionQuotas|:
+and an integer |l1Norm|:
 
 1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
 
@@ -1262,20 +1261,22 @@ and a [=set=] of [=privacy budget keys=] |deductedImpressionQuotas|:
         epoch because [=deduct privacy and safety budgets=] is called at most
         once per epoch.
 
+    1.  Let |deductedImpressionQuotas| be a new [=set=].
+
     1.  [=list/iterate|For each=] |impression| in |impressions|:
 
         1.  Let |impressionSite| be |impression|'s [=impression/impression site=].
-
-        1.  Let |impressionQuotaKey| be an [=privacy budget key=]
-            whose items are |epoch| and |impressionSite|.
 
             <p class=note>The below ensures that we do not deduct budget
             more than once from the same impression site quota
             when there are multiple impressions for the site.
 
-        1.  If |deductedImpressionQuotas| does not [=map/contain=] |impressionQuotaKey|:
+        1.  If |deductedImpressionQuotas| does not [=set/contain=] |impressionSite|:
 
-            1.  [=set/Append=] |deductedImpressionQuotas| with |impressionQuotaKey|.
+            1.  [=set/Append=] |impressionSite| to |deductedImpressionQuotas|.
+
+            1.  Let |impressionQuotaKey| be a [=privacy budget key=]
+                whose items are |epoch| and |impressionSite|.
 
             1.  Let |currentImpressionQuotaValue| be the result of [=map/get|getting the value=] of |impressionQuotaKey|
                 in the [=impression site quota per epoch=]
@@ -2059,8 +2060,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
     1.  [=Assert=]: |l1Norm| is less than or equal to |options|' [=validated conversion options/value=].
 
-1.  Let |deductedImpressionQuotas| be a new [=set=].
-
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
 1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
@@ -2080,7 +2079,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
             |options|' [=validated conversion options/epsilon=],
             |options|' [=validated conversion options/value=],
             |options|'s [=validated conversion options/max value=],
-            |isSingleEpoch|, |l1Norm|, and |deductedImpressionQuotas|.
+            |isSingleEpoch|, and |l1Norm|.
 
         1.  If |budgetAndSafetyOk| is true,
             [=set/extend=] |matchedImpressions| with |impressions|.
