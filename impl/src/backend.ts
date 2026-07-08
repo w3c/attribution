@@ -485,7 +485,6 @@ export class Backend {
 
     const matchedImpressions = new Set<Impression>();
     const deductedImpressionQuotas: PrivacyBudgetKey[] = [];
-    const deductedGlobalBudgets = new Set<number>();
 
     for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
       const impressions = this.#commonMatchingLogic(
@@ -506,7 +505,6 @@ export class Backend {
           isSingleEpoch,
           l1Norm,
           deductedImpressionQuotas,
-          deductedGlobalBudgets,
         );
         if (budgetAndSafetyOk) {
           for (const i of impressions) {
@@ -539,7 +537,6 @@ export class Backend {
     isSingleEpoch: boolean,
     l1Norm: number,
     deductedImpressionQuotas: PrivacyBudgetKey[],
-    deductedGlobalBudgets: Set<number>,
   ): boolean {
     const l1NormSensitivity = isSingleEpoch ? l1Norm : 2 * value;
     const valueSensitivity = 2 * value;
@@ -567,8 +564,7 @@ export class Backend {
     const currentValue = entry.value;
     entry.value = currentValue - deduction;
     const epoch = key.epoch;
-    if (!deductedGlobalBudgets.has(epoch)) {
-      deductedGlobalBudgets.add(epoch);
+    {
       const value = this.#globalPrivacyBudgetStore.get(epoch)!;
       this.#globalPrivacyBudgetStore.set(epoch, value - valueDeduction);
     }

@@ -1206,8 +1206,7 @@ integer |value|,
 integer |maxValue|,
 boolean |isSingleEpoch|,
 integer |l1Norm|,
-[=set=] of [=privacy budget keys=] |deductedImpressionQuotas|
-and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
+and a [=set=] of [=privacy budget keys=] |deductedImpressionQuotas|:
 
 1.  Let |l1NormSensitivity| be |l1Norm| if |isSingleEpoch|, 2 * |value| otherwise.
 
@@ -1257,9 +1256,11 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
 
     1.  Let |epoch| be the [=epoch index=] component of |key|.
 
-    1.  If |deductedGlobalBudgets| does not [=set/contain=] |epoch|,
-        [=set/append=] |deductedGlobalBudgets| with |epoch|
-        and decrement [=global privacy budget store=]\[|epoch|] by |valueDeduction|.
+    1.  Decrement [=global privacy budget store=]\[|epoch|] by |valueDeduction|.
+
+        <p class=note>This deduction is guaranteed to happen at most once per
+        epoch because [=deduct privacy and safety budgets=] is called at most
+        once per epoch.
 
     1.  [=list/iterate|For each=] |impression| in |impressions|:
 
@@ -2060,8 +2061,6 @@ To <dfn>do attribution and fill a histogram</dfn>, given
 
 1.  Let |deductedImpressionQuotas| be a new [=set=].
 
-1.  Let |deductedGlobalBudgets| be a new [=set=].
-
 1.  Let |matchedImpressions| be an [=set/is empty|empty=] [=set=].
 
 1.  For each |epoch| from |startEpoch| to |currentEpoch|, inclusive:
@@ -2081,7 +2080,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
             |options|' [=validated conversion options/epsilon=],
             |options|' [=validated conversion options/value=],
             |options|'s [=validated conversion options/max value=],
-            |isSingleEpoch|, |l1Norm|, |deductedImpressionQuotas|, and |deductedGlobalBudgets|.
+            |isSingleEpoch|, |l1Norm|, and |deductedImpressionQuotas|.
 
         1.  If |budgetAndSafetyOk| is true,
             [=set/extend=] |matchedImpressions| with |impressions|.
