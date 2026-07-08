@@ -1280,7 +1280,7 @@ and a [=set=] of [=epoch indices=] |deductedGlobalBudgets|:
                 in the [=impression site quota per epoch=]
                 with a default of the [=impression site quota per epoch=].
 
-            1.  [=map/set|Set=] the value of [=impression site quota per epoch=]\[|impressionQuotaKey|\]
+            1.  [=map/set|Set=] the value of [=impression site quota per epoch=]\[|impressionQuotaKey|]
                 to |currentImpressionQuotaValue| − |valueDeduction|.
 
 1.  Set [=attribution budget lock=] to false.
