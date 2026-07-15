@@ -1255,7 +1255,12 @@ and an integer |l1Norm|:
 
     1.  Let |epoch| be the [=epoch index=] component of |key|.
 
-    1.  Decrement [=global privacy budget store=]\[|epoch|] by |valueDeduction|.
+    1.  Let |currentGlobalValue| be the result of [=map/get|getting the value=]
+        of |epoch| in the [=global privacy budget store=]
+        with a default of the [=global privacy budget per epoch=].
+
+    1.  [=map/set|Set=] the value of |epoch| in the [=global privacy budget store=]
+        to |currentGlobalValue| − |valueDeduction|.
 
         <p class=note>This deduction is guaranteed to happen at most once per
         epoch because [=deduct privacy and safety budgets=] is called at most

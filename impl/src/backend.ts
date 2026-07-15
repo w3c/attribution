@@ -562,8 +562,14 @@ export class Backend {
     entry.value = currentValue - deduction;
     const epoch = key.epoch;
     {
-      const value = this.#globalPrivacyBudgetStore.get(epoch)!;
-      this.#globalPrivacyBudgetStore.set(epoch, value - valueDeduction);
+      const currentGlobalValue =
+        this.#globalPrivacyBudgetStore.get(epoch) ??
+        this.#delegate.globalPrivacyBudgetPerEpoch;
+
+      this.#globalPrivacyBudgetStore.set(
+        epoch,
+        currentGlobalValue - valueDeduction,
+      );
     }
     const deductedImpressionQuotas = new Set<string>();
     for (const impression of impressions) {
