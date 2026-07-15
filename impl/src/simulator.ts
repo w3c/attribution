@@ -149,6 +149,9 @@ function updateBudgetAndEpochTables() {
 }
 
 {
+  const form = document.querySelector<HTMLFormElement>("#clear-as-user")!;
+  const output = form.querySelector<HTMLOutputElement>("output")!;
+
   function updateLastClear() {
     updateImpressionsTable();
     updateBudgetAndEpochTables();
@@ -161,18 +164,22 @@ function updateBudgetAndEpochTables() {
     }
   }
 
-  document
-    .querySelector<HTMLFormElement>("#clear-as-user")!
-    .addEventListener("submit", function (this: HTMLFormElement, e) {
-      e.preventDefault();
+  form.addEventListener("submit", function (this: HTMLFormElement, e) {
+    e.preventDefault();
 
-      const sites = this.elements.namedItem("sites") as HTMLInputElement;
-      const forgetVisits = this.elements.namedItem(
-        "forget-visits",
-      ) as HTMLInputElement;
+    const sites = this.elements.namedItem("sites") as HTMLInputElement;
+    const forgetVisits = this.elements.namedItem(
+      "forget-visits",
+    ) as HTMLInputElement;
+    try {
       backend.clearState(spaceSeparated(sites), forgetVisits.checked);
+      output.innerText = "Success";
       updateLastClear();
-    });
+    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      output.innerText = `Error: ${e}`;
+    }
+  });
 
   document
     .querySelector<HTMLFormElement>("#clear-as-site")!

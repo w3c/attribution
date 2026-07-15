@@ -743,6 +743,11 @@ export class Backend {
   clearState(sites: readonly string[], forgetVisits: boolean): void {
     const parsedSites = parseSites(sites, "sites", Infinity);
     if (!forgetVisits) {
+      if (parsedSites.size === 0) {
+        throw new RangeError(
+          "sites must not be empty unless visits are forgotten",
+        );
+      }
       this.#zeroBudgetForSites(parsedSites);
       return;
     }

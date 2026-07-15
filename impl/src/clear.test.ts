@@ -42,7 +42,10 @@ void test("clear-site-state", () => {
   const backend = setupImpressions();
 
   // Check that this rejects correctly.
-  assert.throws(() => backend.clearState([], false));
+  assert.throws(() => backend.clearState([], false), {
+    name: "RangeError",
+    message: "sites must not be empty unless visits are forgotten",
+  });
 
   // Run one query with the affected site.
   const before = backend.measureConversion("conv-one.example", undefined, {
