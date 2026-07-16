@@ -1961,9 +1961,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
     throw a {{RangeError}}.
 1.  Let |credit| be |options|.{{AttributionConversionOptions/credit}} if it [=map/exists=], «1» otherwise.
 1.  If |credit| [=list/is empty=], throw a {{RangeError}}.
-1.  If any of the [=list/items=] of |credit| are
-    not [finite](https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-number.isfinite)
-    or less than or equal to 0,
+1.  If any of the [=list/items=] of |credit| are less than or equal to 0,
     throw a {{RangeError}}.
 1.  If the [=list/size=] of |credit| exceeds the [=implementation-defined=]
     [=maximum number of credit values=], throw a {{RangeError}}.
