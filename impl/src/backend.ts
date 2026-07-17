@@ -725,10 +725,10 @@ export class Backend {
     assert(sites.size > 0);
 
     const now = this.#delegate.now();
+    const startEpoch = this.#getStartEpoch(now);
+    const currentEpoch = this.#getCurrentEpoch(now);
 
     for (const site of sites) {
-      const startEpoch = this.#getStartEpoch(now);
-      const currentEpoch = this.#getCurrentEpoch(now);
       for (let epoch = startEpoch; epoch <= currentEpoch; ++epoch) {
         const entry = getOrInsertEntry(
           this.#privacyBudgetStore,

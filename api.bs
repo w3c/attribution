@@ -1666,15 +1666,15 @@ and a [=moment=] |now|:
 
     1.  [=Assert=]: |sites| [=set/is empty|is not empty=].
 
+    1.  Let |startingEpoch| be the result of
+        invoking [=get the starting epoch for attribution=]
+        given |now|.
+
+    1.  Let |currentEpoch| be the result of
+        invoking [=get the current epoch=]
+        given |now|.
+
     1.  [=set/iterate|For each=] |site| in |sites|:
-
-        1.  Let |startingEpoch| be the result of
-            invoking [=get the starting epoch for attribution=]
-            given |now|.
-
-        1.  Let |currentEpoch| be the result of
-            invoking [=get the current epoch=]
-            given |now|.
 
         1.  [=set/iterate|For each=] |epoch| in [=the inclusive range=]
             from |startingEpoch| to |currentEpoch|:
