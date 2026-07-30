@@ -1216,14 +1216,6 @@ and an optional integer |singleEpochL1Norm|:
 
 1.  Let |valueDeductionFp| be |valueSensitivity| / |noiseScale|.
 
-    <p class=note>Single-epoch attributions
-    do not cause any cascading effects across epochs.
-    Attribution that involves multiple epochs consumes double the budget
-    because of the potential for one change to affect attribution across epochs.
-    Doubling the deduction assumes that Laplace noise
-    proportional to |maxValue| / |epsilon|
-    is added to the aggregated histogram.
-
 1.  Let |valueDeduction| be |valueDeductionFp| * 1000000, rounded towards positive Infinity.
 
 1.  Let |deduction| be |valueDeduction|.
@@ -1235,6 +1227,14 @@ and an optional integer |singleEpochL1Norm|:
     1.  Let |l1NormDeduction| be |l1NormDeductionFp| * 1000000, rounded towards positive Infinity.
 
     1.  Set |deduction| to |l1NormDeduction|.
+
+    <p class=note>Single-epoch attributions
+    do not cause any cascading effects across epochs.
+    Attribution that involves multiple epochs consumes double the budget
+    because of the potential for one change to affect attribution across epochs.
+    Doubling the deduction assumes that Laplace noise
+    proportional to |maxValue| / |epsilon|
+    is added to the aggregated histogram.
 
 1.  If [=attribution budget lock=] is true,
     wait until the value becomes false,
