@@ -1201,10 +1201,14 @@ that could be maliciously triggered.
 To <dfn>deduct privacy and safety budgets</dfn>
 given a [=privacy budget key=] |key|,
 [=set=] of [=impressions=] |impressions|,
-[[WEBIDL#idl-double|double]] |epsilon|,
-integer |value|,
-integer |maxValue|,
-and an integer or null |singleEpochL1Norm|:
+[=validated conversion options=] |options|,
+and an optional integer |singleEpochL1Norm|:
+
+1.  Let |epsilon| be |options|'s [=validated conversion options/epsilon=].
+
+1.  Let |value| be |options|'s [=validated conversion options/value=].
+
+1.  Let |maxValue| be |options|'s [=validated conversion options/max value=].
 
 1.  Let |valueSensitivity| be 2 * |value|.
 
@@ -1224,7 +1228,7 @@ and an integer or null |singleEpochL1Norm|:
 
 1.  Let |deduction| be |valueDeduction|.
 
-1.  If |singleEpochL1Norm| is not null:
+1.  If |singleEpochL1Norm| was given:
 
     1.  Let |l1NormDeductionFp| be |singleEpochL1Norm| / |noiseScale|.
 
@@ -2065,11 +2069,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
     1.  Let |key| be a [=privacy budget key=] whose items are |currentEpoch| and |topLevelSite|.
 
     1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-        with |key|, |impressions|,
-        |options|' [=validated conversion options/epsilon=],
-        |options|' [=validated conversion options/value=],
-        |options|'s [=validated conversion options/max value=],
-        and |l1Norm|.
+        with |key|, |impressions|, |options|, and |l1Norm|.
 
     1.  If |budgetAndSafetyOk| is true, return |histogram|.
 
@@ -2088,11 +2088,7 @@ To <dfn>do attribution and fill a histogram</dfn>, given
         1.  Let |key| be a [=privacy budget key=] whose items are |epoch| and |topLevelSite|.
 
         1.  Let |budgetAndSafetyOk| be the result of invoking [=deduct privacy and safety budgets=]
-            with |key|, |impressions|,
-            |options|' [=validated conversion options/epsilon=],
-            |options|' [=validated conversion options/value=],
-            |options|'s [=validated conversion options/max value=],
-            and null.
+            with |key|, |impressions|, and |options|.
 
         1.  If |budgetAndSafetyOk| is true,
             [=set/extend=] |matchedImpressions| with |impressions|.
