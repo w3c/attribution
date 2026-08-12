@@ -70,7 +70,7 @@ function parseSite(input: string): string {
     site.startsWith("[") ||
     endsInNumber(site)
   ) {
-    throw new DOMException(`invalid site ${input}`, "NotAllowed");
+    throw new DOMException(`invalid site ${input}`, "NotAllowedError");
   }
   return site;
 }
