@@ -1872,7 +1872,7 @@ returning a [=site=]:
     if |host| [=code unit suffix|ends with=] "`.localhost`",
     if |host| [=code unit prefix|starts with=] U+005B ([),
     or if |host| [=ends in a number=],
-    throw a  {{"NotAllowedError"}} {{DOMException}}.
+    throw a {{"NotAllowedError"}} {{DOMException}}.
 1.  Return the result of [=obtain a site|obtaining a site=] from |origin|.
 
 
