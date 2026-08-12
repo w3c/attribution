@@ -512,13 +512,13 @@ is out of scope for this document.
 # API Usage # {#api}
 
 A site using the Attribution API will typically register either
-[=impressions=] or [=conversions=], but in some cases the same site may
+[=impressions=] or [=conversions=], but in some cases the same site could
 do both.
 
 To register an impression, a site calls
 <a method for=Attribution>saveImpression()</a>. No preparation is
 required to use this API beyond collecting parameter values, although
-it may be useful to examine the supported
+it could be useful to examine the supported
 <a attribute for=Attribution>aggregationServices</a> in deciding
 whether to use the Attribution API.
 
@@ -526,13 +526,13 @@ It is also possible to register an impression by including the
 [:Save-Impression:]
 header in the HTTP response when serving a resource to the user agent.
 
-To request a conversion report, a site calls
+To request a conversion report, the site calls
 <a method for=Attribution>measureConversion()</a>.
-Before calling this API, a site must
-select a supported [=aggregation service=].
-The page may select any of the supported services found in
+Before calling this API,
+the site selects a supported [=aggregation service=].
+The page can select any of the supported services found in
 <a attribute for=Attribution>aggregationServices</a>.
-The name of the selected service must be supplied as
+The name of the selected service is supplied as
 the {{AttributionConversionOptions/aggregationService}} member of the
 {{AttributionConversionOptions}} dictionary when calling the
 <a method for=Attribution>measureConversion()</a> method.
@@ -594,10 +594,10 @@ This provides three key functions:
 ## Finding a Supported Aggregation Service ## {#find-aggregation-service}
 
 The <dfn attribute for=Attribution>aggregationServices</dfn> attribute
-contains a set of aggregation services supported by the [=user agent=]. The page
-must select and specify one of these services when calling the
+contains a set of aggregation services supported by the [=user agent=].
+The site selects and specifies one of these services when calling the
 <a method for=Attribution>measureConversion()</a> method.
-It may also be useful to query the supported services
+It could also be useful to query the supported services
 before registering an impression,
 but that is not required,
 and impressions are not scoped to a single aggregation service.
@@ -740,12 +740,12 @@ The arguments to <a method for=Attribution>saveImpression()</a> are as follows:
   <dt><dfn>matchValue</dfn></dt>
   <dd>
     An optional piece of metadata associated with the impression. The value
-    can be used to identify which impressions may receive attribution
+    can be used to identify which impressions could receive attribution
     from a [=conversion=].
   </dd>
   <dt><dfn>conversionSites</dfn></dt>
   <dd>
-    The top-level [=conversion sites=] where [=conversions=] for this impression may occur,
+    The top-level [=conversion sites=] where [=conversions=] for this impression can occur,
     identified by their domain names.
     The <a method for=Attribution>measureConversion()</a> method
     will only attribute to this impression when called by one of the indicated sites.
@@ -763,7 +763,7 @@ The arguments to <a method for=Attribution>saveImpression()</a> are as follows:
   <dd>
     A positive "time to live" (in days) after which the [=impression=] can no
     longer receive attribution.
-    The [=user agent=] should impose an upper limit on the lifetime,
+    The [=user agent=] [=should=] impose an upper limit on the lifetime,
     and silently reduce the value specified here if it exceeds that limit.
   </dd>
   <dt><dfn>priority</dfn></dt>
@@ -910,7 +910,11 @@ The arguments to <a method for=Attribution>measureConversion()</a> are as follow
   <dt><dfn>histogramSize</dfn></dt>
   <dd>The number of histogram buckets to use in the [=conversion report=].</dd>
   <dt><dfn>lookbackDays</dfn></dt>
-  <dd>A positive integer number of days. Only impressions occurring within the past `lookbackDays` may match this [=conversion=]. If omitted, it is equivalent to the [=maximum lookback=].</dd>
+  <dd>
+    A positive integer number of days.
+    Only impressions occurring within the past `lookbackDays` match this [=conversion=].
+    If omitted, it is equivalent to the [=maximum lookback=].
+  </dd>
   <dt><dfn>matchValues</dfn></dt>
   <dd>A [=set=] of match values that can be used to select [=impressions=].</dd>
   <dt><dfn>impressionSites</dfn></dt>
@@ -1091,7 +1095,7 @@ The [=impression store=] is a [=set=] of [=impression|impressions=]:
 
 ### Maintenance ### {#impression-store-maintenance}
 
-The [=user agent=] should periodically use
+The [=user agent=] [=should=] periodically use
 the [=impression/timestamp=] and [=impression/lifetime=] values
 to identify and delete any [=impressions=] in the [=impression store=]
 that have expired.
@@ -1099,7 +1103,7 @@ that have expired.
 It is not necessary to remove [=impressions=] immediately upon expiry,
 as long as <a method for=Attribution>measureConversion()</a>
 excludes expired [=impressions=] from [=attribution=]. However, the
-[=user agent=] should not retain expired [=impressions=] indefinitely.
+[=user agent=] [=should not=] retain expired [=impressions=] indefinitely.
 
 
 ### `Clear-Site-Data` Integration ### {#impression-store-clear}
@@ -1164,7 +1168,7 @@ the [=impression/impression site=],
 an optional [=impression/intermediary site=],
 and a [=set=] of [=impression/conversion sites=].
 
-These [=sites=] MUST all be in [=scheme-and-host=] form,
+These [=sites=] [=must=] all be in [=scheme-and-host=] form,
 with a [=scheme=] of "`https`".
 This means that a simple string serialization of a [=host=]
 is sufficient to identify the site.
@@ -1283,7 +1287,7 @@ used in differential privacy [[DP]].
 
 <p class=note>The choice of a 32-bit integer restricts the setting of epsilon to
 be less than or equal to the <dfn>maximum epsilon</dfn> of 4294.
-This <span class=allow-2119>should</span> be more than sufficient for implementations.
+This is expected to be more than sufficient for implementations.
 
 The <dfn>global privacy budget store</dfn> is a [=map=] whose keys are
 [=epoch indices=] and whose values are [=32-bit unsigned integers=]
@@ -1535,7 +1539,7 @@ for the Attribution API:
 
 Implementations also configure <dfn>attribution activation duration</dfn>
 as an [=implementation-defined=] [=duration=].
-This should be no less than the [=transient activation duration=],
+This [=should=] be no less than the [=transient activation duration=],
 though a larger value
 might be advisable to ensure that delays from [=navigate|navigation=]
 do not cause the Attribution API to become inaccessible.
@@ -1724,7 +1728,7 @@ all of the following are true:
 
 If all three conditions are true,
 the [=last browsing history clear=] does not need to be updated.
-Instead, the [=privacy budget store=] must be updated
+Instead, the [=privacy budget store=] [=must=] be updated
 by [=map/set|setting=] a value of 0
 for all [=privacy budget key=] combinations that can be formed
 from every affected [=site=] and [=epoch=]
@@ -1936,7 +1940,7 @@ does not return a status indicating whether the impression was recorded.
 This minimizes the ability to detect when the Attribution
 API is [[#opt-out|disabled]].
 
-<p class=advisement>Implementations MUST attempt to mitigate [=side channels=]
+<p class=advisement>Implementations [=must=] attempt to mitigate [=side channels=]
 that can reveal API state. For example, resolution of the returned promise is
 not predicated on saving |impression| to the [=impression store=] to ensure that
 the amount of time it takes to resolve is not dependent on the number of
@@ -2037,7 +2041,7 @@ and [=implicit API inputs=] |implicitInputs|:
          [=resolve=] |promise| with |result|.
 1. Return |promise|.
 
-<p class=advisement>Implementations MUST attempt to mitigate [=side channels=]
+<p class=advisement>Implementations [=must=] attempt to mitigate [=side channels=]
 that can reveal API state. For example, ideally the amount of time it takes to
 resolve the returned promise would not depend on the number of stored or matched
 impressions or whether the API is enabled.
@@ -2648,8 +2652,9 @@ are unknown parameters.
   <dt><dfn noexport><code>report-url</code></dfn></dt>
   <dd>
     A [=structured header/string=] containing the [=potentially trustworthy URL=]
-    to which the resulting report, if any, will be `POST`ed. The URL may be
-    relative to the response URL. Its [=url/scheme=] must be "`https`".
+    to which the resulting report, if any, will be `POST`ed.
+    The URL [=may=] be relative to the response URL.
+    Its [=url/scheme=] [=must=] be "`https`".
     This key is required.
   </dd>
 </dl>
@@ -2812,7 +2817,9 @@ Modify [=HTTP-network fetch=] as follows:
 <div algorithm=fetch-monkey-patch>
 After the step
 
-> If <var ignore>includeCredentials</var> is true, then the user agent should parse and store response `Set-Cookie` headers given |request| and |response|.
+> If <var ignore>includeCredentials</var> is true,
+> then the user agent [=should=] parse and store
+> response `Set-Cookie` headers given |request| and |response|.
 
 add the step
 
@@ -3072,9 +3079,6 @@ and a [=list=] of [=integers=] |histogram|:
         is expected to identify the DAP Leader role.
         Implementations need to obtain HPKE configuration for both Aggregators statically;
         see [[#unconfigured]].
-        The HPKE configuration <span class=allow-2119>must not</span> be fetched on demand,
-        as the time that takes will leak information
-        to callers of {{Attribution/measureConversion()}}.
 
     1.  Let |serverRole| be a [=byte=] with a value of 2 for the first item (the Leader)
         or 3 for the second (the Helper).
@@ -3122,7 +3126,7 @@ Always follow the referenced specification when interacting with DAP.
 to the amount of [=privacy budget=]
 that was expended by the site that requested the report.
 
-An [=aggregation service=] MUST guarantee
+An [=aggregation service=] [=must=] guarantee
 that it does not accept the same report more than once.
 
 
@@ -3239,12 +3243,13 @@ The first [[PPA-DP]] establishes the theory
 for on-device Individual DP accounting. The second [[PPA-DP-2]] expands the analysis to
 the mathematical privacy guarantees afforded by per-site budgets and by the global budget.
 
-The per-site budgets should be seen as the primary privacy protection. Per-site budgets should be configured to provide a meaningful DP guarantee.
+The per-site budgets can be viewed as the primary privacy protection.
+Per-site budgets [=should=] be configured to provide a meaningful DP guarantee.
 However, the analysis in [[PPA-DP-2]] identified two assumptions that limit these guarantees:
 
 1.  *No cross-site adaptivity in data generation.* A site's queryable data stream (impressions
-    and conversions) <span class=allow-2119>must</span> be generated independently of past DP [=attribution results=] from other sites.
-1.  *No leakage through cross-site shared limits.* Queries from one site <span class=allow-2119>must not</span> affect which
+    and conversions) [=must=] be generated independently of past DP [=attribution results=] from other sites.
+1.  *No leakage through cross-site shared limits.* Queries from one site [=must not=] affect which
     reports are emitted to others.
 
 In short, neither assumption can hold in practice.
@@ -3262,7 +3267,7 @@ Any system that provides continuous measurement has this property, so the only c
 An assumption of no cross-site leakage is necessary when we have shared limits that span multiple sites. An example of
 such shared limits are the global safety limits that aim to provide a global DP guarantee.
 If <a method for=Attribution>measureConversion()</a> requests from some sites cause a shared limit
-to be reached, reports to other sites may be
+to be reached, reports to other sites could be
 filtered. For instance, a site that knows it has impressions learns something about whether the shared limit has been reached. Though this information is aggregated and noisy, it is information about the site that exhausted its budget, in excess of the per-site budget for that site.
 
 Leakage through shared limits motivates using those limits only as a means of limiting abuse. Setting shared limits that are large multiples of the per-site budget makes it so that seeking to exploit shared limits requires coordination by at least that many sites. Larger multiples makes shared limits less useful as a privacy means of privacy protection and more suited as a means of protecting against denial of service or similar forms of abuse.
@@ -3457,7 +3462,7 @@ balancing the overall magnitude of noise
 and the simplicity of implementation and analysis.
 The current design uses a DP sensitivity based on an L1 norm,
 which supports Laplace noise added in the aggregation.
-Supporting other noise mechanisms may require additional changes
+Supporting other noise mechanisms might require additional changes
 to how sensitivity is computed and signaled.
 
 The addition of noise in a central location,
@@ -3507,8 +3512,8 @@ of harmful information flow through the impression store:
 
 ## Side Channel Risks in Implementation ## {#security-api-implementation}
 
-The Attribution APIs must be implemented with care
-for maintaining the required security and privacy properties.
+Implementing the Attribution API requires care
+to maintain the required security and privacy properties.
 A site calling the APIs cannot learn:
 
 *   Whether the Attribution APIs are [[#opt-out|enabled]].
@@ -3523,7 +3528,7 @@ A site calling the APIs cannot learn:
 Note that explicit return values or thrown exceptions
 are not the only way that a site can learn from
 the Attribution APIs.
-It may be possible to infer sensitive information from
+It might be possible to infer sensitive information from
 <dfn>side channels</dfn> like:
 
 *   Variation in the time it takes for the APIs to complete.
@@ -3562,7 +3567,7 @@ does not contribute to a [=fingerprint=]
 or other information leakage.
 
 While complete elimination of all side channels is impractical,
-implementations must make reasonable efforts to prevent
+implementations [=must=] make reasonable efforts to prevent
 leakage of sensitive information from the attribution APIs.
 Strategies to prevent leakage include:
 
@@ -3570,7 +3575,7 @@ Strategies to prevent leakage include:
     is disabled.
 *   Avoiding conditional logic. For example,
     <a method for=Attribution>measureConversion()</a>
-    should always go through the full process of constructing
+    can always go through the full process of constructing
     a conversion report, even when the [=conversion value=] to be
     reported is zero.
 *   Setting a fixed running time for certain operations.
@@ -3588,12 +3593,12 @@ Thus, much of the potential for disclosure
 of the information contained in these reports
 depends on the details of the aggregation service.
 
-[=User agent=] developers should carefully consider
+[=User agent=] developers need to carefully consider
 the design of an aggregation service
 and the trustworthiness of the aggregation service operator
 before adding it as a supported service for the Attribution API.
 Additional discussion of these issues
-may be found in [[#aggregation]] and [[#privacy]].
+can be found in [[#aggregation]] and [[#privacy]].
 
 
 ## Combining Reports from Multiple Sites ## {#security-multiple-sites}
@@ -3601,7 +3606,7 @@ may be found in [[#aggregation]] and [[#privacy]].
 The privacy mechanisms in the Attribution API
 operate primarily at the granularity of [=sites=].
 A malicious operator
-may attempt to register [=impressions=] for multiple sites,
+could attempt to register [=impressions=] for multiple sites,
 thus exceeding the amount of information that would otherwise
 be released through attribution.
 [[#dp-safety]] discusses establishing additional cross-site
@@ -3737,14 +3742,14 @@ is designed to reveal only aggregate information.
 The use of [[#dp|differential privacy]]
 limits the chance of determining whether any particular user
 contributed to the aggregated output.
-However, some users may still prefer
+However, some users might still prefer
 not to participate in attribution measurement.
 
 Implementations can offer users a choice to opt out
 using a dedicated control for the Attribution API,
 or through a consolidated privacy control that applies to multiple features.
 
-User agent developers should consider interaction
+User agent developers are encouraged to consider interaction
 of other privacy modes with the Attribution API.
 For example, attribution might be disabled in a private browsing mode,
 or it might be disabled
@@ -3755,7 +3760,7 @@ By design, whether a user has opted out is not detectable by websites.
 To minimize the risk of [=fingerprinting=],
 and to prevent discrimination
 against users who choose to disable the Attribution API,
-sites <span class=allow-2119>must not</span> be able to detect that the API is disabled.
+sites [=must not=] be able to detect that the API is disabled.
 Specifically, all calls to the Attribution API
 that are otherwise valid
 complete successfully, even when the API is disabled.
@@ -3805,6 +3810,9 @@ or changes in choice of algorithm.
 
 Detecting stale or absent configuration might be used
 to [=fingerprint=] the [=user agent=].
+The HPKE configuration [=must not=] be fetched on demand,
+as the time that takes will leak information
+to callers of {{Attribution/measureConversion()}}.
 
 A [=user agent=] [=should=] therefore
 prioritize the acquisition of [=aggregation service=] configuration
@@ -3849,7 +3857,7 @@ The following measures mitigate this risk:
 
 The Attribution API is available even in third-party contexts.
 In particular, a third-party iframe
-may call <a method for=Attribution>saveImpression()</a>.
+[=may=] call <a method for=Attribution>saveImpression()</a>.
 Note, however, that the impression is recorded with the [=site=]
 of the top-level navigation context, not the [=origin=] of the iframe.
 
@@ -3877,7 +3885,7 @@ has an adverse effect on privacy toward sites.
 Sites would then be able to gain more information
 from attribution.
 
-A [=user agent=] may clear data
+A [=user agent=] [=may=] clear data
 from the [=privacy budget store=] and [=epoch start time=]
 when the API is [[#opt-out|disabled]].
 In that case, if the API is re-enabled,
@@ -3962,7 +3970,7 @@ from when state is cleared.
 
 ### Clearing Impressions ### {#removing-impressions}
 
-A mechanism must be provided to clear the [=impression store=].
+A mechanism [=must=] be provided to clear the [=impression store=].
 For example, the impression store could be cleared
 upon activation of the control that
 [[#opt-out|disables]] the Attribution API.
@@ -3974,7 +3982,7 @@ be extended to cover the impression store.
 on the clearing of stored data.
 
 A [=user agent=] that clears state for a [=site=]
-must discard all [=impression store|saved impressions=]
+[=must=] discard all [=impression store|saved impressions=]
 that were saved during the affected period
 with a [=same site|matching=] [=impression/impression site=]
 or [=impression/conversion site=].
@@ -3984,7 +3992,7 @@ A [=conversion site=] that has had state cleared
 will not be able to use these [=impressions=].
 
 [=Impressions=] that have a [=same site|matching=] [=impression/intermediary site=]
-may be retained.
+can be retained.
 
 
 ## Choice of Clock ## {#why-wall-clock}
@@ -4038,6 +4046,11 @@ The privacy architecture is courtesy of the authors of [[PPA-DP]].
 
 
 <pre class=anchors>
+urlPrefix: https://www.rfc-editor.org/info/rfc2119/#section-; spec: html; type: dfn
+    text: must; url: 1
+    text: must not; url: 2
+    text: should; url: 3
+    text: may; url: 5
 urlPrefix: https://fetch.spec.whatwg.org/; spec: html; type: dfn
     text: request origin; url: #concept-request-origin
     text: HTTP-network fetch; url: #concept-http-network-fetch
