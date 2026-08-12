@@ -1772,7 +1772,7 @@ and [=implicit API inputs=] |implicitInputs|:
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionSites}}.
     1.  If any result in |conversionSites| is failure, return
-        [=a promise rejected with=] a {{"NotAllowed"}} {{DOMException}} in |realm|.
+        [=a promise rejected with=] a {{"NotAllowedError"}} {{DOMException}} in |realm|.
     1.  If the [=list/size=] of
         |options|.{{AttributionImpressionOptions/conversionCallers}} is
         greater than the [=implementation-defined=]
@@ -1782,7 +1782,7 @@ and [=implicit API inputs=] |implicitInputs|:
         of invoking [=parse a site=]
         for each value in |options|.{{AttributionImpressionOptions/conversionCallers}}.
     1.  If any result in |conversionCallers| is failure, return
-        [=a promise rejected with=] a {{"NotAllowed"}} {{DOMException}} in |realm|.
+        [=a promise rejected with=] a {{"NotAllowedError"}} {{DOMException}} in |realm|.
 1.  Run the following steps [=in parallel=]:
      1.  Construct |impression| as a [=impression|saved impression=] comprising:
          :   [=impression/Match Value=]
@@ -2009,7 +2009,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  Let |impressionSites| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionSites}}.
-1.  If any result in |impressionSites| is failure, throw a {{"NotAllowed"}} {{DOMException}}.
+1.  If any result in |impressionSites| is failure, throw a {{"NotAllowedError"}} {{DOMException}}.
 1.  If the [=list/size=] of
     |options|.{{AttributionConversionOptions/impressionCallers}} is greater than
     the [=implementation-defined=] [=maximum number of impression callers for conversion=],
@@ -2017,7 +2017,7 @@ To <dfn>validate {{AttributionConversionOptions}}</dfn> |options|:
 1.  Let |impressionCallers| be the [=set=] that is the result
     of invoking [=parse a site=]
     for each value in |options|.{{AttributionConversionOptions/impressionCallers}}.
-1.  If any result in |impressionCallers| is failure, throw a {{"NotAllowed"}} {{DOMException}}.
+1.  If any result in |impressionCallers| is failure, throw a {{"NotAllowedError"}} {{DOMException}}.
 1.  Return a [=validated conversion options=] with the following fields:
     : [=validated conversion options/Aggregation Service=]
     :: |aggregationService|

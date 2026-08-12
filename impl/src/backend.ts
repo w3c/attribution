@@ -59,7 +59,7 @@ export function days(days: number): Temporal.Duration {
 function parseSite(input: string): string {
   function endsInNumber(site: string): boolean {
     const parts = site.split(".");
-    const last = parts.pop() || parts.pop();
+    const last = parts.pop() || parts.pop() || "";
     return /^(?:\d+|0x[\da-f]*)$/i.test(last);
   }
   const site = getDomain(input, { allowPrivateDomains: true });
