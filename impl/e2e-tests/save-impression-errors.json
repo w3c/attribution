@@ -30,7 +30,7 @@
       },
       "expectedError": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {
@@ -54,7 +54,7 @@
       },
       "expectedError": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {

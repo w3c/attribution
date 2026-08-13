@@ -1738,7 +1738,8 @@ and a [=moment=] |now|:
 <div algorithm>
 The <dfn method for=Attribution>saveImpression(|options|)</dfn> method steps are:
 
-1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=],
+    returning [=a promise rejected with=] any thrown reason.
 1.  [=Assert=]: |implicitInputs| is not null.
 1.  Return the result of running [=save an impression=] with |options| and |implicitInputs|.
 
@@ -1889,7 +1890,8 @@ asynchronously, queuing work on the <dfn>Attribution [=task source=]</dfn>.
 <div algorithm>
 The <dfn method for=Attribution>measureConversion(|options|)</dfn> method steps are:
 
-1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=].
+1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from [=this=],
+    returning [=a promise rejected with=] any thrown reason.
 1.  [=Assert=]: |implicitInputs| is not null.
 1.  Return the result of running [=measure a conversion=] with |options| and |implicitInputs|.
 
@@ -2683,7 +2685,7 @@ and [=response=] |response|, run these steps:
 1.  Let |implicitInputs| be the result of [=obtaining the implicit API inputs=] from |request|'s [=request/client=]
     with |response|'s [=response/URL=]'s [=url/origin=].
 
-1.  If |implicitInputs| is null, return.
+1.  If |implicitInputs| is null or an exception is caught, return.
 
 1.  Let |saveImpressionHeader| be the result of [=header list/get|getting=] <code>[:Save-Impression:]</code> from |response|'s [=response/header list=].
 

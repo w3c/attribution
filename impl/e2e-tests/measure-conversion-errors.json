@@ -147,7 +147,7 @@
       },
       "expected": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {
@@ -161,7 +161,7 @@
       },
       "expected": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {

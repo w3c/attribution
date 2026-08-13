@@ -9,7 +9,7 @@
       },
       "expectedError": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {
@@ -21,7 +21,7 @@
       },
       "expectedError": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {
@@ -34,7 +34,7 @@
       },
       "expectedError": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {
@@ -47,7 +47,7 @@
       },
       "expectedError": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
       }
     },
     {
@@ -60,7 +60,79 @@
       },
       "expectedError": {
         "error": "DOMException",
-        "name": "SyntaxError"
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 6,
+      "site": "[::1]",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 7,
+      "site": "127.0.0.1",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 8,
+      "site": "192.0.2.75",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 9,
+      "site": "[3fff::100a]",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 10,
+      "site": "foo.localhost.",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
+      }
+    },
+    {
+      "seconds": 11,
+      "site": "0xff",
+      "event": "saveImpression",
+      "options": {
+        "histogramIndex": 0
+      },
+      "expectedError": {
+        "error": "DOMException",
+        "name": "NotAllowedError"
       }
     }
   ]
