@@ -4101,7 +4101,6 @@ urlPrefix: https://html.spec.whatwg.org/; spec: html; type: dfn
     text: top-level origin; url: #concept-environment-top-level-origin
     text: top-level traversable; url: #nav-top
     text: transient activation duration
-    text: tuple origin; url: #concept-tuple-origin
     text: iframe; url: #child-navigable
 urlPrefix: https://infra.spec.whatwg.org/; spec: infra; type: dfn;
     text: set; url: #sets
