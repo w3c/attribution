@@ -227,13 +227,27 @@ when the group that participates is larger.
 This is due to the effect of aggregation on
 the ability of sites to
 extract information about individuals from aggregates.
-This is especially true for central [[#dp|differential privacy]],
-which is the mathematical basis for the privacy design used
-in this specification.
 
-Larger cohorts of participants also produce more representative--
-and therefore more useful--
-statistics about the advertising that is being measured.
+This is especially true for the [[#dp|differential privacy]]
+model used in this specification.
+Noise is added during aggregation as a single quantity
+that is proportional to the amount that an individual contributes.
+Increased participation reduces the degree to which
+this noise affects the usefulness of the results.
+This allows the noise to be large
+relative to the values that any single person might contribute.
+
+Alternative models that rely on noise added to individual contributions
+produce more noise for the same privacy goal
+as the magnitude of noise increases with more contributions.
+The result is a worse balance of privacy and utility.
+To achieve the same utility in these systems,
+either looser privacy protections
+or measurement of significantly larger populations
+is needed.
+
+Larger cohorts of participants also produce more representative statistics,
+which are inherently more useful.
 
 If attribution is justified,
 both these factors motivate the enablement of attribution for all users.
@@ -3493,7 +3507,7 @@ which supports Laplace noise added in the aggregation.
 Supporting other noise mechanisms might require additional changes
 to how sensitivity is computed and signaled.
 
-The addition of noise in a central location,
+The addition of noise in a single location,
 as defined for any of these aggregation services,
 ensures that the total amount of noise does not increase
 as the total number of reports increases.
