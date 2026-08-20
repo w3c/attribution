@@ -4,13 +4,13 @@ on:
   pull_request: {}
   push:
     branches: [main]
-    
+
 jobs:
   main:
     name: Build, Validate and Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: w3c/spec-prod@v2
         with:
         # testing without github pages or figures dir on first pass
@@ -22,4 +22,3 @@ jobs:
           W3C_BUILD_OVERRIDE: |
             status: WD
             shortName: attribution
- 
