@@ -231,7 +231,11 @@ extract information about individuals from aggregates.
 This is especially true for the [[#dp|differential privacy]]
 model used in this specification.
 Noise is added during aggregation as a single quantity
-that is proportional to the amount that an individual contributes.
+that is based on the amount of privacy budget
+that has been consumed from each individual
+that contributes to the aggregate.
+Differential privacy guarantees do not change
+based on the number of individuals who participate.
 Increased participation reduces the degree to which
 this noise affects the usefulness of the results.
 This allows the noise to be large
