@@ -2863,9 +2863,11 @@ Modify [=HTTP-network fetch=] as follows:
 <div algorithm=fetch-monkey-patch>
 After the step
 
-> If <var ignore>includeCredentials</var> is true,
-> then the user agent [=should=] parse and store
-> response `Set-Cookie` headers given |request| and |response|.
+<blockquote>
+If <var ignore>includeCredentials</var> is true,
+then the user agent [=should=] parse and store
+response `Set-Cookie` headers given |request| and |response|.
+</blockquote>
 
 add the step
 
