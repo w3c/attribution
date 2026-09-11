@@ -22,6 +22,7 @@ export interface TestConfig {
   epochStart: number;
   fairlyAllocateCreditFraction: number;
   impressionSiteQuotaPerEpoch: number;
+  activationSeconds: number;
 }
 
 export function makeBackend(
@@ -38,6 +39,9 @@ export function makeBackend(
     ),
     includeUnencryptedHistogram: true,
 
+    activationDuration: Temporal.Duration.from({
+      seconds: config.activationSeconds,
+    }),
     globalPrivacyBudgetPerEpoch: config.globalPrivacyBudgetPerEpoch,
     impressionSiteQuotaPerEpoch: config.impressionSiteQuotaPerEpoch,
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
