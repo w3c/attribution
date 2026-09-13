@@ -2509,6 +2509,16 @@ ensures that exhausting shared limits requires coordination by many sites,
 making them primarily useful as a means of protecting against abuse
 rather than as a primary privacy mechanism.
 
+These configured [=privacy budget=] values
+are the ultimate control
+on the [=differential privacy|differentially-private=] information release
+from [=sites=] querying the [=impression store=].
+The [=impression store=] contains [[#privacy-impression-store|sensitive cross-site information]]
+that is both [[#save-impression-api|populated]] and [[#measure-conversion-api|queried]]
+by entities that might not respect user privacy.
+Larger values could improve utility for advertising measurement,
+but too-large values could be ineffective
+at safeguarding privacy.
 
 
 # HTTP API # {#http-api}
