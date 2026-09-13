@@ -3183,6 +3183,20 @@ that it does not accept the same report more than once.
 This design uses the concept of [=differential privacy=]
 as the basis of its privacy design. [[PPA-DP]]
 
+The information that this API stores and uses to generate reports
+is under the control of potentially-malicious sites
+and could be sensitive,
+as it relates to activity on other sites;
+see [[#privacy-impression-store]].
+Information that is released by the API
+therefore needs to be subject to strong restrictions.
+The API constrains information release by using
+[[#privacy-exposure|on-device attribution]],
+limited expressiveness of outputs (the use of [[#histograms|constrained histograms]]),
+and aggregation via an [=aggregation service=].
+Together, these restrictions all enable the use
+of [=differential privacy=].
+
 <dfn lt='differential privacy'>Differential privacy</dfn>
 is a mathematical definition of privacy
 that can guarantee the amount of private information
