@@ -3628,6 +3628,11 @@ Strategies to prevent leakage include:
     reported is zero.
 *   Setting a fixed running time for certain operations.
 
+At a minimum, implementations [=must=] have a finite running time
+for <a method for=Attribution>measureConversion()</a>,
+regardless of the number of saved [=impressions=]
+or concurrent requests.
+
 
 ## Aggregation Services ## {#security-aggregation-services}
 
