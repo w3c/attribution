@@ -3628,9 +3628,9 @@ Strategies to prevent leakage include:
     reported is zero.
 *   Setting a fixed running time for certain operations.
 
-At a minimum, implementations [=must=] have a finite running time
-for <a method for=Attribution>measureConversion()</a>,
-regardless of the number of saved [=impressions=]
+At a minimum, implementations [=must=] ensure that the time
+taken to return for <a method for=Attribution>measureConversion()</a>,
+is independent of the number of saved [=impressions=]
 or concurrent requests.
 
 
