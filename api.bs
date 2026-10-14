@@ -3786,7 +3786,7 @@ The most significant risk comes from an adversary
 that possesses high-fidelity tracking information on a user
 across many sites.
 In that case, misuse of the API leads to information release
-that is bounded by only the [[global privacy budget per epoch|global privacy budget]].
+that is bounded by only the [=global privacy budget per epoch|global privacy budget=].
 
 Such an attack is likely more difficult in practice
 than the differential privacy analysis considers.
@@ -3794,7 +3794,7 @@ An attacker would need to isolate information
 from aggregates that could include data about other users.
 Such an attacker would then need to combine information
 from the sites they control,
-as per-site information limited by the [[per-site privacy budget]].
+as per-site information limited by the [=per-site privacy budget=].
 
 It might be feasible to exploit this information at small scales.
 The potential to consolidate information collected from small sets of sites
