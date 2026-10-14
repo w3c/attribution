@@ -3653,6 +3653,58 @@ before adding it as a supported service for the Attribution API.
 Additional discussion of these issues
 can be found in [[#aggregation]] and [[#privacy]].
 
+Aggregation using DAP ([[DAP]]) involves two independent operators.
+The use of DAP provides the following properties of note:
+
+*   Strong confidentiality for individual reports is maintained
+    as long as the encryption method used (HPKE [[RFC9180]]) remains sound
+    and the two aggregation service operators do not collude.
+
+*   Correctness of the aggregate results can be undermined
+    by either aggregation service operator.
+    Either operator can spoil aggregates by adding (or subtracting) arbitrary values,
+    so both operators need to be honest for correctness.
+
+*   Correctness also depends on user agent instances generating correct values.
+    A user agent is limited in how much it can spoil results
+    because each report contains a proof
+    that the value does not exceed the L1 norm bound; see [[PRIO-L1]].
+    Reports with an invalid L1 norm are rejected.
+    However, a user agent can alter the value it provides
+    by changing values within the L1 norm bound
+    or moving values between histogram buckets.
+
+*   The addition of noise is necessary, but unspecified.
+    Noise needs to be added in a way that guarantees that no entity
+    receives noise-free results.
+
+    <p class=note>Techniques for sampling noise in MPC exist,
+    but these algorithms are very expensive
+    relative to the Prio aggregation that is used.
+    A design where each operator applies noise independently
+    is suboptimal from a utility perspective --
+    it increases noise by a factor
+    of roughly <math xmlns="http://www.w3.org/1998/Math/MathML"><msqrt><mn>2</mn></msqrt></math>
+    and could change its distribution --
+    but could be considered acceptable given the cost
+    of MPC-based noise sampling.
+
+
+[Section 8](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-8) of [[DAP]]
+explores the security properties of DAP
+in more detail.
+
+Under the architecture adopted by this API,
+[=conversion sites=] choose which reports are aggregated.
+This can have consequences for the accuracy of aggregates
+and can give sites a chance to filter out data
+from suspicious user agents.
+This places the responsibility for managing Sybil attacks
+(as discussed in [Section 8.1](https://datatracker.ietf.org/doc/html/draft-ietf-ppm-dap-18#section-8.1) of [[DAP]])
+on the conversion site rather than the aggregation service.
+See [Section 4](https://datatracker.ietf.org/doc/html/draft-thomson-ppm-dap-attribution-01#section-4) of [[DAP-ATTRIBUTION]]
+and [[#security-ad-fraud]] for further details.
+
 
 ## Combining Reports from Multiple Sites ## {#security-multiple-sites}
 
