@@ -3753,10 +3753,12 @@ As use of the API increases,
 so does the scope of this information.
 However, most of the information written to these stores
 is never disclosed.
-Because attribution is performed on the device
+
+Attribution is performed on the device
 (<dfn ignore=''>on-device attribution</dfn>),
-only information about attributed conversions is exposed by the
-Attribution API. This contrasts with other schemes in which
+so only information about attributed conversions is exposed
+by the Attribution API.
+This contrasts with other schemes in which
 information about both impressions and conversions is sent to the
 aggregation service for <dfn ignore=''>off-device attribution</dfn>.
 In the latter class of schemes, the amount of information
@@ -3764,20 +3766,39 @@ that could be revealed in a compromise of the aggregation service
 (or in a compromise of communication with the aggregation service)
 is significantly larger.
 
-When the Attribution API makes an attribution, information
-about that attribution is released from the device
+When the Attribution API generates a report,
+information about that attribution is released from the device
 only to the extent the [[#dp|differential privacy]] restrictions allow.
 
-While the Attribution API is intended to measure
-the association of relatively infrequent conversion events
-with a limited set of related impression candidates,
-it is important to consider how the API might be misused
-for larger-scale data collection.
-The requirement that impressions enumerate
-the possible [=conversion sites=] (and vice-versa)
-has an important role in preventing misuse of the API
-for mass data collection, and in making attempts
-at such misuse more visible.
+[[#dp|Differential privacy]] provides strong guarantees
+that bounds information release
+under all conditions,
+including worst-case scenarios
+where attackers are permitted significant capabilities
+(such as complete knowledge of all activity
+outside of the actions of a target user).
+This provides strong guarantees
+about what information a malicious site can obtain,
+even if they seek to misuse the API
+to gain the maximum information possible.
+
+The most significant risk comes from an adversary
+that possesses high-fidelity tracking information on a user
+across many sites.
+In that case, misuse of the API leads to information release
+that is bounded by only the [=global privacy budget per epoch|global privacy budget=].
+
+Such an attack is likely more difficult in practice
+than the differential privacy analysis considers.
+An attacker would need to isolate information
+from aggregates that could include data about other users.
+Such an attacker would then need to combine information
+from the sites they control,
+as per-site information limited by the [=per-site privacy budget=].
+
+It might be feasible to exploit this information at small scales.
+The potential to consolidate information collected from small sets of sites
+is a risk that implementations might consider when setting budgets.
 
 
 ## Disabling the Attribution API ## {#opt-out}
