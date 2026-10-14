@@ -25,7 +25,9 @@ type Event =
   | ClearImpressionsForSite
   | ClearBrowsingHistoryForAttribution
   | EnableAPI
-  | DisableAPI;
+  | DisableAPI
+  | UpdateActivationTimestamp
+  | UpdateActivationOnNavigate;
 
 type ExpectedError =
   | "RangeError"
@@ -40,6 +42,7 @@ interface SaveImpression {
   seconds: number;
   site: string;
   intermediarySite?: string | undefined;
+  topLevelTraversable?: string | undefined;
   options: AttributionImpressionOptions;
   expectedError?: ExpectedError;
 }
@@ -49,6 +52,7 @@ interface MeasureConversion {
   seconds: number;
   site: string;
   intermediarySite?: string | undefined;
+  topLevelTraversable?: string | undefined;
   options: AttributionConversionOptions;
   expected: number[] | ExpectedError;
 }
@@ -74,6 +78,20 @@ interface EnableAPI {
 interface DisableAPI {
   event: "disableAPI";
   seconds: number;
+}
+
+interface UpdateActivationTimestamp {
+  event: "updateActivationTimestamp";
+  seconds: number;
+  topLevelTraversable: string;
+}
+
+interface UpdateActivationOnNavigate {
+  event: "updateActivationOnNavigate";
+  seconds: number;
+  topLevelTraversable: string;
+  initiatorOrigin: string;
+  responseOrigin: string;
 }
 
 function assertThrows(
@@ -110,6 +128,9 @@ function runTest(
     ),
     includeUnencryptedHistogram: true,
 
+    activationDuration: Temporal.Duration.from({
+      seconds: config.activationSeconds,
+    }),
     globalPrivacyBudgetPerEpoch: config.globalPrivacyBudgetPerEpoch,
     impressionSiteQuotaPerEpoch: config.impressionSiteQuotaPerEpoch,
     maxConversionSitesPerImpression: config.maxConversionSitesPerImpression,
@@ -141,6 +162,7 @@ function runTest(
       case "saveImpression": {
         const call = () =>
           backend.saveImpression(
+            event.topLevelTraversable,
             event.site,
             event.intermediarySite,
             event.options,
@@ -157,6 +179,7 @@ function runTest(
       case "measureConversion": {
         const call = () =>
           backend.measureConversion(
+            event.topLevelTraversable,
             event.site,
             event.intermediarySite,
             event.options,
@@ -184,6 +207,16 @@ function runTest(
         break;
       case "disableAPI":
         backend.enabled = false;
+        break;
+      case "updateActivationTimestamp":
+        backend.updateActivationTimestamp(event.topLevelTraversable);
+        break;
+      case "updateActivationOnNavigate":
+        backend.updateActivationOnNavigate(
+          event.topLevelTraversable,
+          event.initiatorOrigin,
+          event.responseOrigin,
+        );
         break;
     }
   }

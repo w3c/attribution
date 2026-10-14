@@ -25,6 +25,15 @@ interface Impression {
   priority: number;
 }
 
+class TopLevelTraversable {
+  attributionEnabled: boolean = false;
+  attributionActivationTimestamp: Temporal.Instant;
+
+  constructor(now: Temporal.Instant) {
+    this.attributionActivationTimestamp = now;
+  }
+}
+
 interface PrivacyBudgetKey {
   epoch: number;
   site: string;
@@ -120,6 +129,7 @@ export interface Delegate {
   readonly privacyBudgetEpoch: Temporal.Duration;
   readonly impressionSiteQuotaPerEpoch: number;
   readonly globalPrivacyBudgetPerEpoch: number;
+  readonly activationDuration: Temporal.Duration;
 
   now(): Temporal.Instant;
   fairlyAllocateCreditFraction(): number;
@@ -179,6 +189,10 @@ export class Backend {
   #impressionSiteQuotaStore: PrivacyBudgetStoreEntry[] = [];
   #lastBrowsingHistoryClear: Temporal.Instant | null = null;
 
+  // Outside the simulator, this information is owned by the browser's actual
+  // top-level traversables, but is owned by the simulator here for simplicity.
+  readonly #topLevelTraversables = new Map<string, TopLevelTraversable>();
+
   constructor(delegate: Delegate) {
     this.#delegate = delegate;
   }
@@ -203,7 +217,66 @@ export class Backend {
     return this.#lastBrowsingHistoryClear;
   }
 
+  #getOrCreateTopLevelTraversable(topKey: string): TopLevelTraversable {
+    let top = this.#topLevelTraversables.get(topKey);
+    if (top === undefined) {
+      top = new TopLevelTraversable(this.#delegate.now());
+      this.#topLevelTraversables.set(topKey, top);
+    }
+    return top;
+  }
+
+  #checkAttributionAPIActivation(topKey: string | undefined): void {
+    // Since most logic doesn't care about activation, provide a simple way to
+    // opt out of it. (This doesn't exist in the actual specification.)
+    if (topKey === undefined) {
+      return;
+    }
+
+    const top = this.#getOrCreateTopLevelTraversable(topKey);
+    if (top.attributionEnabled) {
+      return;
+    }
+    if (
+      Temporal.Instant.compare(
+        top.attributionActivationTimestamp.add(
+          this.#delegate.activationDuration,
+        ),
+        this.#delegate.now(),
+      ) < 0
+    ) {
+      throw new DOMException("invalid last activation", "NotAllowedError");
+    }
+    top.attributionActivationTimestamp = UNIX_EPOCH;
+    top.attributionEnabled = true;
+  }
+
+  // Outside the simulator, this would be called when:
+  // 1. "a user interaction cuases firing of an activation trigger input event
+  // in a Document"
+  // 2. "navigation starts, and the user navigation involvement is browser UI"
+  updateActivationTimestamp(topKey: string): void {
+    this.#getOrCreateTopLevelTraversable(
+      topKey,
+    ).attributionActivationTimestamp = this.#delegate.now();
+  }
+
+  // Outside the simulator, this would be called "when a top-level traversable
+  // is navigated as part of the navigate algorithm, after the document state is
+  // finalized and the origin of the response is known."
+  updateActivationOnNavigate(
+    topKey: string,
+    initiatorOrigin: string,
+    responseOrigin: string,
+  ): void {
+    if (parseSite(initiatorOrigin) == parseSite(responseOrigin)) {
+      return;
+    }
+    this.#getOrCreateTopLevelTraversable(topKey).attributionEnabled = false;
+  }
+
   saveImpression(
+    topKey: string | undefined,
     impressionSite: string,
     intermediarySite: string | undefined,
     {
@@ -224,7 +297,7 @@ export class Backend {
     assert(isUnsignedLong(lifetimeDays));
     assert(isLong(priority));
 
-    const timestamp = this.#delegate.now();
+    this.#checkAttributionAPIActivation(topKey);
 
     const maxHistogramSize = this.#delegate.maxHistogramSize;
     if (histogramIndex >= maxHistogramSize) {
@@ -259,7 +332,7 @@ export class Backend {
       intermediarySite,
       conversionSites: parsedConversionSites,
       conversionCallers: parsedConversionCallers,
-      timestamp,
+      timestamp: this.#delegate.now(),
       lifetime: days(lifetimeDays),
       histogramIndex,
       priority,
@@ -364,6 +437,7 @@ export class Backend {
   }
 
   measureConversion(
+    topKey: string | undefined,
     topLevelSite: string,
     intermediarySite: string | undefined,
     options: AttributionConversionOptions,
@@ -371,7 +445,7 @@ export class Backend {
     assert(isValidSite(topLevelSite));
     assert(intermediarySite === undefined || isValidSite(intermediarySite));
 
-    const now = this.#delegate.now();
+    this.#checkAttributionAPIActivation(topKey);
 
     const validatedOptions = this.#validateConversionOptions(options);
 
@@ -379,7 +453,7 @@ export class Backend {
       ? this.#doAttributionAndFillHistogram(
           topLevelSite,
           intermediarySite,
-          now,
+          this.#delegate.now(),
           validatedOptions,
         )
       : allZeroHistogram(validatedOptions.histogramSize);

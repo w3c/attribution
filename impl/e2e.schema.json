@@ -8,6 +8,10 @@
         "$comment": {
           "$ref": "#/$defs/comment"
         },
+        "activationSeconds": {
+          "type": "number",
+          "minimum": 1
+        },
         "aggregationServices": {
           "type": "object",
           "additionalProperties": {
@@ -77,6 +81,7 @@
         }
       },
       "required": [
+        "activationSeconds",
         "aggregationServices",
         "globalPrivacyBudgetPerEpoch",
         "impressionSiteQuotaPerEpoch",
@@ -115,6 +120,9 @@
                   },
                   "options": {
                     "$ref": "#/$defs/AttributionImpressionOptions"
+                  },
+                  "topLevelTraversable": {
+                    "type": "string"
                   }
                 },
                 "required": ["options"],
@@ -144,6 +152,9 @@
                   },
                   "options": {
                     "$ref": "#/$defs/AttributionConversionOptions"
+                  },
+                  "topLevelTraversable": {
+                    "type": "string"
                   }
                 },
                 "required": ["expected", "options"],
@@ -190,6 +201,42 @@
                     "const": "disableAPI"
                   }
                 },
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "updateActivationTimestamp"
+                  },
+                  "topLevelTraversable": {
+                    "type": "string"
+                  }
+                },
+                "required": ["topLevelTraversable"],
+                "unevaluatedProperties": false
+              },
+              {
+                "$ref": "#/$defs/commonEvent",
+                "properties": {
+                  "event": {
+                    "const": "updateActivationOnNavigate"
+                  },
+                  "initiatorOrigin": {
+                    "type": "string"
+                  },
+                  "responseOrigin": {
+                    "type": "string"
+                  },
+                  "topLevelTraversable": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "initiatorOrigin",
+                  "responseOrigin",
+                  "topLevelTraversable"
+                ],
                 "unevaluatedProperties": false
               }
             ]
