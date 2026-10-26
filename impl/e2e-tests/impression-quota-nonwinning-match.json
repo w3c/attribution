@@ -1,0 +1,97 @@
+{
+  "$comment": "Every matching publisher consumes quota, not only publishers selected by attribution (#454).",
+  "events": [
+    {
+      "event": "saveImpression",
+      "seconds": 1,
+      "site": "losing-publisher.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 2,
+      "site": "winning-publisher.example",
+      "options": {
+        "histogramIndex": 1
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 3,
+      "site": "advertiser-0.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Both matching publishers lose 1M, including the publisher receiving no attribution credit."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 4,
+      "site": "advertiser-1.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Both matching publishers lose 1M, including the publisher receiving no attribution credit."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 5,
+      "site": "advertiser-2.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Both matching publishers lose 1M, including the publisher receiving no attribution credit."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 6,
+      "site": "advertiser-3.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Both matching publishers lose 1M, including the publisher receiving no attribution credit."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 7,
+      "site": "fresh-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["losing-publisher.example"]
+      },
+      "expected": [0, 0],
+      "$comment": "The nonwinning publisher is exhausted even when queried alone."
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "$comment": "Rejected quota checks preserve remaining budgets for an exact-boundary retry (#454).",
+  "events": [
+    {
+      "event": "saveImpression",
+      "seconds": 1,
+      "site": "publisher.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 2,
+      "site": "advertiser-0.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [1],
+      "$comment": "Consume 1M publisher quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 3,
+      "site": "advertiser-1.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [1],
+      "$comment": "Consume 1M publisher quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 4,
+      "site": "advertiser-2.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [1],
+      "$comment": "Consume 1M publisher quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 5,
+      "site": "fractional-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 3,
+        "maxValue": 4
+      },
+      "expected": [3],
+      "$comment": "Consume 750k, leaving 250k publisher quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 6,
+      "site": "retry-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0],
+      "$comment": "Reject a 1M request with 250k remaining, without deducting anything."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 7,
+      "site": "retry-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 4
+      },
+      "expected": [1],
+      "$comment": "The same advertiser can consume the exact remaining 250k after rejection."
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "$comment": "Global rejection preserves remaining budgets for a fractional exact-boundary retry (#468).",
+  "events": [
+    {
+      "event": "saveImpression",
+      "seconds": 1,
+      "site": "publisher-0.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 2,
+      "site": "advertiser-0.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-0.example"]
+      },
+      "expected": [1],
+      "$comment": "Consume 1M global budget with independent advertiser and publisher budgets."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 3,
+      "site": "publisher-1.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 4,
+      "site": "advertiser-1.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-1.example"]
+      },
+      "expected": [1],
+      "$comment": "Consume 1M global budget with independent advertiser and publisher budgets."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 5,
+      "site": "publisher-2.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 6,
+      "site": "advertiser-2.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-2.example"]
+      },
+      "expected": [1],
+      "$comment": "Consume 1M global budget with independent advertiser and publisher budgets."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 7,
+      "site": "publisher-3.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 8,
+      "site": "advertiser-3.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-3.example"]
+      },
+      "expected": [1],
+      "$comment": "Consume 1M global budget with independent advertiser and publisher budgets."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 9,
+      "site": "publisher-4.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 10,
+      "site": "advertiser-4.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-4.example"]
+      },
+      "expected": [1],
+      "$comment": "Consume 1M global budget with independent advertiser and publisher budgets."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 11,
+      "site": "publisher-5.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 12,
+      "site": "advertiser-5.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-5.example"]
+      },
+      "expected": [1],
+      "$comment": "Consume 1M global budget with independent advertiser and publisher budgets."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 13,
+      "site": "publisher-6.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 14,
+      "site": "advertiser-6.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-6.example"]
+      },
+      "expected": [1],
+      "$comment": "Consume 1M global budget with independent advertiser and publisher budgets."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 15,
+      "site": "fractional-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 3,
+        "maxValue": 4,
+        "impressionSites": ["publisher-0.example"]
+      },
+      "expected": [3],
+      "$comment": "Consume 750k global budget, leaving 250k."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 16,
+      "site": "retry-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-0.example"]
+      },
+      "expected": [0],
+      "$comment": "Reject a 1M request with 250k remaining; no budget store should be deducted."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 17,
+      "site": "retry-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 4,
+        "impressionSites": ["publisher-0.example"]
+      },
+      "expected": [1],
+      "$comment": "The exact remaining 250k remains available to the same advertiser after rejection."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 18,
+      "site": "final-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 1,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-0.example"]
+      },
+      "expected": [0],
+      "$comment": "The exact-boundary retry exhausted the global budget."
+    }
+  ]
+}
