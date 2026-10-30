@@ -1,0 +1,310 @@
+{
+  "$comment": "Global checks and deductions apply independently to every matching epoch, including nonwinning epochs (#468).",
+  "events": [
+    {
+      "event": "saveImpression",
+      "seconds": 1,
+      "site": "publisher-0.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 2,
+      "site": "publisher-1.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 3,
+      "site": "publisher-2.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 4,
+      "site": "publisher-3.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 5,
+      "site": "publisher-4.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 6,
+      "site": "publisher-5.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 7,
+      "site": "publisher-6.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 8,
+      "site": "publisher-7.example",
+      "options": {
+        "histogramIndex": 0,
+        "matchValue": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604801,
+      "site": "publisher-0.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604802,
+      "site": "publisher-1.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604803,
+      "site": "publisher-2.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604804,
+      "site": "publisher-3.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604805,
+      "site": "publisher-4.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604806,
+      "site": "publisher-5.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604807,
+      "site": "publisher-6.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 604808,
+      "site": "publisher-7.example",
+      "options": {
+        "histogramIndex": 1,
+        "matchValue": 1
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604820,
+      "site": "advertiser-0.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-0.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604821,
+      "site": "advertiser-1.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-1.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604822,
+      "site": "advertiser-2.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-2.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604823,
+      "site": "advertiser-3.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-3.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604824,
+      "site": "advertiser-4.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-4.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604825,
+      "site": "advertiser-5.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-5.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604826,
+      "site": "advertiser-6.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-6.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604827,
+      "site": "advertiser-7.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-7.example"]
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M from both matching epochs, including the epoch whose impression loses last-touch attribution."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604829,
+      "site": "old-epoch-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-0.example"],
+        "matchValues": [0]
+      },
+      "expected": [0, 0],
+      "$comment": "The nonwinning older epoch is also exhausted when selected alone."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 604830,
+      "site": "fresh-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 8,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher-0.example"]
+      },
+      "expected": [0, 0],
+      "$comment": "Both matching epochs are globally exhausted; neither may contribute."
+    }
+  ]
+}

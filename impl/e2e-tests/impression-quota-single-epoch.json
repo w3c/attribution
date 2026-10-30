@@ -1,0 +1,144 @@
+{
+  "$comment": "Regression for #454: deductions, deduplication, sharing across advertisers, publisher isolation, and epoch renewal.",
+  "events": [
+    {
+      "event": "saveImpression",
+      "seconds": 1,
+      "site": "publisher.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 2,
+      "site": "publisher.example",
+      "options": {
+        "histogramIndex": 1
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 3,
+      "site": "advertiser-0.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M once for this publisher despite two matching impressions. The fourth call exactly exhausts its 4M quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 4,
+      "site": "advertiser-1.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M once for this publisher despite two matching impressions. The fourth call exactly exhausts its 4M quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 5,
+      "site": "advertiser-2.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M once for this publisher despite two matching impressions. The fourth call exactly exhausts its 4M quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 6,
+      "site": "advertiser-3.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 1],
+      "$comment": "Deduct 1M once for this publisher despite two matching impressions. The fourth call exactly exhausts its 4M quota."
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 7,
+      "site": "fresh-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1
+      },
+      "expected": [0, 0],
+      "$comment": "The publisher quota is shared across advertisers; 4M global budget remains."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 8,
+      "site": "other-publisher.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 9,
+      "site": "fresh-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["other-publisher.example"]
+      },
+      "expected": [1, 0],
+      "$comment": "An unrelated publisher still contributes, and the rejected call preserved this advertiser budget."
+    },
+    {
+      "event": "saveImpression",
+      "seconds": 302403,
+      "site": "publisher.example",
+      "options": {
+        "histogramIndex": 0
+      }
+    },
+    {
+      "event": "measureConversion",
+      "seconds": 302404,
+      "site": "epoch-advertiser.example",
+      "options": {
+        "aggregationService": "https://agg-service.example",
+        "epsilon": 1,
+        "histogramSize": 2,
+        "lookbackDays": 1,
+        "value": 1,
+        "maxValue": 1,
+        "impressionSites": ["publisher.example"]
+      },
+      "expected": [1, 0],
+      "$comment": "The exhausted publisher receives a fresh quota in the next epoch."
+    }
+  ]
+}
