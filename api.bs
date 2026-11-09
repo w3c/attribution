@@ -3678,7 +3678,7 @@ The use of DAP provides the following properties of note:
     relative to the Prio aggregation that is used.
     A design where each operator applies noise independently
     is suboptimal from a utility perspective --
-    it increases noise by a factor
+    it increases the standard deviation of the noise by a factor
     of roughly <math xmlns="http://www.w3.org/1998/Math/MathML"><msqrt><mn>2</mn></msqrt></math>
     and could change its distribution --
     but could be considered acceptable given the cost
