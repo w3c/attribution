@@ -1961,7 +1961,7 @@ and [=implicit API inputs=] |implicitInputs|:
 <p class=advisement><a method for=Attribution>saveImpression()</a>
 does not return a status indicating whether the impression was recorded.
 This minimizes the ability to detect when the Attribution
-API is [[#opt-out|disabled]].
+API is [[#opt-out|inert]].
 
 <p class=advisement>Implementations [=must=] attempt to mitigate [=side channels=]
 that can reveal API state. For example, resolution of the returned promise is
@@ -3644,7 +3644,7 @@ leakage of sensitive information from the attribution APIs.
 Strategies to prevent leakage include:
 
 *   Fully validating all API inputs, even when the API
-    is disabled.
+    is [[#opt-out|inert]].
 *   Avoiding conditional logic. For example,
     <a method for=Attribution>measureConversion()</a>
     can always go through the full process of constructing
@@ -3833,7 +3833,8 @@ is a risk that implementations might consider when setting budgets.
 ## Disabling the Attribution API ## {#opt-out}
 
 User agents [=must=] provide controls
-for users to disable the Attribution API.
+for users to render the Attribution API inert
+or to completely disable the API.
 
 The Attribution API
 is designed to reveal only aggregate information.
@@ -3843,31 +3844,55 @@ contributed to the aggregated output.
 However, some users might still prefer
 not to participate in attribution measurement.
 
-Implementations can offer users a choice to opt out
-using a dedicated control for the Attribution API,
-or through a consolidated privacy control that applies to multiple features.
+There are two ways to render the Attribution API inoperable:
 
-User agent developers are encouraged to consider interaction
-of other privacy modes with the Attribution API.
-For example, attribution might be disabled in a private browsing mode,
-or it might be disabled
-if the user has opted out of collection of diagnostic data.
+*   When inert, the API appears to function,
+    but any [=conversion report=] that is generated
+    contains no information.
+    That is, the histogram contains only zero values.
 
-By design, whether a user has opted out is not detectable by websites.
+*   When disabled, the API obviously does not function.
+    The API is not exposed to sites,
+    as though the API has not been implemented.
 
-To minimize the risk of [=fingerprinting=],
-and to prevent discrimination
-against users who choose to disable the Attribution API,
-sites [=must not=] be able to detect that the API is disabled.
-Specifically, all calls to the Attribution API
-that are otherwise valid
-complete successfully, even when the API is disabled.
+Implementations can choose which option to use
+or present this choice to users.
+Implementations might provide a dedicated control for the Attribution API,
+or use a consolidated privacy control that applies to multiple features.
+
+The choice about whether to make the API inert or disabled
+is driven by whether the decision to opt out
+should be detectable by websites.
+
+Choosing to make the API inert minimizes the risk of [=fingerprinting=],
+and prevents discrimination
+against users who choose not to contribute their information
+to cross-site ad measurement.
+
+Sites [=must not=] be able to detect that the API is inert.
+When inert, all calls to the Attribution API
+that are otherwise valid complete successfully.
 The only difference in behavior
 is that [=conversion reports=] returned when the API is disabled
 will never report any [=conversion value=].
 Because the reports are encrypted,
 this difference cannot be detected
 by the site receiving the conversion report.
+
+Disabling the Attribution API is a detectable choice.
+Implementations [=must=] disable exposure
+of <code>{{Navigator|navigator}}.{{Navigator/attribution|attribution}}</code>
+when the API is disabled.
+This ensures that site feature detection can be used to disable the feature.
+
+A disabled [[#http-api|HTTP API]] cannot rely on feature detection;
+headers are simply ignored.
+
+User agent developers are encouraged to consider interaction
+of other privacy modes with the Attribution API.
+For example, attribution might be made inert or disabled
+either in a private browsing mode
+or if the user has opted out of collection of diagnostic data.
 
 
 ## Visibility ## {#visibility}
@@ -3948,7 +3973,7 @@ The following measures mitigate this risk:
     after aggregation and the addition of noise.
 *   Users have the ability to [[#removing-impressions|clear the impression store]].
 *   No impressions are saved to the impression store
-    when the Attribution API is [[#opt-out|disabled]].
+    when the Attribution API is [[#opt-out|inert or disabled]].
 
 
 ## Use in Third-party Contexts ## {#privacy-third-party-contexts}
@@ -3985,10 +4010,10 @@ from attribution.
 
 A [=user agent=] [=may=] clear data
 from the [=privacy budget store=] and [=epoch start time=]
-when the API is [[#opt-out|disabled]].
+when the API is [[#opt-out|inert or disabled]].
 In that case, if the API is re-enabled,
 there is no way to determine what budget was expended
-prior to the API being [[#opt-out|disabled]].
+prior to the API being [[#opt-out|inert or disabled]].
 In that case, a [=user agent=] can update
 the value of [=last browsing history clear=]
 to ensure that [=privacy budgets=] are not inadvertently exceeded.
@@ -4071,7 +4096,7 @@ from when state is cleared.
 A mechanism [=must=] be provided to clear the [=impression store=].
 For example, the impression store could be cleared
 upon activation of the control that
-[[#opt-out|disables]] the Attribution API.
+makes the Attribution API [[#opt-out|inert or disabled]].
 
 It is recommended that any mechanism a [=user agent=] provides
 to clear stored data (history, cookies, etc.)
